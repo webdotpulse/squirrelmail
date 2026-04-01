@@ -515,6 +515,7 @@ $check_referrer = ''                   if ( !$check_referrer );
 $ask_user_info = 'true'                if ( !$ask_user_info );
 $use_transparent_security_image = 'true' if ( !$use_transparent_security_image );
 $display_imap_login_error = 'false'    if ( !$display_imap_login_error );
+$treat_svg_separate_from_unsafe_images = 'false' if ( !$treat_svg_separate_from_unsafe_images );
 $allow_svg_display = 'false'           if ( !$allow_svg_display );
 $block_svg_download = 'false'          if ( !$block_svg_download );
 $fix_broken_base64_encoded_messages = 'false' if ( !$fix_broken_base64_encoded_messages );
@@ -752,7 +753,7 @@ while ( ( $command ne "q" ) && ( $command ne "Q" ) && ( $command ne ":q" ) ) {
         print "19. Page referal requirement     : $WHT$check_referrer$NRM\n";
         print "20. Security image               : $WHT" . (lc($use_transparent_security_image) eq 'true' ? 'Transparent' : 'Textual') . "$NRM\n";
         print "21. Display login error from IMAP: $WHT$display_imap_login_error$NRM\n";
-        print "22. Show inline SVG objects      : $WHT$allow_svg_display$NRM\n";
+        print "22. Show inline SVG objects      : $WHT" . ($treat_svg_separate_from_unsafe_images eq 'false' ? "Treat as unsafe images" : ($allow_svg_display eq 'true' ? "Always" : "Never")) . "$NRM\n";
         print "23. Block downloading SVG objects: $WHT$block_svg_download$NRM\n";
         print "24. Fix broken base64 messages   : $WHT$fix_broken_base64_encoded_messages$NRM\n";
         print "\n";
@@ -1033,7 +1034,7 @@ while ( ( $command ne "q" ) && ( $command ne "Q" ) && ( $command ne ":q" ) ) {
             elsif ( $command == 19 ) { $check_referrer           = command321(); }
             elsif ( $command == 20 ) { $use_transparent_security_image = command322(); }
             elsif ( $command == 21 ) { $display_imap_login_error = command323(); }
-            elsif ( $command == 22 ) { $allow_svg_display        = command324(); }
+            elsif ( $command == 22 ) { ($treat_svg_separate_from_unsafe_images,$allow_svg_display) = command324(); }
             elsif ( $command == 23 ) { $block_svg_download       = command325(); }
             elsif ( $command == 24 ) { $fix_broken_base64_encoded_messages = command326(); }
         } elsif ( $menu == 5 ) {
@@ -2966,27 +2967,56 @@ sub command323 {
 
 # allow_svg_display (since 1.5.2)
 sub command324 {
-    print "Some email messages might contain SVG images or animations, however\n";
-    print "the power and dynamic nature of SVG objects may represent security or\n";
-    print "privacy vulnerabilities.\n";
+    print "Some HTML-format email messages might contain SVG images or animations,\n";
+    print "however the power and dynamic nature of SVG objects may represent security\n";
+    print "or privacy vulnerabilities.\n";
     print "\n";
-    print "Enabling this option will cause SquirrelMail to display any SVG objects\n";
-    print "included inline in email messages when they are viewed in HTML format.\n";
+    print "SVG objects can be considered to be the same as \"unsafe images\" which\n";
+    print "users have the option to view should they deem the risk acceptable, or\n";
+    print "the display of SVG objects can be separately turned on or off by the\n";
+    print "administrator, regardless of \"unsafe images\" (if the latter option\n";
+    print "is chosen, it should be used to turn SVG display off completely; causing\n";
+    print "them to always be displayed should be considered a security risk)\n";
     print "\n";
 
-    if ( lc($allow_svg_display) eq 'true' ) {
+    if ( lc($treat_svg_separate_from_unsafe_images) eq 'false' ) {
         $default_value = "y";
     } else {
         $default_value = "n";
     }
-    print "Show inline SVG objects? (y/n) [$WHT$default_value$NRM]: $WHT";
-    $allow_svg_display = <STDIN>;
-    if ( ( $allow_svg_display =~ /^y\n/i ) || ( ( $allow_svg_display =~ /^\n/ ) && ( $default_value eq "y" ) ) ) {
-        $allow_svg_display = 'true';
-    } else {
-        $allow_svg_display = 'false';
+    $valid_input = 0;
+    while ($valid_input eq 0) {
+        print "Treat SVG objects as unsafe images? (y/n) [$WHT$default_value$NRM]: $WHT";
+        $treat_svg_separate_from_unsafe_images = <STDIN>;
+        if ( ( $treat_svg_separate_from_unsafe_images =~ /^y\n/i ) || ( ( $treat_svg_separate_from_unsafe_images =~ /^\n/ ) && ( $default_value eq "y" ) ) ) {
+            $treat_svg_separate_from_unsafe_images = 'false';
+            $valid_input = 1;
+        } elsif ( ( $treat_svg_separate_from_unsafe_images =~ /^n\n/i ) || ( ( $treat_svg_separate_from_unsafe_images =~ /^\n/ ) && ( $default_value eq "n" ) ) ) {
+            $treat_svg_separate_from_unsafe_images = 'true';
+            $valid_input = 1;
+        }
     }
-    return $allow_svg_display;
+
+    if ( lc($treat_svg_separate_from_unsafe_images) eq 'true' ) {
+        if ( lc($allow_svg_display) eq 'true' ) {
+            $default_value = "s";
+        } else {
+            $default_value = "h";
+        }
+        $valid_input = 0;
+        while ($valid_input eq 0) {
+            print "Always show or hide inline SVG objects? (s/h) [$WHT$default_value$NRM]: $WHT";
+            $allow_svg_display = <STDIN>;
+            if ( ( $allow_svg_display =~ /^s\n/i ) || ( ( $allow_svg_display =~ /^\n/ ) && ( $default_value eq "s" ) ) ) {
+                $allow_svg_display = 'true';
+                $valid_input = 1;
+            } elsif ( ( $allow_svg_display =~ /^h\n/i ) || ( ( $allow_svg_display =~ /^\n/ ) && ( $default_value eq "h" ) ) ) {
+                $allow_svg_display = 'false';
+                $valid_input = 1;
+            }
+        }
+    }
+    return ($treat_svg_separate_from_unsafe_images, $allow_svg_display);
 }
 
 
@@ -5380,6 +5410,7 @@ sub save_data {
         # boolean
         print CF "\$use_transparent_security_image = $use_transparent_security_image;\n";
 
+        print CF "\$treat_svg_separate_from_unsafe_images = $treat_svg_separate_from_unsafe_images;\n";
         print CF "\$allow_svg_display = $allow_svg_display;\n";
         print CF "\$block_svg_download = $block_svg_download;\n";
         print CF "\$fix_broken_base64_encoded_messages = $fix_broken_base64_encoded_messages;\n";
