@@ -2378,6 +2378,10 @@ function sq_body2div($attary, $mailbox, $message, $id){
  * There are several variables you should be aware of an which need
  * special description.
  *
+ * NOTE: If the caller wants to inspect a list of the tags completely
+ *       removed, it should check the global array $tags_removed
+ *       immediately after calling this function
+ *
  * Since the description is quite lengthy, see it here:
  * http://linux.duke.edu/projects/mini/htmlfilter/
  *
@@ -2408,6 +2412,8 @@ function sq_sanitize($body,
                      $recursively_called=FALSE
                      ){
     $me = 'sq_sanitize';
+    global $tags_removed;
+    $tags_removed = array();
 
     /**
      * See if tag_list is of tags to remove or tags to allow.
@@ -2464,10 +2470,14 @@ function sq_sanitize($body,
                 else if ($closing_tag[0] !== false
                  // these should be redundant
                  && $closing_tag[0] === $tagname && $closing_tag[2] === 2) {
+                    $tags_removed_temporary = $tags_removed;
                     $trusted .= sq_sanitize(substr($body, $curpos, $closing_tag[4] - $curpos + 1),
                                             $orig_tag_list, $rm_tags_with_content, $self_closing_tags,
                                             $force_tag_closing, $rm_attnames, $bad_attvals, $add_attr_to_tag,
                                             $message, $id, $mailbox, true);
+                    // Also works (slower?):
+                    // $tags_removed = array_merge($tags_removed_temporary, $tags_removed);
+                    $tags_removed = $tags_removed_temporary + $tags_removed;
                     $curpos = $closing_tag[4] + 1;
                     continue 2;
                 }
@@ -2589,6 +2599,8 @@ function sq_sanitize($body,
             if ($tagname != false && $skip_content == false){
                 $trusted .= sq_tagprint($tagname, $attary, $tagtype);
             }
+            else if (!empty($tagname))
+                $tags_removed[$tagname] = TRUE;
         }
         $curpos = $gt+1;
     }
@@ -2625,7 +2637,12 @@ function magicHTML($body, $id, $message, $mailbox = 'INBOX', $take_mailto_links 
 
     global $attachment_common_show_images, $view_unsafe_images,
            $has_unsafe_images, $allow_svg_display, $rcdata_rawtext_tags,
-           $remove_rcdata_rawtext_tags_and_content;
+           $remove_rcdata_rawtext_tags_and_content,
+           $treat_svg_separate_from_unsafe_images;
+
+    // If there's no "view_unsafe_images" variable in the URL, turn unsafe
+    // images off by default.
+    sqgetGlobalVar('view_unsafe_images', $view_unsafe_images, SQ_GET, FALSE);
 
     $rcdata_rawtext_tags = array(
         "noscript",
@@ -2664,7 +2681,8 @@ function magicHTML($body, $id, $message, $mailbox = 'INBOX', $take_mailto_links 
             "xmp",
             "xml",
             );
-    if (!$allow_svg_display)
+    if ((!$treat_svg_separate_from_unsafe_images && !$view_unsafe_images)
+     || ($treat_svg_separate_from_unsafe_images && !$allow_svg_display))
         $rm_tags_with_content[] = 'svg';
     /**
      * SquirrelMail will parse RCDATA and RAWTEXT tags and handle them as the special
@@ -2778,10 +2796,6 @@ function magicHTML($body, $id, $message, $mailbox = 'INBOX', $take_mailto_links 
             )
         );
 
-    // If there's no "view_unsafe_images" variable in the URL, turn unsafe
-    // images off by default.
-    sqgetGlobalVar('view_unsafe_images', $view_unsafe_images, SQ_GET, FALSE);
-
     if (!$view_unsafe_images){
         /**
          * Remove any references to http/https if view_unsafe_images set
@@ -2815,6 +2829,12 @@ function magicHTML($body, $id, $message, $mailbox = 'INBOX', $take_mailto_links 
                            $id,
                            $mailbox
                            );
+    if (!$treat_svg_separate_from_unsafe_images && !$view_unsafe_images){
+        global $tags_removed;
+        if (array_key_exists('svg', $tags_removed)){
+            $has_unsafe_images = true;
+       }
+    }
     if (strpos($trusted,$secremoveimg)){
         $has_unsafe_images = true;
     }
