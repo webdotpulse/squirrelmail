@@ -1553,6 +1553,55 @@ if ($is_already_installed) {
                             </div>
                         </label>
                         <label class="plugin-check">
+                            <input type="checkbox" name="plugins[]" value="abook_import_export" checked>
+                            <div>
+                                <strong>abook_import_export</strong>
+                                <div class="field-desc">Import/export contacts (CSV, Google, Outlook, vCard .vcf, LDIF).</div>
+                            </div>
+                        </label>
+                        <label class="plugin-check">
+                            <input type="checkbox" name="plugins[]" value="calendar" checked>
+                            <div>
+                                <strong>calendar</strong>
+                                <div class="field-desc">Modern web calendar (Month/Agenda, iCal .ics sync, email meeting scheduler).</div>
+                            </div>
+                        </label>
+                        <label class="plugin-check">
+                            <input type="checkbox" name="plugins[]" value="autoresponder" checked>
+                            <div>
+                                <strong>autoresponder</strong>
+                                <div class="field-desc">Out of Office vacation responder &amp; email forwarding with date scheduler.</div>
+                            </div>
+                        </label>
+                        <label class="plugin-check">
+                            <input type="checkbox" name="plugins[]" value="message_labels" checked>
+                            <div>
+                                <strong>message_labels</strong>
+                                <div class="field-desc">Gmail-style colored flags &amp; labels (Work, Personal, Urgent, custom tags).</div>
+                            </div>
+                        </label>
+                        <label class="plugin-check">
+                            <input type="checkbox" name="plugins[]" value="newmail_notify" checked>
+                            <div>
+                                <strong>newmail_notify</strong>
+                                <div class="field-desc">Desktop push notifications, floating in-app popup cards, and audio chime alerts.</div>
+                            </div>
+                        </label>
+                        <label class="plugin-check">
+                            <input type="checkbox" name="plugins[]" value="spam_buttons" checked>
+                            <div>
+                                <strong>spam_buttons</strong>
+                                <div class="field-desc">Report Spam &amp; Not Spam buttons with automatic Gemini AI training and learning.</div>
+                            </div>
+                        </label>
+                        <label class="plugin-check">
+                            <input type="checkbox" name="plugins[]" value="templates" checked>
+                            <div>
+                                <strong>templates</strong>
+                                <div class="field-desc">Reply &amp; email templates with automatic attachment support (PDFs, brochures, forms).</div>
+                            </div>
+                        </label>
+                        <label class="plugin-check">
                             <input type="checkbox" name="plugins[]" value="squirrelspell" checked>
                             <div>
                                 <strong>squirrelspell</strong>

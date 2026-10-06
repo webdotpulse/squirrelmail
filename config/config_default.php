@@ -989,8 +989,20 @@ $motd = "";
  * the following.
  *    $plugins[] = 'squirrelspell';
  *    $plugins[] = 'listcommands';
- */
 // Add list of enabled plugins here
+$plugins[] = 'html_mail';
+$plugins[] = 'ai_agent';
+$plugins[] = 'multi_account';
+$plugins[] = 'abook_import_export';
+$plugins[] = 'calendar';
+$plugins[] = 'autoresponder';
+$plugins[] = 'message_labels';
+$plugins[] = 'newmail_notify';
+$plugins[] = 'spam_buttons';
+$plugins[] = 'templates';
+$plugins[] = 'squirrelspell';
+$plugins[] = 'message_details';
+$plugins[] = 'info';
 
 
 /**

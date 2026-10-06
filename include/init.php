@@ -446,6 +446,18 @@ if (!$disable_plugins && file_exists(SM_PATH . 'config/plugin_hooks.php')) {
 //FIXME: if we keep the plugin hooks array static like this, it seems like we should also keep the template files list in a static file too (when a new user session is started or the template set is changed, the code will dynamically iterate through the directory heirarchy of the template directory and catalog all the template files therein (and store the "catalog" in PHP session) -- instead, we could do that once at config-time and keep that static so SM can just include the file just like the line below)
     require(SM_PATH . 'config/plugin_hooks.php');
 }
+if (!$disable_plugins && !empty($plugins) && is_array($plugins)) {
+    foreach ($plugins as $p) {
+        $setup = SM_PATH . "plugins/$p/setup.php";
+        if (file_exists($setup)) {
+            include_once($setup);
+            $fn = "squirrelmail_plugin_init_$p";
+            if (function_exists($fn)) {
+                $fn();
+            }
+        }
+    }
+}
 
 
 /**
