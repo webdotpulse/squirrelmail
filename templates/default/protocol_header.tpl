@@ -37,6 +37,19 @@ if (empty($lang)) {
 }
 ?>
 <head>
+<script type="text/javascript">
+(function() {
+  try {
+    var stored = localStorage.getItem('sm_theme');
+    if (!stored) {
+      var match = document.cookie.match(/(?:^|;\s*)sm_theme=([^;]*)/);
+      if (match) stored = decodeURIComponent(match[1]);
+    }
+    var theme = stored || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    document.documentElement.setAttribute('data-theme', theme);
+  } catch(e) {}
+})();
+</script>
 <?php
 if (!empty($page_title)) {
     ?>

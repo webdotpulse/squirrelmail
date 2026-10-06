@@ -1,7 +1,7 @@
 /**
  * Modern Deep Ocean Theme
  */
-:root {
+:root[data-theme="dark"], [data-theme="dark"] {
   --sm-bg-canvas: #0c1b2a;
   --sm-bg-surface: #102436;
   --sm-bg-sidebar: #091522;

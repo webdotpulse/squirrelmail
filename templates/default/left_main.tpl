@@ -262,7 +262,9 @@ function buildMailboxTree ($box, $settings, $icon_theme_path, $indent_factor=0) 
 extract($t);
 
 ?>
+<?php if (empty($GLOBALS['in_webmail_shell'])) { ?>
 <body class="sqm_leftMain">
+<?php } ?>
 <div class="sqm_leftMain">
 <?php if (!empty($plugin_output['left_main_before'])) echo $plugin_output['left_main_before']; ?>
 <div class="sm-sidebar-folders-wrapper">
@@ -277,3 +279,6 @@ extract($t);
 </div>
 <?php if (!empty($plugin_output['left_main_after'])) echo $plugin_output['left_main_after']; ?>
 </div>
+<?php if (empty($GLOBALS['in_webmail_shell'])) { ?>
+</body>
+<?php } ?>

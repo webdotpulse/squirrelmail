@@ -169,12 +169,19 @@ function displayHtmlHeader( $title = 'SquirrelMail', $xtra = '', $do_hook = TRUE
     $header_tags .= create_css_link($base_uri . 'css/print.css', 'printerfriendly', false, 'print');
 
     // Modern Application Shell Stylesheet & SPA Scripts
-    $header_tags .= '<link rel="stylesheet" type="text/css" href="' . sqm_baseuri() . 'assets/css/app.css" />' . "\n";
+    $app_css_path = SM_PATH . 'assets/css/app.css';
+    $app_js_path = SM_PATH . 'assets/js/app.js';
+    $app_css_ver = file_exists($app_css_path) ? filemtime($app_css_path) : '1.0';
+    $app_js_ver = file_exists($app_js_path) ? filemtime($app_js_path) : '1.0';
+
+    $header_tags .= '<link rel="stylesheet" type="text/css" href="' . sqm_baseuri() . 'assets/css/app.css?v=' . $app_css_ver . '" />' . "\n";
     if (!empty($chosen_theme) && substr($chosen_theme, -4) === '.css') {
-        $header_tags .= '<link rel="stylesheet" type="text/css" href="' . sqm_baseuri() . $chosen_theme . '" id="sm-custom-theme-css" />' . "\n";
+        $theme_file = SM_PATH . $chosen_theme;
+        $theme_ver = file_exists($theme_file) ? filemtime($theme_file) : '1.0';
+        $header_tags .= '<link rel="stylesheet" type="text/css" href="' . sqm_baseuri() . $chosen_theme . '?v=' . $theme_ver . '" id="sm-custom-theme-css" />' . "\n";
     }
     $header_tags .= '<script src="' . sqm_baseuri() . 'assets/js/dompurify.min.js" type="text/javascript"></script>' . "\n";
-    $header_tags .= '<script src="' . sqm_baseuri() . 'assets/js/app.js" type="text/javascript"></script>' . "\n";
+    $header_tags .= '<script src="' . sqm_baseuri() . 'assets/js/app.js?v=' . $app_js_ver . '" type="text/javascript"></script>' . "\n";
 
     if ($squirrelmail_language == 'ja_JP') {
         /*

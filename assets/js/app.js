@@ -28,7 +28,9 @@
         state: {
             currentUrl: window.location.href,
             isLoading: false,
-            theme: localStorage.getItem('sm_theme') || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+            theme: localStorage.getItem('sm_theme') || 
+                   (document.cookie.match(/(?:^|;\s*)sm_theme=([^;]*)/) ? decodeURIComponent(document.cookie.match(/(?:^|;\s*)sm_theme=([^;]*)/)[1]) : null) || 
+                   (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
         },
 
         init() {
@@ -72,25 +74,44 @@
         applyTheme(theme) {
             this.state.theme = theme;
             document.documentElement.setAttribute('data-theme', theme);
-            localStorage.setItem('sm_theme', theme);
+            try {
+                localStorage.setItem('sm_theme', theme);
+                document.cookie = 'sm_theme=' + encodeURIComponent(theme) + '; path=/; max-age=31536000; SameSite=Lax';
+            } catch(e) {}
+
+            // Synchronize custom theme stylesheet link if present
+            const customTheme = document.getElementById('sm-custom-theme-css');
+            if (customTheme) {
+                const href = (customTheme.getAttribute('href') || '').toLowerCase();
+                if (theme === 'light') {
+                    if (href.includes('dark') || href.includes('night') || href.includes('ocean')) {
+                        customTheme.disabled = true;
+                    }
+                } else {
+                    customTheme.disabled = false;
+                }
+            }
 
             const toggleBtn = document.getElementById(this.config.themeToggleId);
             if (toggleBtn) {
-                toggleBtn.setAttribute('title', theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode');
+                const titleText = theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode';
+                toggleBtn.setAttribute('title', titleText);
+                toggleBtn.setAttribute('aria-label', titleText);
                 toggleBtn.innerHTML = theme === 'dark'
-                    ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>'
-                    : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>';
+                    ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>'
+                    : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>';
             }
         },
 
         setupThemeToggle() {
             const toggleBtn = document.getElementById(this.config.themeToggleId);
             if (toggleBtn) {
-                toggleBtn.addEventListener('click', (e) => {
+                toggleBtn.onclick = (e) => {
                     e.preventDefault();
+                    e.stopPropagation();
                     const newTheme = this.state.theme === 'dark' ? 'light' : 'dark';
                     this.applyTheme(newTheme);
-                });
+                };
             }
         },
 
@@ -113,19 +134,19 @@
             };
 
             if (menuBtn) {
-                menuBtn.addEventListener('click', (e) => {
+                menuBtn.onclick = (e) => {
                     e.preventDefault();
                     toggle();
-                });
+                };
             }
 
             if (backdrop) {
-                backdrop.addEventListener('click', close);
+                backdrop.onclick = close;
             }
 
-            // Close on link click on mobile
+            // Close on link click on mobile (< 768px)
             document.addEventListener('click', (e) => {
-                if (window.innerWidth < 1024 && e.target.closest('#sm-sidebar a')) {
+                if (window.innerWidth < 768 && e.target.closest('#sm-sidebar a')) {
                     close();
                 }
             });

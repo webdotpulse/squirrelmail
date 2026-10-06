@@ -35,29 +35,30 @@ function multi_account_left_main_do()
     <style>
         .sqm-multi-account-container {
             margin: 6px 8px 12px 8px;
-            padding: 8px 10px;
-            background: #ffffff;
-            border: 1px solid #dcdfe4;
-            border-radius: 8px;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            padding: 10px;
+            background: var(--sm-bg-card, #ffffff);
+            border: 1px solid var(--sm-border, #dcdfe4);
+            border-radius: var(--sm-radius-md, 8px);
+            font-family: inherit;
+            box-shadow: var(--sm-shadow-sm, 0 1px 3px rgba(0,0,0,0.05));
             text-align: left;
         }
         .sqm-multi-unified-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 4px 6px;
-            border-radius: 6px;
-            background: #e8f0fe;
-            color: #1a73e8;
+            padding: 6px 8px;
+            border-radius: var(--sm-radius-sm, 6px);
+            background: var(--sm-primary-light, #e8f0fe);
+            color: var(--sm-primary, #1a73e8);
             text-decoration: none;
             font-weight: 600;
             font-size: 12.5px;
-            transition: background 0.15s ease;
+            transition: all var(--sm-transition-fast, 0.15s ease);
         }
         .sqm-multi-unified-header:hover {
-            background: #d2e3fc;
+            background: var(--sm-selected-bg, #d2e3fc);
+            color: var(--sm-primary-hover, #1d4ed8);
             text-decoration: none;
         }
         .sqm-unified-title {
@@ -66,7 +67,7 @@ function multi_account_left_main_do()
             gap: 6px;
         }
         .sqm-unread-badge {
-            background: #1a73e8;
+            background: var(--sm-primary, #1a73e8);
             color: #ffffff;
             font-size: 10.5px;
             font-weight: 700;
@@ -81,7 +82,7 @@ function multi_account_left_main_do()
         .sqm-accounts-tree {
             margin-top: 6px;
             padding-top: 4px;
-            border-top: 1px dashed #e8eaed;
+            border-top: 1px dashed var(--sm-border, #e8eaed);
             list-style: none;
             padding-left: 0;
             margin-bottom: 0;
@@ -93,15 +94,16 @@ function multi_account_left_main_do()
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 3px 6px;
-            border-radius: 4px;
-            color: #3c4043;
+            padding: 4px 6px;
+            border-radius: var(--sm-radius-sm, 4px);
+            color: var(--sm-text-secondary, #3c4043);
             text-decoration: none;
             font-size: 11.5px;
             transition: background 0.1s ease;
         }
         .sqm-account-link:hover {
-            background: #f1f3f4;
+            background: var(--sm-hover-bg, #f1f3f4);
+            color: var(--sm-text-primary, #0f172a);
             text-decoration: none;
         }
         .sqm-acc-info {
@@ -120,8 +122,8 @@ function multi_account_left_main_do()
             flex-shrink: 0;
         }
         .sqm-acc-badge {
-            background: #dadce0;
-            color: #3c4043;
+            background: var(--sm-border, #dadce0);
+            color: var(--sm-text-primary, #3c4043);
             font-size: 10px;
             font-weight: 600;
             padding: 0 5px;
@@ -129,19 +131,19 @@ function multi_account_left_main_do()
         }
         .sqm-acc-actions {
             margin-top: 6px;
-            padding-top: 4px;
-            border-top: 1px solid #f1f3f4;
+            padding-top: 6px;
+            border-top: 1px solid var(--sm-border, #f1f3f4);
             display: flex;
             align-items: center;
             justify-content: space-between;
             font-size: 11px;
         }
         .sqm-acc-action-link {
-            color: #5f6368;
+            color: var(--sm-text-muted, #5f6368);
             text-decoration: none;
         }
         .sqm-acc-action-link:hover {
-            color: #1a73e8;
+            color: var(--sm-primary, #1a73e8);
             text-decoration: underline;
         }
     </style>

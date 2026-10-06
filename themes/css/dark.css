@@ -1,7 +1,7 @@
 /**
  * Modern Midnight Dark Theme
  */
-:root {
+:root[data-theme="dark"], [data-theme="dark"] {
   --sm-bg-canvas: #090d16;
   --sm-bg-surface: #111827;
   --sm-bg-sidebar: #0b1120;

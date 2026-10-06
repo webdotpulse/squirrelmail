@@ -1,7 +1,7 @@
 /**
  * Modern Solarized Dark Theme
  */
-:root {
+:root[data-theme="dark"], [data-theme="dark"] {
   --sm-bg-canvas: #002b36;
   --sm-bg-surface: #073642;
   --sm-bg-sidebar: #00212b;

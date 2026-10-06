@@ -1,7 +1,7 @@
 /**
  * Modern High Contrast Accessible Theme
  */
-:root {
+:root[data-theme="dark"], [data-theme="dark"] {
   --sm-bg-canvas: #000000;
   --sm-bg-surface: #0a0a0a;
   --sm-bg-sidebar: #000000;
