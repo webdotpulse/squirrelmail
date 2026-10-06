@@ -1,0 +1,384 @@
+/* ==========================================================================
+   SquirrelMail - Gmail Theme
+   Modern Google / Gmail material aesthetic for SquirrelMail
+   ========================================================================== */
+
+/* Google Typography & Base Elements */
+body {
+    font-family: 'Google Sans', Roboto, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+    color: #202124;
+    background-color: #ffffff;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+}
+
+body.sqm_leftMain {
+    font-family: 'Google Sans', Roboto, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+    color: #202124;
+    background-color: #f6f8fc;
+    border-right: 1px solid #dadce0;
+    padding: 8px 12px;
+}
+
+/* Links */
+a:link, a:visited {
+    color: #1a73e8;
+    text-decoration: none;
+    transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+a:hover, a:active {
+    color: #1557b0;
+    text-decoration: underline;
+}
+
+/* Left Navigation Links & Folders (Gmail Sidebar) */
+.sqm_leftMain a:link, .sqm_leftMain a:visited {
+    color: #202124;
+    text-decoration: none;
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.sqm_leftMain a:hover, .sqm_leftMain a:active {
+    color: #1a73e8;
+    background-color: #e8f0fe;
+    text-decoration: none;
+}
+
+.leftspecial, .leftspecial a:link, .leftspecial a:visited {
+    color: #d93025 !important;
+    font-weight: 600 !important;
+}
+
+.leftspecial a:hover, .leftspecial a:active {
+    background-color: #fce8e6 !important;
+    color: #c5221f !important;
+}
+
+.leftunseen {
+    color: #1a73e8 !important;
+    font-weight: 700 !important;
+}
+
+.leftunseen a:link, .leftunseen a:visited {
+    color: #1a73e8 !important;
+    font-weight: 700 !important;
+}
+
+.leftnoselect, .leftnoselect a:link, .leftnoselect a:visited {
+    color: #80868b;
+    font-style: italic;
+}
+
+/* Sidebar Folder Header & Actions */
+.sqm_folderHeader {
+    font-size: 15px;
+    font-weight: 600;
+    color: #5f6368;
+    letter-spacing: 0.3px;
+    text-align: left;
+    padding: 6px 4px 10px 4px;
+    border-bottom: 1px solid #e8eaed;
+    margin-bottom: 8px;
+}
+
+.sqm_lastRefreshTime {
+    font-size: 11px;
+    color: #5f6368;
+}
+
+/* Top App Header & Toolbar */
+td.header1, .sqm_loginOrgName, .sqm_signoutBar {
+    background: #f6f8fc !important;
+    color: #202124 !important;
+    border-bottom: 1px solid #dadce0;
+    padding: 8px 14px;
+    font-weight: 500;
+}
+
+td.header1 a:link, td.header1 a:visited,
+.sqm_loginOrgName a:link, .sqm_loginOrgName a:visited {
+    color: #1a73e8;
+    padding: 4px 10px;
+    border-radius: 16px;
+    font-weight: 500;
+    display: inline-block;
+}
+
+td.header1 a:hover, td.header1 a:active,
+.sqm_loginOrgName a:hover, .sqm_loginOrgName a:active {
+    background-color: #e8f0fe;
+    text-decoration: none;
+}
+
+td.header2 {
+    background: #f1f3f4 !important;
+    color: #3c4043 !important;
+    border-top: 1px solid #dadce0;
+    border-bottom: 1px solid #dadce0;
+    padding: 6px 10px;
+    font-weight: 600;
+    font-size: 12px;
+}
+
+td.header3 {
+    color: #202124;
+    font-weight: 600;
+    padding: 6px 8px;
+}
+
+td.header4 {
+    background: #f8fafd !important;
+    color: #5f6368 !important;
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid #dadce0;
+    padding: 8px 10px;
+}
+
+td.header5 {
+    background: #e8f0fe !important;
+    color: #1a73e8 !important;
+    font-weight: 600;
+    padding: 6px 10px;
+}
+
+/* Tables & Lists */
+table.table1, table.table2, table.table_standard, table.sm_readBody_table2 {
+    border: 1px solid #dadce0 !important;
+    border-collapse: separate;
+    border-spacing: 0;
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 1px 2px rgba(60,64,67,0.08);
+    overflow: hidden;
+    margin-top: 8px;
+    margin-bottom: 12px;
+}
+
+table.table1 td, table.table2 td, table.table_standard td {
+    padding: 6px 10px;
+    border-bottom: 1px solid #f1f3f4;
+}
+
+/* Alternating Message Rows */
+tr.even {
+    background-color: #ffffff !important;
+    transition: background-color 0.15s ease;
+}
+
+tr.odd {
+    background-color: #fcfdfe !important;
+    transition: background-color 0.15s ease;
+}
+
+tr.even:hover, tr.odd:hover {
+    background-color: #f2f6fc !important;
+    box-shadow: inset 1px 0 0 #dadce0, inset -1px 0 0 #dadce0;
+}
+
+/* Selected / Highlighted Rows */
+tr.clicked_even, tr.clicked_odd {
+    background-color: #e8f0fe !important;
+    color: #174ea6 !important;
+}
+
+tr.clicked_even:hover, tr.clicked_odd:hover {
+    background-color: #d2e3fc !important;
+}
+
+.highlight {
+    color: #1a73e8;
+    background-color: #e8f0fe;
+    padding: 2px 4px;
+    border-radius: 4px;
+}
+
+/* Form Fields & Controls */
+input[type="text"],
+input[type="password"],
+input[type="email"],
+select,
+textarea {
+    font-family: inherit;
+    font-size: 13px;
+    color: #202124;
+    background-color: #ffffff;
+    border: 1px solid #dadce0;
+    border-radius: 6px;
+    padding: 6px 10px;
+    box-sizing: border-box;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="email"]:focus,
+select:focus,
+textarea:focus {
+    border-color: #1a73e8;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(26,115,232,0.2);
+}
+
+/* Google Material Buttons */
+input[type="submit"],
+input[type="button"],
+input[type="reset"],
+button,
+.sqm_refreshButton input,
+.button {
+    font-family: 'Google Sans', Roboto, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: #1a73e8;
+    background-color: #ffffff;
+    border: 1px solid #dadce0;
+    border-radius: 18px;
+    padding: 5px 16px;
+    cursor: pointer;
+    display: inline-block;
+    text-align: center;
+    line-height: 1.4;
+    transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease;
+}
+
+input[type="submit"]:hover,
+input[type="button"]:hover,
+input[type="reset"]:hover,
+button:hover,
+.sqm_refreshButton input:hover,
+.button:hover {
+    background-color: #f1f3f4;
+    border-color: #dadce0;
+    color: #174ea6;
+    box-shadow: 0 1px 2px rgba(60,64,67,0.15);
+}
+
+/* Primary Submit Button (Google Blue / Compose Red Accent) */
+input[type="submit"][name="send"],
+input[type="submit"][value*="Send"],
+input[type="submit"][value*="Login"],
+input[type="submit"][value*="Save"],
+input[type="submit"][value*="Submit"] {
+    background-color: #1a73e8;
+    color: #ffffff;
+    border: 1px solid #1a73e8;
+    font-weight: 500;
+}
+
+input[type="submit"][name="send"]:hover,
+input[type="submit"][value*="Send"]:hover,
+input[type="submit"][value*="Login"]:hover,
+input[type="submit"][value*="Save"]:hover,
+input[type="submit"][value*="Submit"]:hover {
+    background-color: #1557b0;
+    border-color: #1557b0;
+    color: #ffffff;
+    box-shadow: 0 1px 3px rgba(60,64,67,0.3);
+}
+
+/* Error & Alert Boxes */
+.error_table, .table_errorBox {
+    background-color: #fef7f6 !important;
+    border: 1px solid #fad2cf !important;
+    border-radius: 8px !important;
+    color: #d93025 !important;
+    padding: 10px;
+    margin: 12px auto;
+}
+
+.error_thead, .error_thead_caption, td.error_header {
+    background-color: #fce8e6 !important;
+    color: #c5221f !important;
+    font-weight: 600;
+}
+
+.error_row {
+    color: #d93025 !important;
+}
+
+/* Reading Email Quotes */
+.quote1 {
+    color: #5f6368;
+    border-left: 3px solid #dadce0;
+    padding-left: 10px;
+    margin: 4px 0;
+}
+
+.quote2 {
+    color: #1a73e8;
+    border-left: 3px solid #1a73e8;
+    padding-left: 10px;
+    margin: 4px 0;
+}
+
+/* Field Labels & Value Layout */
+td.fieldName {
+    color: #5f6368;
+    font-weight: 500;
+    text-align: right;
+    padding: 6px 12px;
+}
+
+td.fieldValue {
+    color: #202124;
+    padding: 6px 12px;
+}
+
+/* Options Screen Enhancements */
+#optionGroups td.title {
+    background: #f1f3f4 !important;
+    color: #202124 !important;
+    font-weight: 600;
+    border-bottom: 1px solid #dadce0;
+    padding: 8px;
+}
+
+#optionGroups td.optionName {
+    background: #f8fafd !important;
+    color: #1a73e8 !important;
+    font-weight: 500;
+    padding: 6px 8px;
+}
+
+#optionGroups td.optionDesc {
+    background: #ffffff !important;
+    color: #5f6368 !important;
+    padding: 6px 8px;
+}
+
+#optionGroups td.optionElement table {
+    border: 1px solid #dadce0 !important;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+/* Login Box Google Card Design */
+body.sqm_login {
+    background-color: #f6f8fc;
+}
+
+body.sqm_login table.table1 {
+    max-width: 440px;
+    margin: 40px auto;
+    border-radius: 12px;
+    border: 1px solid #dadce0;
+    box-shadow: 0 4px 16px rgba(60,64,67,0.12);
+    background-color: #ffffff;
+}
+
+body.sqm_login td.header1 {
+    border-radius: 12px 12px 0 0;
+    background: #ffffff !important;
+    font-size: 18px;
+    padding: 18px 20px;
+    color: #202124 !important;
+    border-bottom: 1px solid #f1f3f4;
+}

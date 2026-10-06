@@ -778,6 +778,9 @@ $user_themes[0]['NAME'] = 'Default';
 $user_themes[1]['PATH'] = '../css/blue_gradient/';
 $user_themes[1]['NAME'] = 'Blue Options';
 
+$user_themes[2]['PATH'] = '../css/gmail/';
+$user_themes[2]['NAME'] = 'Gmail';
+
 /**
  * Message Icons control
  *
