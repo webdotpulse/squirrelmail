@@ -267,8 +267,8 @@ function save_configuration($data) {
 \$signout_page  = '';
 \$frame_top     = '_top';
 
-\$provider_uri     = 'http://squirrelmail.org/';
-\$provider_name    = 'SquirrelMail';
+\$provider_uri     = '';
+\$provider_name    = '';
 
 \$motd = '';
 

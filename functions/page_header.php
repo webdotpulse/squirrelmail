@@ -58,15 +58,26 @@ function displayHtmlHeader( $title = 'SquirrelMail', $xtra = '', $do_hook = TRUE
     $oTemplate->header('X-Powered-By: SquirrelMail', FALSE);
 
     // prevent clickjack attempts
-// FIXME: use a new config variable for this eventually. for now, we'll just cut the prefix off the provider_uri.
-    if (empty($provider_uri))
-     $oTemplate->header('X-Frame-Options: SAMEORIGIN');
-    else {
-     $ancestor = $provider_uri;
-     if (strpos($ancestor, '://') !== false)
-      $ancestor = substr($ancestor, strpos($ancestor, '://') + 3);
-     $oTemplate->header('Content-Security-Policy: frame-ancestors http://'.$ancestor.' https://'.$ancestor.' http://*.'.$ancestor.' https://*.'.$ancestor);
+    // 'self' MUST ALWAYS be present in frame-ancestors so SquirrelMail framesets (left_main/right_main) can load
+    $csp_ancestors = array("'self'");
+
+    if (!empty($provider_uri)) {
+        $ancestor = $provider_uri;
+        if (strpos($ancestor, '://') !== false) {
+            $ancestor = substr($ancestor, strpos($ancestor, '://') + 3);
+        }
+        $ancestor = trim(explode('/', $ancestor)[0]);
+
+        if (!empty($ancestor) && strtolower($ancestor) !== 'squirrelmail.org') {
+            $csp_ancestors[] = 'http://' . $ancestor;
+            $csp_ancestors[] = 'https://' . $ancestor;
+            $csp_ancestors[] = 'http://*.' . $ancestor;
+            $csp_ancestors[] = 'https://*.' . $ancestor;
+        }
     }
+
+    $oTemplate->header('Content-Security-Policy: frame-ancestors ' . implode(' ', $csp_ancestors));
+    $oTemplate->header('X-Frame-Options: SAMEORIGIN');
 
     // prevent clickjack attempts using JavaScript for browsers that
     // don't support the X-Frame-Options header...
