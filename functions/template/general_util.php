@@ -98,7 +98,11 @@ function getIcon($icon_theme_path, $icon_name, $text_icon, $alt_text, $w=NULL, $
         // If we found an icon, build an img tag to display it.  If we didn't
         // find an image, we will revert back to the text icon.
         if (!is_null($icon_path)) {
-            $icon = create_image($icon_path, $alt_text, $w, $h, '', '', '', 
+            if (is_null($w) && is_null($h) && preg_match('/\.svg$/i', $icon_path)) {
+                $w = 16;
+                $h = 16;
+            }
+            $icon = create_image($icon_path, $alt_text, $w, $h, '', 'sm-icon', '', 
                                  '', $alt_text, '', '', '', $text_icon);
         } else {
             $icon = $text_icon;
@@ -135,12 +139,22 @@ function getIconPath ($icon_theme_path, $icon_name) {
         if (!empty($clean_rel) && substr($clean_rel, -1) !== '/') {
             $clean_rel .= '/';
         }
-        $fs_path = SM_PATH . $clean_rel . $name;
-        if (is_file($fs_path)) {
-            return sqm_baseuri() . $clean_rel . $name;
+
+        // Check for SVG equivalent first if requesting a PNG
+        $candidates = array();
+        if (preg_match('/\.png$/i', $name)) {
+            $candidates[] = preg_replace('/\.png$/i', '.svg', $name);
         }
-        if (is_file($path . $name)) {
-            return sqm_baseuri() . $clean_rel . $name;
+        $candidates[] = $name;
+
+        foreach ($candidates as $cand) {
+            $fs_path = SM_PATH . $clean_rel . $cand;
+            if (is_file($fs_path)) {
+                return sqm_baseuri() . $clean_rel . $cand;
+            }
+            if (is_file($path . $cand)) {
+                return sqm_baseuri() . $clean_rel . $cand;
+            }
         }
         return null;
     };
@@ -159,8 +173,8 @@ function getIconPath ($icon_theme_path, $icon_name) {
         }
     }
 
-    // 3. Icon not found, return the SQM default icon (images/themes/default/)
-    $found = $resolve('images/themes/default/', $icon_name);
+    // 3. Icon not found, return the modern SVG icon (images/themes/modern/)
+    $found = $resolve('images/themes/modern/', $icon_name);
     if ($found !== null) {
         return $found;
     }

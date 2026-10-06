@@ -358,8 +358,8 @@ function save_configuration($data) {
 \$user_themes[3]['PATH'] = '../css/modern_responsive/';
 \$user_themes[3]['NAME'] = 'Modern Responsive';
 
-\$icon_theme_def = 1;
-\$icon_theme_fallback = 3;
+\$icon_theme_def = 2;
+\$icon_theme_fallback = 2;
 
 \$icon_themes[0]['PATH'] = 'none';
 \$icon_themes[0]['NAME'] = 'No Icons';
@@ -367,11 +367,8 @@ function save_configuration($data) {
 \$icon_themes[1]['PATH'] = 'template';
 \$icon_themes[1]['NAME'] = 'Template Default Icons';
 
-\$icon_themes[2]['PATH'] = '../images/themes/default/';
-\$icon_themes[2]['NAME'] = 'Default Icon Set';
-
-\$icon_themes[3]['PATH'] = '../images/themes/xp/';
-\$icon_themes[3]['NAME'] = 'XP Style Icons';
+\$icon_themes[2]['PATH'] = '../images/themes/modern/';
+\$icon_themes[2]['NAME'] = 'Modern SVG Icons';
 
 \$templateset_default = '%SKIN%';
 \$templateset_fallback = 'default';

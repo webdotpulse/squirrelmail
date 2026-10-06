@@ -451,10 +451,34 @@ button, input, select, textarea {
   justify-content: center;
   color: var(--sm-text-muted);
   flex-shrink: 0;
+  width: 18px;
+  height: 18px;
 }
 
 .sm-folder-link.active .sm-folder-icon {
   color: var(--sm-primary);
+}
+
+/* Modern SVG Icon Integration */
+.sm-icon,
+img.sm-icon,
+.sm-folder-icon img,
+.table_messageList img,
+.treeCollapseLink img {
+  vertical-align: middle;
+  display: inline-block;
+  image-rendering: auto;
+}
+
+img[src$=".svg"],
+.sm-icon[src$=".svg"],
+.sm-folder-icon img[src$=".svg"],
+.table_messageList img[src$=".svg"],
+.treeCollapseLink img[src$=".svg"] {
+  width: 16px;
+  height: 16px;
+  max-width: 16px;
+  max-height: 16px;
 }
 
 .sm-folder-name {

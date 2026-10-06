@@ -141,25 +141,27 @@ function buildMailboxTree ($box, $settings, $icon_theme_path, $indent_factor=0) 
     if (!is_null($icon_theme_path)) {
         switch (true) {
             case $box['IsInbox']:
-                $folder_icon = getIcon($icon_theme_path, 'inbox.png', '', $box['MailboxName']);
+                $folder_icon = getIcon($icon_theme_path, 'inbox.svg', '', $box['MailboxName']);
                 break; 
             case $box['IsSent']:
-                $folder_icon = getIcon($icon_theme_path, 'senti.png', '', $box['MailboxName']);
+                $folder_icon = getIcon($icon_theme_path, 'senti.svg', '', $box['MailboxName']);
                 break; 
             case $box['IsTrash']:
-                $folder_icon = getIcon($icon_theme_path, 'delitem.png', '', $box['MailboxName']);
+                $folder_icon = getIcon($icon_theme_path, 'delitem.svg', '', $box['MailboxName']);
                 break; 
             case $box['IsDraft']:
-                $folder_icon = getIcon($icon_theme_path, 'draft.png', '', $box['MailboxName']);
+                $folder_icon = getIcon($icon_theme_path, 'draft.svg', '', $box['MailboxName']);
                 break; 
             case $box['IsNoInferiors']:
-                $folder_icon = getIcon($icon_theme_path, 'folder_noinf.png', '', $box['MailboxName']);
+                $folder_icon = getIcon($icon_theme_path, 'folder_noinf.svg', '', $box['MailboxName']);
                 break;
             default: 
-                $folder_icon = getIcon($icon_theme_path, 'folder.png', '', $box['MailboxName']);
+                $folder_icon = getIcon($icon_theme_path, 'folder.svg', '', $box['MailboxName']);
                 break;
         }
-        $folder_icon .= '&nbsp;';
+        if (!empty($folder_icon)) {
+            $folder_icon = '<span class="sm-folder-icon">' . $folder_icon . '</span>&nbsp;';
+        }
     }
     $pre .= $folder_icon;
 

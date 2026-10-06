@@ -816,8 +816,8 @@ $use_icons = true;
  * @global integer $icon_theme_fallback
  * @since 1.5.2
  */
-$icon_theme_def = 1;
-$icon_theme_fallback = 3;
+$icon_theme_def = 2;
+$icon_theme_fallback = 2;
 
 /**
  * Listing of installed icon themes
@@ -830,11 +830,8 @@ $icon_themes[0]['NAME'] = 'No Icons';
 $icon_themes[1]['PATH'] = 'template';
 $icon_themes[1]['NAME'] = 'Template Default Icons';
 
-$icon_themes[2]['PATH'] = 'images/themes/default/';
-$icon_themes[2]['NAME'] = 'Default Icon Set';
-
-$icon_themes[3]['PATH'] = 'images/themes/xp/';
-$icon_themes[3]['NAME'] = 'XP Style Icons';
+$icon_themes[2]['PATH'] = 'images/themes/modern/';
+$icon_themes[2]['NAME'] = 'Modern SVG Icons';
 
 /**
  * Templates

@@ -53,6 +53,11 @@ $default_icon_theme = $icon_themes[$icon_theme_def]['PATH'];
 $fallback_icon_theme = $icon_themes[$icon_theme_fallback]['PATH'];
 $found_theme = false;
 
+if (!empty($icon_theme) && (strpos($icon_theme, 'themes/default') !== false || strpos($icon_theme, 'themes/xp') !== false)) {
+    $icon_theme = 'images/themes/modern/';
+    setPref($data_dir, $username, 'icon_theme', 'images/themes/modern/');
+}
+
 // Make sure the chosen icon theme is a legitimate one.
 // need to adjust $icon_theme path with SM_PATH 
 $icon_theme = preg_replace("/(\.\.\/){1,}/", SM_PATH, $icon_theme);

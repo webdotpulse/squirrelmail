@@ -102,7 +102,7 @@ function getBoxStructure ($boxes) {
      */
      
     $text_icon = $box['IsCollapsed'] ? '+' : '-';
-    $icon_file = $box['IsCollapsed'] ? 'plus.png' : 'minus.png';
+    $icon_file = $box['IsCollapsed'] ? 'plus.svg' : 'minus.svg';
     $icon_alt = $box['IsCollapsed'] ? 'Expand Box' : 'Collapse Box';
     $icon = getIcon($icon_theme_path, $icon_file, $text_icon, $icon_alt);
     
