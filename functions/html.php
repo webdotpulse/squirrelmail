@@ -112,6 +112,11 @@ function create_image($src, $alt='', $width='', $height='',
 
     global $oTemplate;
 
+    if (!empty($src) && !preg_match('#^(https?://|data:|/)#i', $src)) {
+        $clean_src = ltrim(preg_replace('#^(\.\./|\./)+#', '', $src), '/');
+        $src = sqm_baseuri() . $clean_src;
+    }
+
     $oTemplate->assign('src', $src);
     $oTemplate->assign('alt', $alt);
     $oTemplate->assign('width', $width);

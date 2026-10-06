@@ -48,6 +48,10 @@
 //
 extract($t);
 
+if (!empty($src) && !preg_match('#^(https?://|data:|/)#i', $src)) {
+    $clean_src = ltrim(preg_replace('#^(\.\./|\./)+#', '', $src), '/');
+    $src = sqm_baseuri() . $clean_src;
+}
 
 echo '<img src="' . $src . '"';
 if (!empty($class)) echo ' class="' . $class . '"';

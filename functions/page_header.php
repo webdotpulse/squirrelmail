@@ -187,7 +187,8 @@ function displayHtmlHeader( $title = 'SquirrelMail', $xtra = '', $do_hook = TRUE
         $js_includes = $oTemplate->get_javascript_includes(TRUE);
         foreach ($js_includes as $js_file) {
             if (empty($xtra) || strpos($xtra, $js_file) === false) {
-                $header_tags .= '<script src="' . sqm_baseuri() . $js_file . '" type="text/javascript"></script>' . "\n";
+                $clean_js = ltrim(preg_replace('#^(\.\./|\./)+#', '', $js_file), '/');
+                $header_tags .= '<script src="' . sqm_baseuri() . $clean_js . '" type="text/javascript"></script>' . "\n";
             }
         }
     }

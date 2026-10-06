@@ -830,10 +830,10 @@ $icon_themes[0]['NAME'] = 'No Icons';
 $icon_themes[1]['PATH'] = 'template';
 $icon_themes[1]['NAME'] = 'Template Default Icons';
 
-$icon_themes[2]['PATH'] = '../images/themes/default/';
+$icon_themes[2]['PATH'] = 'images/themes/default/';
 $icon_themes[2]['NAME'] = 'Default Icon Set';
 
-$icon_themes[3]['PATH'] = '../images/themes/xp/';
+$icon_themes[3]['PATH'] = 'images/themes/xp/';
 $icon_themes[3]['NAME'] = 'XP Style Icons';
 
 /**
