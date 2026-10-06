@@ -411,7 +411,7 @@
                 const form = e.target;
                 if (!form || form.getAttribute('target') === '_blank') return;
 
-                const action = form.action || window.location.href;
+                const action = (e.submitter && e.submitter.formAction) || form.action || window.location.href;
                 // Do not intercept auth, redirect, signout, install, or forms outside the SPA shell
                 if (form.id === 'login_form' || 
                     form.name === 'login_form' || 
@@ -426,7 +426,15 @@
                 this.showLoading();
 
                 const method = (form.method || 'POST').toUpperCase();
-                const formData = new FormData(form);
+                let formData;
+                try {
+                    formData = e.submitter ? new FormData(form, e.submitter) : new FormData(form);
+                } catch (err) {
+                    formData = new FormData(form);
+                }
+                if (e.submitter && e.submitter.name && !formData.has(e.submitter.name)) {
+                    formData.append(e.submitter.name, e.submitter.value || '');
+                }
 
                 try {
                     let response;

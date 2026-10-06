@@ -23,6 +23,13 @@ require_once(SM_PATH . 'plugins/multi_account/account_manager.php');
 global $data_dir, $username, $color;
 
 if (empty($username)) {
+    sqgetGlobalVar('username', $username, SQ_SESSION);
+}
+if (empty($data_dir)) {
+    sqgetGlobalVar('data_dir', $data_dir, SQ_INORDER);
+}
+
+if (empty($username)) {
     exit;
 }
 
@@ -37,11 +44,11 @@ if (isset($_GET['action']) && $_GET['action'] === 'delete' && !empty($_GET['id']
     $delId = trim($_GET['id']);
     $mgr->deleteAccount($delId);
     $mgr->syncSquirrelMailIdentities();
-    sqm_redirect('options.php?msg=deleted');
+    sqm_redirect(sqm_baseuri() . 'plugins/multi_account/options.php?msg=deleted');
 }
 
 // Handle Save (Add or Update)
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_account'])) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_POST['save_account']) || isset($_POST['acc_name']) || isset($_POST['acc_email']))) {
     $name = trim($_POST['acc_name'] ?? '');
     $email = trim($_POST['acc_email'] ?? '');
     $host = trim($_POST['acc_host'] ?? '');
@@ -55,6 +62,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_account'])) {
 
     if (empty($name) || empty($email) || empty($host) || empty($user)) {
         $statusMsg = 'Please fill in all required fields (Name, Email, IMAP Host, Username).';
+        $statusType = 'error';
+    } elseif (empty($editId) && empty($pass)) {
+        $statusMsg = 'Please enter an IMAP password for the new account.';
         $statusType = 'error';
     } else {
         $mgr->saveAccount([
@@ -70,7 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_account'])) {
             'enabled'  => $enabled
         ]);
         $mgr->syncSquirrelMailIdentities();
-        sqm_redirect('options.php?msg=saved');
+        sqm_redirect(sqm_baseuri() . 'plugins/multi_account/options.php?msg=saved');
     }
 }
 
@@ -360,9 +370,9 @@ displayPageHeader($color, null);
             <span>⚙️</span> Multi-Account Manager
         </h1>
         <div class="mgr-nav-links">
-            <a href="unified_inbox.php">📬 Unified Inbox</a>
+            <a href="<?php echo sqm_baseuri(); ?>plugins/multi_account/unified_inbox.php">📬 Unified Inbox</a>
             <span>&bull;</span>
-            <a href="../../src/options.php">Options</a>
+            <a href="<?php echo sqm_baseuri(); ?>src/options.php">Options</a>
         </div>
     </div>
 
@@ -436,13 +446,13 @@ displayPageHeader($color, null);
                             <?php endif; ?>
                         </td>
                         <td style="text-align: right;">
-                            <a href="options.php?action=edit&id=<?php echo urlencode($acc['id']); ?>" class="btn-sm">
+                            <a href="<?php echo sqm_baseuri(); ?>plugins/multi_account/options.php?action=edit&id=<?php echo urlencode($acc['id']); ?>" class="btn-sm">
                                 ✏️ Edit
                             </a>
                             <button type="button" class="btn-sm" onclick="testAccountRow('<?php echo htmlspecialchars($acc['id']); ?>', this);">
                                 ⚡ Test
                             </button>
-                            <a href="options.php?action=delete&id=<?php echo urlencode($acc['id']); ?>" class="btn-sm btn-sm-danger" onclick="return confirm('Remove <?php echo htmlspecialchars(addslashes($acc['name'])); ?>?');">
+                            <a href="<?php echo sqm_baseuri(); ?>plugins/multi_account/options.php?action=delete&id=<?php echo urlencode($acc['id']); ?>" class="btn-sm btn-sm-danger" onclick="return confirm('Remove <?php echo htmlspecialchars(addslashes($acc['name'])); ?>?');">
                                 🗑️ Delete
                             </a>
                         </td>
@@ -458,11 +468,12 @@ displayPageHeader($color, null);
         <div class="mgr-card-title">
             <span><?php echo ($editAcc ? 'Edit Email Account' : '➕ Add Secondary Email Account'); ?></span>
             <?php if ($editAcc): ?>
-                <a href="options.php" class="btn-sm">&times; Cancel Edit</a>
+                <a href="<?php echo sqm_baseuri(); ?>plugins/multi_account/options.php" class="btn-sm">&times; Cancel Edit</a>
             <?php endif; ?>
         </div>
 
-        <form method="post" action="options.php" id="multi-account-form">
+        <form method="post" action="<?php echo sqm_baseuri(); ?>plugins/multi_account/options.php" id="multi-account-form">
+            <input type="hidden" name="save_account" value="1" />
             <input type="hidden" name="acc_id" id="acc_id" value="<?php echo htmlspecialchars($editAcc['id'] ?? ''); ?>" />
 
             <div class="form-grid">
@@ -560,7 +571,7 @@ displayPageHeader($color, null);
                     <span id="conn-test-result"></span>
                 </div>
 
-                <button type="submit" name="save_account" class="btn-main">
+                <button type="submit" name="save_account" value="1" class="btn-main">
                     💾 <?php echo ($editAcc ? 'Update Account' : 'Save & Connect Account'); ?>
                 </button>
             </div>

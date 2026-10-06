@@ -32,9 +32,8 @@ class MultiAccountManager
 
     public function __construct($dataDir = null, $username = null)
     {
-        global $data_dir, $username;
-        $this->dataDir = $dataDir ?: $data_dir;
-        $this->username = $username ?: $username;
+        $this->dataDir = !empty($dataDir) ? $dataDir : ($GLOBALS['data_dir'] ?? '');
+        $this->username = !empty($username) ? $username : ($GLOBALS['username'] ?? '');
         $this->encKey = !empty($_SESSION['key']) ? $_SESSION['key'] : md5($this->username . 'sq_multi_account_salt');
     }
 
@@ -797,8 +796,19 @@ class MultiAccountManager
      */
     public function syncSquirrelMailIdentities()
     {
+        if (!function_exists('get_identities') && file_exists(SM_PATH . 'functions/identity.php')) {
+            require_once(SM_PATH . 'functions/identity.php');
+        }
         if (!function_exists('get_identities') || !function_exists('save_identities')) {
             return;
+        }
+
+        global $username, $data_dir;
+        if (empty($username)) {
+            $username = $this->username;
+        }
+        if (empty($data_dir)) {
+            $data_dir = $this->dataDir;
         }
 
         $idents = get_identities();
