@@ -15,6 +15,11 @@
 define('SM_PATH', './');
 define('INSTALLER_VERSION', '1.5.2');
 
+// Ensure core constants (such as SM_DEBUG_MODE_OFF) are loaded before config.php
+if (file_exists(SM_PATH . 'include/constants.php')) {
+    require_once(SM_PATH . 'include/constants.php');
+}
+
 // Session initialization for installer state
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -30,7 +35,7 @@ function send_json($data) {
 // -----------------------------------------------------------------------------
 // AJAX Actions (Connection tests, auto-create directories, save configuration)
 // -----------------------------------------------------------------------------
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     $action = $_POST['action'];
 
     // Action: Test IMAP connection
