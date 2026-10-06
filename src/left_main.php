@@ -190,6 +190,7 @@ if (empty($unseen_notify)) {
  */
 $boxes = sqimap_mailbox_tree($imapConnection,$mailboxes,$show_only_subscribed_folders);
 $mailbox_structure = getBoxStructure($boxes);
+unset($boxes);
 
 $oTemplate->assign('clock', $clock);
 $oTemplate->assign('mailboxes', $mailbox_structure);

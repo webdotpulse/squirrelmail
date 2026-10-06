@@ -75,6 +75,7 @@
  *
  * @since 1.5.2
  */
+if (!function_exists('buildMailboxTree')) {
 function buildMailboxTree ($box, $settings, $icon_theme_path, $indent_factor=0) {
     // stop condition
     if (empty($box)) {
@@ -254,6 +255,7 @@ function buildMailboxTree ($box, $settings, $icon_theme_path, $indent_factor=0) 
     }
 
     return $out;
+}
 }
 
 // Retrieve the template vars

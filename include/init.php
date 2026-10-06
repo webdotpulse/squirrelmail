@@ -24,6 +24,18 @@ if (defined('SM_INITIALIZED')) {
 }
 define('SM_INITIALIZED', true);
 
+// Global fatal shutdown handler for error diagnostic capture
+register_shutdown_function(function() {
+    $err = error_get_last();
+    if ($err && in_array($err['type'], array(E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR))) {
+        if (!empty($GLOBALS['data_dir']) && is_dir($GLOBALS['data_dir'])) {
+            @file_put_contents($GLOBALS['data_dir'] . 'squirrelmail_fatal.log', 
+                '[' . date('Y-m-d H:i:s') . '] ' . $err['message'] . ' in ' . $err['file'] . ':' . $err['line'] . "\n", 
+                FILE_APPEND);
+        }
+    }
+});
+
 /**
  * Make sure we have a page name
  *

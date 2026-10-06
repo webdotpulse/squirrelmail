@@ -757,15 +757,19 @@ function sqimap_mailbox_option_array($imap_stream, $folder_skip = 0, $boxes = 0,
         $shorten_box_names = getPref($data_dir, $username, 'mailbox_select_style', SMPREF_MAILBOX_SELECT_INDENTED);
     }
 
-    if ($boxes == 0) {
+    if (empty($boxes) || !is_array($boxes) || !isset($boxes[0]) || !is_array($boxes[0])) {
         $boxes = sqimap_mailbox_list($imap_stream);
     }
 
     $a = array();
-    foreach ($boxes as $boxes_part) {
-        if ($flag == NULL || (is_array($boxes_part['flags'])
-                      && !in_array($flag, $boxes_part['flags']))) {
-            $box = $boxes_part['unformatted'];
+    if (is_array($boxes)) {
+        foreach ($boxes as $boxes_part) {
+            if (!is_array($boxes_part) || !isset($boxes_part['unformatted'])) {
+                continue;
+            }
+            if ($flag == NULL || (isset($boxes_part['flags']) && is_array($boxes_part['flags'])
+                          && !in_array($flag, $boxes_part['flags']))) {
+                $box = $boxes_part['unformatted'];
 
             if ($folder_skip != 0 && in_array($box, $folder_skip) ) {
                 continue;
@@ -822,6 +826,7 @@ function sqimap_mailbox_option_array($imap_stream, $folder_skip = 0, $boxes = 0,
             
             $a[sm_encode_html_special_chars($box)] = $box2;
         }
+    }
     }
     
     return $a;

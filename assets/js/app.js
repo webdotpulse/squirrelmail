@@ -281,10 +281,20 @@
                 const form = e.target;
                 if (!form || form.getAttribute('target') === '_blank') return;
 
+                const action = form.action || window.location.href;
+                // Do not intercept auth, redirect, signout, install, or forms outside the SPA shell
+                if (form.id === 'login_form' || 
+                    form.name === 'login_form' || 
+                    action.includes('redirect.php') || 
+                    action.includes('signout.php') || 
+                    action.includes('install.php') ||
+                    !document.getElementById(this.config.workspaceId)) {
+                    return;
+                }
+
                 e.preventDefault();
                 this.showLoading();
 
-                const action = form.action || window.location.href;
                 const method = (form.method || 'POST').toUpperCase();
                 const formData = new FormData(form);
 

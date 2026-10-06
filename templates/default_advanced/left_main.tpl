@@ -3,7 +3,7 @@
  * left_main.tpl
  *
  * Displays an experimental mailbox-tree with dhtml behaviour.
- * Advanced tree makes uses dTree JavaScript package by Geir Landrö heavily.
+ * Advanced tree makes uses dTree JavaScript package by Geir LandrÃ¶ heavily.
  * See http://www.destroydrop.com/javascripts/tree/
  *  
  * It only works on browsers which supports css and javascript.
@@ -86,6 +86,7 @@
  * @since 1.5.2
  * @author Steve Brown
  */
+if (!function_exists('buildMailboxTree')) {
 function buildMailboxTree ($box, $settings, $icon_theme_path, $parent_node=-1) {
     static $counter;
     
@@ -255,6 +256,7 @@ function buildMailboxTree ($box, $settings, $icon_theme_path, $parent_node=-1) {
     return $out;
 //FIXME: somewhere above, need to insert the left_main_after_each_folder hook, or if no plugin hooks allowed in templates, at least the output from that hook (but I think it might be impossible not to have the hook here in this fxn
 }
+}
 
 /* retrieve the template vars */
 extract($t);
@@ -264,13 +266,13 @@ extract($t);
 <script type="text/javascript">
 <!--
 /**
- * Advanced tree makes uses dTree JavaScript package by Geir Landrö heavily.
+ * Advanced tree makes uses dTree JavaScript package by Geir LandrÃ¶ heavily.
  * See http://www.destroydrop.com/javascripts/tree/
  *
  * |---------------------------------------------------|
  * | dTree 2.05 | www.destroydrop.com/javascript/tree/ |
  * |---------------------------------------------------|
- * | Copyright (c) 2002-2003 Geir Landrö               |
+ * | Copyright (c) 2002-2003 Geir LandrÃ¶               |
  * |                                                   |
  * | This script can be used freely as long as all     |
  * | copyright messages are intact.                    |

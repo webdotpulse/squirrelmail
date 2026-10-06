@@ -926,7 +926,7 @@ function calcFetchColumns(&$aMailbox, &$aProps) {
  */
 function showMessagesForMailbox($imapConnection, &$aMailbox,$aProps, &$iError) {
     global $PHP_SELF;
-    global $boxes, $show_copy_buttons;
+    global $show_copy_buttons;
 
     $highlight_list    = (isset($aProps['config']['highlight_list'])) ? $aProps['config']['highlight_list'] : false;
     $fancy_index_highlite = (isset($aProps['config']['fancy_index_highlite'])) ? $aProps['config']['fancy_index_highlite'] : true;
@@ -1139,7 +1139,7 @@ function showMessagesForMailbox($imapConnection, &$aMailbox,$aProps, &$iError) {
               case 'moveButton':
               case 'copyButton':
                 $aFormElements['targetMailbox']
-                    = array('options_list' => sqimap_mailbox_option_list($imapConnection, array(strtolower($lastTargetMailbox)), 0, $boxes),
+                    = array('options_list' => sqimap_mailbox_option_list($imapConnection, array(strtolower($lastTargetMailbox)), 0, 0),
                             'type' => 'select',
                             'accesskey' => $accesskey_mailbox_move_to);
                 $aFormElements['mailbox']       
