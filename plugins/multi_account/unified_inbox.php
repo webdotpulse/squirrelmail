@@ -605,9 +605,9 @@ displayPageHeader($color, null);
 </div>
 
 <script type="text/javascript">
-let currentFilter = '<?php echo htmlspecialchars($selectedFilter); ?>';
-let unreadOnly = false;
-let searchQuery = '';
+var currentFilter = '<?php echo htmlspecialchars($selectedFilter); ?>';
+var unreadOnly = false;
+var searchQuery = '';
 
 function filterRows() {
     const rows = document.querySelectorAll('#uni-table-body tr.uni-row');
@@ -664,7 +664,7 @@ function toggleReadStatus(accId, uid, btn) {
     const newStatus = isSeen ? 0 : 1;
 
     const xhr = new XMLHttpRequest();
-    xhr.open('POST', 'ajax.php?action=toggle_read', true);
+    xhr.open('POST', '<?php echo sqm_baseuri(); ?>plugins/multi_account/ajax.php?action=toggle_read', true);
     xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
     xhr.onreadystatechange = function() {
         if (xhr.readyState === 4 && xhr.status === 200) {

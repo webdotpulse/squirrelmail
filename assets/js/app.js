@@ -15,6 +15,89 @@
 (function (window, document) {
     'use strict';
 
+    // -------------------------------------------------------------------------
+    // SquirrelMail Legacy UI Compatibility & Event Handlers
+    // -------------------------------------------------------------------------
+    window.marked_row = window.marked_row || [];
+    window.orig_row_colors = window.orig_row_colors || [];
+
+    if (typeof window.rowOver !== 'function') {
+        window.rowOver = function (chkboxName) {
+            var chkbox = document.getElementById(chkboxName);
+            if (!chkbox) return;
+            var tr = chkbox.closest('tr');
+            if (tr) {
+                if (typeof window.setPointer === 'function') {
+                    var rowNum = chkboxName.substring(chkboxName.length - 1);
+                    var currentClass = tr.className || 'even';
+                    window.setPointer(tr, rowNum, 'over', currentClass, 'mouse_over', 'clicked');
+                } else {
+                    tr.classList.add('mouse_over');
+                }
+            }
+        };
+    }
+
+    if (typeof window.setPointer !== 'function') {
+        window.setPointer = function (theRow, theRowNum, theAction, defaultClass, mouseoverClass, clickedClass) {
+            if (!theRow) return;
+            mouseoverClass = mouseoverClass || 'mouse_over';
+            clickedClass = clickedClass || 'clicked';
+            defaultClass = defaultClass || 'even';
+
+            if (theAction === 'over') {
+                if (!theRow.classList.contains(clickedClass)) {
+                    theRow.classList.add(mouseoverClass);
+                }
+            } else if (theAction === 'out') {
+                theRow.classList.remove(mouseoverClass);
+            } else if (theAction === 'click') {
+                theRow.classList.toggle(clickedClass);
+                window.marked_row[theRowNum] = theRow.classList.contains(clickedClass);
+            }
+        };
+    }
+
+    if (typeof window.row_click !== 'function') {
+        window.row_click = function (chkboxName, event, formName, checkboxRealName, extra) {
+            var chkbox = document.getElementById(chkboxName);
+            if (chkbox) {
+                chkbox.checked = !chkbox.checked;
+                var tr = chkbox.closest('tr');
+                if (tr) {
+                    tr.classList.toggle('selected', chkbox.checked);
+                    tr.classList.toggle('clicked', chkbox.checked);
+                }
+                if (extra) {
+                    try { (0, eval)(extra); } catch (e) {}
+                }
+            }
+        };
+    }
+
+    if (typeof window.toggle_all !== 'function') {
+        window.toggle_all = function (formname, name_prefix, fancy) {
+            var targetForm = document.getElementById(formname);
+            if (!targetForm) return;
+            var master = targetForm.querySelector('#toggleAll');
+            var isChecked = master ? master.checked : true;
+            targetForm.querySelectorAll('input[type="checkbox"]').forEach(function (cb) {
+                if (!name_prefix || (cb.name && cb.name.substring(0, 3) === name_prefix)) {
+                    cb.checked = isChecked;
+                    var tr = cb.closest('tr');
+                    if (tr) {
+                        tr.classList.toggle('selected', isChecked);
+                        tr.classList.toggle('clicked', isChecked);
+                    }
+                }
+            });
+        };
+    }
+
+    if (typeof window.checkForm !== 'function') {
+        window.checkForm = function () {};
+    }
+
     const App = {
         config: {
             workspaceId: 'sm-workspace-content',
@@ -31,6 +114,24 @@
             theme: localStorage.getItem('sm_theme') || 
                    (document.cookie.match(/(?:^|;\s*)sm_theme=([^;]*)/) ? decodeURIComponent(document.cookie.match(/(?:^|;\s*)sm_theme=([^;]*)/)[1]) : null) || 
                    (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+        },
+
+        getBaseUri() {
+            if (window.sqmBaseUri) return window.sqmBaseUri;
+            const script = document.querySelector('script[src*="assets/js/app.js"]');
+            if (script) {
+                const src = script.getAttribute('src');
+                const idx = src.indexOf('assets/js/app.js');
+                if (idx !== -1) {
+                    return src.substring(0, idx);
+                }
+            }
+            const path = window.location.pathname;
+            const srcIdx = path.indexOf('/src/');
+            if (srcIdx !== -1) return path.substring(0, srcIdx + 1);
+            const pluginsIdx = path.indexOf('/plugins/');
+            if (pluginsIdx !== -1) return path.substring(0, pluginsIdx + 1);
+            return '/';
         },
 
         init() {
@@ -276,14 +377,22 @@
 
             // Execute any scripts in the fragment safely
             container.querySelectorAll('script').forEach(script => {
-                const newScript = document.createElement('script');
-                if (script.src) {
-                    newScript.src = script.src;
-                } else {
-                    newScript.textContent = script.textContent;
+                try {
+                    if (script.src) {
+                        const newScript = document.createElement('script');
+                        newScript.src = script.src;
+                        document.body.appendChild(newScript);
+                        newScript.remove();
+                    } else {
+                        const code = script.textContent;
+                        if (code && code.trim()) {
+                            // Indirect eval executes in global scope without binding let/const to permanent global declarative record
+                            (0, eval)(code);
+                        }
+                    }
+                } catch (scriptErr) {
+                    console.warn('[SquirrelMail Router] Fragment script execution warning:', scriptErr);
                 }
-                document.body.appendChild(newScript);
-                newScript.remove();
             });
 
             // Enhance newly mounted workspace content
@@ -576,7 +685,8 @@
         // -------------------------------------------------------------------------
         async refreshFolders() {
             try {
-                const response = await fetch('left_main.php?ajax=1', {
+                const base = this.getBaseUri();
+                const response = await fetch(base + 'src/left_main.php?ajax=1', {
                     headers: { 'X-Requested-With': 'XMLHttpRequest' }
                 });
                 if (!response.ok) return;
@@ -590,6 +700,10 @@
 
                 if (newTree && curTree) {
                     curTree.innerHTML = newTree.innerHTML;
+                }
+
+                if (typeof window.sqmRefreshMultiCounts === 'function') {
+                    window.sqmRefreshMultiCounts();
                 }
             } catch (err) {
                 console.error('[SquirrelMail] Failed to refresh folders:', err);

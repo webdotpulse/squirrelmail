@@ -569,7 +569,7 @@ displayPageHeader($color, null);
 </div>
 
 <script type="text/javascript">
-const providerPresets = {
+window.providerPresets = window.providerPresets || {
     combell: {
         host: 'imap.mailprotect.be',
         port: 993,
@@ -589,6 +589,7 @@ const providerPresets = {
         color: '#1a73e8'
     }
 };
+var providerPresets = window.providerPresets;
 
 function applyProviderPreset(key) {
     if (!key || !providerPresets[key]) return;
@@ -639,7 +640,7 @@ function testCurrentFormConnection() {
     btn.disabled = true;
 
     const xhr = new XMLHttpRequest();
-    xhr.open('POST', 'ajax.php?action=test_connection', true);
+    xhr.open('POST', '<?php echo sqm_baseuri(); ?>plugins/multi_account/ajax.php?action=test_connection', true);
     xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
     xhr.onreadystatechange = function() {
         if (xhr.readyState === 4) {
@@ -677,7 +678,7 @@ function testAccountRow(accId, btn) {
     btn.disabled = true;
 
     const xhr = new XMLHttpRequest();
-    xhr.open('POST', 'ajax.php?action=test_connection', true);
+    xhr.open('POST', '<?php echo sqm_baseuri(); ?>plugins/multi_account/ajax.php?action=test_connection', true);
     xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
     xhr.onreadystatechange = function() {
         if (xhr.readyState === 4) {

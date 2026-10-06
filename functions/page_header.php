@@ -180,6 +180,18 @@ function displayHtmlHeader( $title = 'SquirrelMail', $xtra = '', $do_hook = TRUE
         $theme_ver = file_exists($theme_file) ? filemtime($theme_file) : '1.0';
         $header_tags .= '<link rel="stylesheet" type="text/css" href="' . sqm_baseuri() . $chosen_theme . '?v=' . $theme_ver . '" id="sm-custom-theme-css" />' . "\n";
     }
+    $header_tags .= '<script type="text/javascript">window.sqmBaseUri = "' . sqm_baseuri() . '";</script>' . "\n";
+
+    // Include template javascript files (e.g. templates/default/js/default.js)
+    if (is_object($oTemplate)) {
+        $js_includes = $oTemplate->get_javascript_includes(TRUE);
+        foreach ($js_includes as $js_file) {
+            if (empty($xtra) || strpos($xtra, $js_file) === false) {
+                $header_tags .= '<script src="' . sqm_baseuri() . $js_file . '" type="text/javascript"></script>' . "\n";
+            }
+        }
+    }
+
     $header_tags .= '<script src="' . sqm_baseuri() . 'assets/js/dompurify.min.js" type="text/javascript"></script>' . "\n";
     $header_tags .= '<script src="' . sqm_baseuri() . 'assets/js/app.js?v=' . $app_js_ver . '" type="text/javascript"></script>' . "\n";
 
