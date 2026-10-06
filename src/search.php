@@ -985,9 +985,8 @@ if ($search_advanced) {
  * @global string $submit
  */
 $searchpressed = false;
-//FIXME: Why is there so much access to $_GET in this file?  What's wrong with sqGetGlobalVar?
-if (isset($_GET['submit'])) {
-    $submit = strip_tags($_GET['submit']);
+if (sqgetGlobalVar('submit', $temp, SQ_GET)) {
+    $submit = strip_tags($temp);
 }
 
 /** Searched mailboxes
@@ -1032,72 +1031,55 @@ $aConfig = array(
 /** Binary operators
  * @global array $biop_array
  */
-//FIXME: Why is there so much access to $_GET in this file?  What's wrong with sqGetGlobalVar?
-if (isset($_GET['biop'])) {
-    $biop_array = $_GET['biop'];
-    if (!is_array($biop_array))
-        $biop_array = array($biop_array);
+if (sqgetGlobalVar('biop', $temp, SQ_GET)) {
+    $biop_array = is_array($temp) ? $temp : array($temp);
 } else {
     $biop_array = array();
 }
 /** Unary operators
  * @global array $unop_array
  */
-//FIXME: Why is there so much access to $_GET in this file?  What's wrong with sqGetGlobalVar?
-if (isset($_GET['unop'])) {
-    $unop_array = $_GET['unop'];
-    if (!is_array($unop_array))
-        $unop_array = array($unop_array);
+if (sqgetGlobalVar('unop', $temp, SQ_GET)) {
+    $unop_array = is_array($temp) ? $temp : array($temp);
 } else {
     $unop_array = array();
 }
 /** Where to search
  * @global array $where_array
  */
-//FIXME: Why is there so much access to $_GET in this file?  What's wrong with sqGetGlobalVar?
-if (isset($_GET['where'])) {
-    $where_array = $_GET['where'];
-    if (!is_array($where_array)) {
-        $where_array = array($where_array);
-    }
+if (sqgetGlobalVar('where', $temp, SQ_GET)) {
+    $where_array = is_array($temp) ? $temp : array($temp);
 } else {
     $where_array = array();
 }
 /** What to search
  * @global array $what_array
  */
-//FIXME: Why is there so much access to $_GET in this file?  What's wrong with sqGetGlobalVar?
-if (isset($_GET['what'])) {
-    $what_array = $_GET['what'];
-    if (!is_array($what_array)) {
-        $what_array = array($what_array);
-    }
+if (sqgetGlobalVar('what', $temp, SQ_GET)) {
+    $what_array = is_array($temp) ? $temp : array($temp);
 } else {
     $what_array = array();
 }
 /** Whether to exclude this criteria from search
  * @global array $exclude_array
  */
-//FIXME: Why is there so much access to $_GET in this file?  What's wrong with sqGetGlobalVar?
-if (isset($_GET['exclude'])) {
-    $exclude_array = $_GET['exclude'];
+if (sqgetGlobalVar('exclude', $temp, SQ_GET)) {
+    $exclude_array = is_array($temp) ? $temp : array($temp);
 } else {
     $exclude_array = array();
 }
 /** Search within subfolders
  * @global array $sub_array
  */
-//FIXME: Why is there so much access to $_GET in this file?  What's wrong with sqGetGlobalVar?
-if (isset($_GET['sub'])) {
-    $sub_array = $_GET['sub'];
+if (sqgetGlobalVar('sub', $temp, SQ_GET)) {
+    $sub_array = is_array($temp) ? $temp : array($temp);
 } else {
     $sub_array = array();
 }
 /** Row number used by recent and saved stuff
  */
-//FIXME: Why is there so much access to $_GET in this file?  What's wrong with sqGetGlobalVar?
-if (isset($_GET['rownum'])) {
-    $submit_rownum = strip_tags($_GET['rownum']);
+if (sqgetGlobalVar('rownum', $temp, SQ_GET)) {
+    $submit_rownum = strip_tags($temp);
 }
 /** Change global sort
  */

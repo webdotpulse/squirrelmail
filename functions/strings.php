@@ -578,15 +578,17 @@ function get_message_list_uri($mailbox, $startMessage, $what='') {
  * @since 1.0
  */
 function OneTimePadEncrypt ($string, $epad) {
+    if (empty($epad) || !is_string($epad)) {
+        return false;
+    }
     $pad = base64_decode($epad);
+    if ($pad === false || strlen($pad) === 0) {
+        return false;
+    }
 
-    if (strlen($pad)>0) {
-        // make sure that pad is longer than string
-        while (strlen($string)>strlen($pad)) {
-            $pad.=$pad;
-        }
-    } else {
-        // FIXME: what should we do when $epad is not base64 encoded or empty.
+    // make sure that pad is longer than string
+    while (strlen($string) > strlen($pad)) {
+        $pad .= $pad;
     }
 
     $encrypted = '';
@@ -609,18 +611,23 @@ function OneTimePadEncrypt ($string, $epad) {
  * @since 1.0
  */
 function OneTimePadDecrypt ($string, $epad) {
+    if (empty($epad) || !is_string($epad)) {
+        return false;
+    }
     $pad = base64_decode($epad);
+    if ($pad === false || strlen($pad) === 0) {
+        return false;
+    }
 
-    if (strlen($pad)>0) {
-        // make sure that pad is longer than string
-        while (strlen($string)>strlen($pad)) {
-            $pad.=$pad;
-        }
-    } else {
-        // FIXME: what should we do when $epad is not base64 encoded or empty.
+    // make sure that pad is longer than string
+    while (strlen($string) > strlen($pad)) {
+        $pad .= $pad;
     }
 
     $encrypted = base64_decode ($string);
+    if ($encrypted === false) {
+        return false;
+    }
     $decrypted = '';
     for ($i = 0; $i < strlen ($encrypted); $i++) {
         $decrypted .= chr (ord($encrypted[$i]) ^ ord($pad[$i]));
@@ -647,6 +654,21 @@ function OneTimePadCreate ($length=100) {
     }
 
     return base64_encode($pad);
+}
+
+/**
+ * Safe utf8_encode replacement (PHP 8.2+ compatible)
+ * @param string $string
+ * @return string
+ */
+function sq_utf8_encode($string) {
+    if (function_exists('mb_convert_encoding')) {
+        return mb_convert_encoding((string)$string, 'UTF-8', 'ISO-8859-1');
+    }
+    if (function_exists('iconv')) {
+        return iconv('ISO-8859-1', 'UTF-8', (string)$string);
+    }
+    return @utf8_encode((string)$string);
 }
 
 /**

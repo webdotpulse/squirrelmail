@@ -60,8 +60,7 @@ function parse_viewheader($imapConnection, $id, $passed_ent_id) {
                 $first[$i] = '&nbsp;';
                 $cnum++;
                 break;
-// FIXME: is the pipe character below a mistake?  I think the original author might have thought it carried special meaning in the character class, which it does not... but then again, I am not currently trying to understand what this code actually does
-            case (preg_match('/^[ |\t]/', $line)):
+            case (preg_match('/^[ \t]/', $line)):
                 $second[$i] = $line;
                 $first[$i] = '';
                 break;

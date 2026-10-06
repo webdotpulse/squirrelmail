@@ -252,7 +252,7 @@ class Deliver_SMTP extends Deliver {
             if ($hAlg === false) {
                 return(0);
             }
-            fputs($stream, 'AUTH '.strtoupper($smtp_auth_args)."\r\n");
+            fputs($stream, 'AUTH '.strtoupper($smtp_auth_mech)."\r\n");
 
             $tmp = fgets($stream,1024);
 

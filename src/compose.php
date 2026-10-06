@@ -473,9 +473,8 @@ if ($draft) {
             if ( !isset($pageheader_sent) || !$pageheader_sent ) {
                 sqm_redirect("$location/compose.php?saved_draft=yes&session=$composesession");
             } else {
-//FIXME: DON'T ECHO HTML FROM CORE!
-                echo '   <br><br><div style="text-align: center;"><a href="' . $location
-                    . '/compose.php?saved_sent=yes&amp;session=' . $composesession . '">'
+                echo '<div style="text-align: center; margin: 2rem 0;"><a class="sm-btn" href="' . $location
+                    . '/compose.php?saved_draft=yes&amp;session=' . urlencode($composesession) . '">'
                     . _("Return") . '</a></div>';
             }
             exit();
@@ -590,9 +589,8 @@ if ($send) {
             if ( !isset($pageheader_sent) || !$pageheader_sent ) {
                 sqm_redirect("$location/compose.php?mail_sent=$mail_sent");
             } else {
-//FIXME: DON'T ECHO HTML FROM CORE!
-                echo '   <br><br><div style="text-align: center;"><a href="' . $location
-                    . '/compose.php?mail_sent=$mail_sent">'
+                echo '<div style="text-align: center; margin: 2rem 0;"><a class="sm-btn" href="' . $location
+                    . '/compose.php?mail_sent=' . urlencode($mail_sent) . '">'
                     . _("Return") . '</a></div>';
             }
             exit();

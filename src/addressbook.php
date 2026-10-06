@@ -285,8 +285,7 @@ if(sqgetGlobalVar('REQUEST_METHOD', $req_method, SQ_SERVER) && $req_method == 'P
 
     // Some times we end output before forms are printed
     if($abortform) {
-//FIXME: use footer.tpl; remove HTML from core
-        echo "</body></html>\n";
+        $oTemplate->display('footer.tpl');
         exit();
     }
 }

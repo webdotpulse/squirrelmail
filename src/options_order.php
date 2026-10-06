@@ -145,8 +145,7 @@ if (count($index_order) != count($available)) {
     }
 }
 
-// FIXME: why are we using this?  $PHP_SELF is already a global var processed (and therefore trustworthy) by init.php
-sqgetGlobalVar('PHP_SELF', $PHP_SELF, SQ_SERVER);
+$script_url = 'options_order.php';
 $x = isset($mailbox) && $mailbox ? '&amp;mailbox='.urlencode($mailbox) : '';
 
 $oTemplate->assign('fields', $available);
@@ -154,12 +153,11 @@ $oTemplate->assign('current_order', $index_order);
 $oTemplate->assign('not_used', $opts);
 $oTemplate->assign('always_show', array(SQM_COL_SUBJ, SQM_COL_FLAGS));
 
-// FIXME: (related to the above) $PHP_SELF might already have a query string... don't assume otherwise here by adding the ? sign!!
-$oTemplate->assign('move_up', $PHP_SELF .'?method=move&amp;positions=-1'. $x .'&amp;num=');
-$oTemplate->assign('move_down', $PHP_SELF .'?method=move&amp;positions=1'. $x .'&amp;num=');
-$oTemplate->assign('remove', $PHP_SELF .'?method=remove'. $x .'&amp;num=');
-$oTemplate->assign('add', $PHP_SELF.'?method=add'.$x.'&amp;num=');
-$oTemplate->assign('addField_action', $PHP_SELF);
+$oTemplate->assign('move_up', $script_url . '?method=move&amp;positions=-1' . $x . '&amp;num=');
+$oTemplate->assign('move_down', $script_url . '?method=move&amp;positions=1' . $x . '&amp;num=');
+$oTemplate->assign('remove', $script_url . '?method=remove' . $x . '&amp;num=');
+$oTemplate->assign('add', $script_url . '?method=add' . $x . '&amp;num=');
+$oTemplate->assign('addField_action', $script_url);
 
 $oTemplate->display('options_order.tpl');
 

@@ -199,11 +199,11 @@ class Message {
      * Add header object to message object.
      * WARNING: Unfinished code. Don't expect it to work in older sm versions.
      * @param mixed $read array or string with message headers
-     * @todo FIXME: rfc822header->parseHeader() does not return rfc822header object
      */
     function addRFC822Header($read) {
         $header = new Rfc822Header();
-        $this->rfc822_header = $header->parseHeader($read);
+        $header->parseHeader($read);
+        $this->rfc822_header = $header;
     }
 
     /**

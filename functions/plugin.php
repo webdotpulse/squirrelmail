@@ -389,10 +389,8 @@ function get_plugin_version($plugin_name, $force_inclusion = FALSE, $do_parse = 
       // this of course can break if plugin authors do funny things
       // with their file formatting
       //
-      $setup_file = '';
-      $file_contents = file(SM_PATH . 'plugins/' . $plugin_name . '/setup.php');
-      foreach ($file_contents as $line)
-         $setup_file .= $line;
+      $setup_file_path = SM_PATH . 'plugins/' . $plugin_name . '/setup.php';
+      $setup_file = file_exists($setup_file_path) ? file_get_contents($setup_file_path) : '';
 
 
       // this regexp grabs a version number from a standard 
@@ -622,10 +620,8 @@ function get_plugin_requirement($plugin_name, $requirement,
       // this of course can break if plugin authors do funny things
       // with their file formatting
       //
-      $setup_file = '';
-      $file_contents = file(SM_PATH . 'plugins/' . $plugin_name . '/setup.php');
-      foreach ($file_contents as $line) 
-         $setup_file .= $line;
+      $setup_file_path = SM_PATH . 'plugins/' . $plugin_name . '/setup.php';
+      $setup_file = file_exists($setup_file_path) ? file_get_contents($setup_file_path) : '';
 
 
       // this regexp grabs the full plugin info array from a standard 

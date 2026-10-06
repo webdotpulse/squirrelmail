@@ -88,14 +88,6 @@ function spamcop_show_link_function(&$links) {
         $spamcop_method = 'web_form';
     }
 
-// FIXME: do we need this javascript and if so, fix it
-// <script type="text/javascript">
-// document.write('<a href="../plugins/spamcop/spamcop.php?passed_id=<php echo urlencode($passed_id); >&amp;js_web=1&amp;mailbox=<php echo urlencode($mailbox); >&amp;passed_ent_id=<php echo urlencode($passed_ent_id); >" target="_blank">');
-//document.write("<php echo _("Report as Spam"); >");
-//document.write("</a>");
-//</script>
-
-
     $url =  '../plugins/spamcop/spamcop.php?passed_id=' . urlencode($passed_id) .
                 '&amp;mailbox=' . urlencode($mailbox) . '&amp;startMessage=' . urlencode($startMessage) .
                 '&amp;passed_ent_id=' . urlencode($passed_ent_id);

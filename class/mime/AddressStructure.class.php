@@ -62,6 +62,10 @@ class AddressStructure {
             $email = ($this->host ? $this->mailbox.'@'.$this->host
                                   : $this->mailbox);
             $personal = trim($this->personal);
+            // If personal name is already wrapped in quotes, strip them to prevent double-quoting
+            if (strlen($personal) >= 2 && $personal[0] === '"' && substr($personal, -1) === '"') {
+                $personal = substr($personal, 1, -1);
+            }
             $is_encoded = false;
             if (preg_match('/(=\?([^?]*)\?(Q|B)\?([^?]*)\?=)(.*)/i',$personal,$reg)) {
                 $is_encoded = true;
@@ -72,17 +76,16 @@ class AddressStructure {
                     if ($personal !== $personal_encoded) {
                         $personal = $personal_encoded;
                     } else {
-                        //FIXME: this probably adds quotes around an encoded string which itself is already quoted
-                        $personal = '"' . $this->personal . '"';
+                        $personal = '"' . $personal . '"';
                     }
                 } else {
                     if (!$is_encoded || $unconditionally_quote) {
-                        $personal = '"' . $this->personal . '"';
+                        $personal = '"' . $personal . '"';
                     }
                 }
                 $addr = ($email ? $personal . ' <' .$email.'>'
-                        : $this->personal);
-                $best_dpl = $this->personal;
+                        : $personal);
+                $best_dpl = $personal;
             } else {
                 $addr = $email;
                 $best_dpl = $email;

@@ -60,16 +60,14 @@ function sqimap_run_command_list ($imap_stream, $query, $handle_errors, &$respon
         $message = $message[$tag];
         $response = $response[$tag];
         return $read[$tag];
-//FIXME: obey $handle_errors below!
     } else {
-        global $squirrelmail_language, $color;
-        set_up_language($squirrelmail_language);
-//FIXME: NO HTML IN CORE!
-        $string = "<b><font color=\"$color[2]\">\n" .
-                _("ERROR: No available IMAP stream.") .
-//FIXME: NO HTML IN CORE!
-                "</b></font>\n";
-        error_box($string);
+        $response = 'BAD';
+        $message = _("ERROR: No available IMAP stream.");
+        if ($handle_errors) {
+            global $squirrelmail_language;
+            set_up_language($squirrelmail_language);
+            error_box($message);
+        }
         return false;
     }
 }
@@ -128,16 +126,14 @@ function sqimap_run_command ($imap_stream, $query, $handle_errors, &$response,
         } else {
             return $read[$tag];
         }
-//FIXME: obey $handle_errors below!
     } else {
-        global $squirrelmail_language, $color;
-        set_up_language($squirrelmail_language);
-//FIXME: NO HTML IN CORE!
-        $string = "<b><font color=\"$color[2]\">\n" .
-                _("ERROR: No available IMAP stream.") .
-//FIXME: NO HTML IN CORE!
-                "</b></font>\n";
-        error_box($string);
+        $response = 'BAD';
+        $message = _("ERROR: No available IMAP stream.");
+        if ($handle_errors) {
+            global $squirrelmail_language;
+            set_up_language($squirrelmail_language);
+            error_box($message);
+        }
         return false;
     }
 }
@@ -335,23 +331,22 @@ function sqimap_fread($imap_stream,$iSize,$filter=false,
  */
 function sqimap_read_data_list($imap_stream, $tag, $handle_errors,
           &$response, &$message, $query = '') {
-    global $color, $oTemplate, $squirrelmail_language;
+    global $oTemplate, $squirrelmail_language;
     set_up_language($squirrelmail_language);
-//FIXME: NO HTML IN CORE!
-    $string = "<b><font color=\"$color[2]\">\n" .
+    $string = "<strong>\n" .
         _("ERROR: Bad function call.") .
-//FIXME: NO HTML IN CORE!
-        "</b><br />\n" .
+        "</strong><br />\n" .
         _("Reason:") . ' '.
-          'There is a plugin installed which make use of the  <br />' .
+          'There is a plugin installed which makes use of the <br />' .
           'SquirrelMail internal function sqimap_read_data_list.<br />'.
           'Please adapt the installed plugin and let it use<br />'.
           'sqimap_run_command or sqimap_run_command_list instead<br /><br />'.
           'The following query was issued:<br />'.
-//FIXME: NO HTML IN CORE!
-           sm_encode_html_special_chars($query) . '<br />' . "</font><br />\n";
+          sm_encode_html_special_chars($query) . "<br />\n";
     error_box($string);
-    $oTemplate->display('footer.tpl');
+    if (is_object($oTemplate)) {
+        $oTemplate->display('footer.tpl');
+    }
     exit;
 }
 
@@ -367,24 +362,26 @@ function sqimap_read_data_list($imap_stream, $tag, $handle_errors,
  */
 function sqimap_error_box($title, $query = '', $message_title = '', $message = '', $link = '')
 {
-    global $color, $squirrelmail_language;
+    global $squirrelmail_language;
 
     set_up_language($squirrelmail_language);
-//FIXME: NO HTML IN CORE!
-    $string = "<font color=\"$color[2]\"><b>\n" . $title . "</b><br />\n";
+    $string = "<strong>\n" . sm_encode_html_special_chars($title) . "</strong><br />\n";
     $cmd = explode(' ',$query);
-    $cmd= strtolower($cmd[0]);
+    $cmd = strtolower($cmd[0]);
 
-    if ($query != '' &&  $cmd != 'login')
+    if ($query != '' && $cmd != 'login') {
         $string .= _("Query:") . ' ' . sm_encode_html_special_chars($query) . '<br />';
-    if ($message_title != '')
-        $string .= $message_title;
-    if ($message != '')
+    }
+    if ($message_title != '') {
+        $string .= sm_encode_html_special_chars($message_title);
+    }
+    if ($message != '') {
         $string .= sm_encode_html_special_chars($message);
-//FIXME: NO HTML IN CORE!
-    $string .= "</font><br />\n";
-    if ($link != '')
+    }
+    $string .= "<br />\n";
+    if ($link != '') {
         $string .= $link;
+    }
     error_box($string);
 }
 
@@ -406,7 +403,7 @@ function sqimap_error_box($title, $query = '', $message_title = '', $message = '
 function sqimap_retrieve_imap_response($imap_stream, $tag, $handle_errors,
           &$response, &$message, $query = '',
            $filter = false, $outputstream = false, $no_return = false) {
-    global $color, $squirrelmail_language;
+    global $color, $squirrelmail_language, $oTemplate;
     $read = '';
     if (!is_array($message)) $message = array();
     if (!is_array($response)) $response = array();
@@ -587,12 +584,16 @@ function sqimap_retrieve_imap_response($imap_stream, $tag, $handle_errors,
                 $query = '';
             }
             sqimap_error_box(_("ERROR: IMAP server closed the connection."), $query, _("Server responded:"),$sResponse);
-//FIXME: NO HTML IN CORE!
-            echo '</body></html>';
+            if (is_object($oTemplate)) {
+                $oTemplate->display('footer.tpl');
+            }
             exit;
         } else if ($handle_errors) {
             unset($data);
             sqimap_error_box(_("ERROR: Connection dropped by IMAP server."), $query);
+            if (is_object($oTemplate)) {
+                $oTemplate->display('footer.tpl');
+            }
             exit;
         }
     }
@@ -620,7 +621,9 @@ function sqimap_retrieve_imap_response($imap_stream, $tag, $handle_errors,
             sqsession_register($query, 'IMAP_FATAL_ERROR_QUERY');
             sqsession_register($message[$tag], 'IMAP_FATAL_ERROR_MESSAGE');
             sqimap_error_box(_("ERROR: Could not complete request."), $query, _("Reason Given:") . ' ', $message[$tag]);
-            echo '</body></html>';
+            if (is_object($oTemplate)) {
+                $oTemplate->display('footer.tpl');
+            }
             exit;
         }
         break;
@@ -629,16 +632,18 @@ function sqimap_retrieve_imap_response($imap_stream, $tag, $handle_errors,
         sqsession_register($query, 'IMAP_FATAL_ERROR_QUERY');
         sqsession_register($message[$tag], 'IMAP_FATAL_ERROR_MESSAGE');
         sqimap_error_box(_("ERROR: Bad or malformed request."), $query, _("Server responded:") . ' ', $message[$tag]);
-//FIXME: NO HTML IN CORE!
-        echo '</body></html>';
+        if (is_object($oTemplate)) {
+            $oTemplate->display('footer.tpl');
+        }
         exit;
     case 'BYE':
         sqsession_register('BYE', 'IMAP_FATAL_ERROR_TYPE');
         sqsession_register($query, 'IMAP_FATAL_ERROR_QUERY');
         sqsession_register($message[$tag], 'IMAP_FATAL_ERROR_MESSAGE');
         sqimap_error_box(_("ERROR: IMAP server closed the connection."), $query, _("Server responded:") . ' ', $message[$tag]);
-//FIXME: NO HTML IN CORE!
-        echo '</body></html>';
+        if (is_object($oTemplate)) {
+            $oTemplate->display('footer.tpl');
+        }
         exit;
     default:
         sqsession_register('UNKNOWN', 'IMAP_FATAL_ERROR_TYPE');

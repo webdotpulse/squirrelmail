@@ -236,8 +236,9 @@ function isBoxBelow( $subbox, $parentbox ) {
  */
 function isSpecialMailbox($box,$include_subs=true) {
     global $subfolders_of_inbox_are_special;
-    $ret = ( ($subfolders_of_inbox_are_special && isInboxMailbox($box,$include_subs)) ||
-             (!$subfolders_of_inbox_are_special && strtolower($box) == 'inbox') ||
+    $special_subs = !empty($subfolders_of_inbox_are_special);
+    $ret = ( ($special_subs && isInboxMailbox($box,$include_subs)) ||
+             (!$special_subs && strtolower($box) == 'inbox') ||
              isTrashMailbox($box,$include_subs) || 
              isSentMailbox($box,$include_subs) || 
              isDraftMailbox($box,$include_subs) );

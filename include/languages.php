@@ -431,10 +431,17 @@ function set_up_language($sm_language, $do_search = false, $default = false,
     if (($do_search || empty($squirrelmail_default_language)) &&
         ! $sm_language &&
         isset($accept_lang)) {
-        // TODO: use more than one language, if first language is not available
-        // FIXME: function assumes that string contains two or more characters.
-        // FIXME: some languages use 5 chars
-        $sm_language = substr($accept_lang, 0, 2);
+        $clean_accept = str_replace('-', '_', trim($accept_lang));
+        if (preg_match('/^([a-z]{2}(?:_[a-z]{2})?)/i', $clean_accept, $matches)) {
+            $candidate = $matches[1];
+            if (isset($languages[$candidate])) {
+                $sm_language = $candidate;
+            } else {
+                $sm_language = substr($candidate, 0, 2);
+            }
+        } else {
+            $sm_language = substr($accept_lang, 0, 2);
+        }
     }
 
     /**

@@ -392,15 +392,16 @@ function cram_md5_response ($username,$password,$challenge) {
  * @since 1.4.0
  */
 function digest_md5_response ($username,$password,$challenge,$service,$host,$authz='') {
-    $result=digest_md5_parse_challenge($challenge);
-    //FIXME we should check that $result contains the expected values that we use below
+    $result = digest_md5_parse_challenge($challenge);
+    if (!is_array($result) || empty($result['nonce'])) {
+        return false;
+    }
 
-    // verify server supports qop=auth
-    // $qop = explode(",",$result['qop']);
-    //if (!in_array("auth",$qop)) {
-    // rfc2831: client MUST fail if no qop methods supported
-    // return false;
-    //}
+    $realm = isset($result['realm']) ? $result['realm'] : '';
+    if (is_array($realm)) {
+        $realm = reset($realm);
+    }
+
     $cnonce = base64_encode(bin2hex(hmac_md5(microtime())));
     $ncount = "00000001";
 
@@ -412,14 +413,13 @@ function digest_md5_response ($username,$password,$challenge,$service,$host,$aut
     $digest_uri_value = $service . '/' . $host;
 
     // build the $response_value
-    //FIXME This will probably break badly if a server sends more than one realm
-    $string_a1 = utf8_encode($username).":";
-    $string_a1 .= utf8_encode($result['realm']).":";
-    $string_a1 .= utf8_encode($password);
+    $string_a1 = sq_utf8_encode($username) . ":";
+    $string_a1 .= sq_utf8_encode($realm) . ":";
+    $string_a1 .= sq_utf8_encode($password);
     $string_a1 = hmac_md5($string_a1);
     $A1 = $string_a1 . ":" . $result['nonce'] . ":" . $cnonce;
     if(!empty($authz)) {
-        $A1 .= ":" . utf8_encode($authz);
+        $A1 .= ":" . sq_utf8_encode($authz);
     }
     $A1 = bin2hex(hmac_md5($A1));
     $A2 = "AUTHENTICATE:$digest_uri_value";
@@ -432,7 +432,7 @@ function digest_md5_response ($username,$password,$challenge,$service,$host,$aut
     $string_response = $result['nonce'] . ':' . $ncount . ':' . $cnonce . ':' . $qop_value;
     $response_value = bin2hex(hmac_md5($A1.":".$string_response.":".$A2));
 
-    $reply = 'charset=utf-8,username="' . $username . '",realm="' . $result["realm"] . '",';
+    $reply = 'charset=utf-8,username="' . $username . '",realm="' . $realm . '",';
     $reply .= 'nonce="' . $result['nonce'] . '",nc=' . $ncount . ',cnonce="' . $cnonce . '",';
     $reply .= "digest-uri=\"$digest_uri_value\",response=$response_value";
     $reply .= ',qop=' . $qop_value;
@@ -454,38 +454,44 @@ function digest_md5_response ($username,$password,$challenge,$service,$host,$aut
  * @since 1.4.0
  */
 function digest_md5_parse_challenge($challenge) {
-    $challenge=base64_decode($challenge);
+    $challenge = base64_decode($challenge);
+    if ($challenge === false) {
+        return array();
+    }
     $parsed = array();
     while (!empty($challenge)) {
         if ($challenge[0] == ',') { // First char is a comma, must not be 1st time through loop
-            $challenge=substr($challenge,1);
+            $challenge = substr($challenge, 1);
         }
-        $key=explode('=',$challenge,2);
-        $challenge=$key[1];
-        $key=$key[0];
-        if ($challenge[0] == '"') {
+        $key = explode('=', $challenge, 2);
+        if (count($key) < 2) {
+            break;
+        }
+        $challenge = $key[1];
+        $key = $key[0];
+        if (!empty($challenge) && $challenge[0] == '"') {
             // We're in a quoted value
             // Drop the first quote, since we don't care about it
-            $challenge=substr($challenge,1);
+            $challenge = substr($challenge, 1);
             // Now explode() to the next quote, which is the end of our value
-            $val=explode('"',$challenge,2);
-            $challenge=$val[1]; // The rest of the challenge, work on it in next iteration of loop
-            $value=explode(',',$val[0]);
+            $val = explode('"', $challenge, 2);
+            $challenge = isset($val[1]) ? $val[1] : ''; // The rest of the challenge, work on it in next iteration of loop
+            $value = explode(',', $val[0]);
             // Now, for those quoted values that are only 1 piece..
             if (sizeof($value) == 1) {
-                $value=$value[0];  // Convert to non-array
+                $value = $value[0];  // Convert to non-array
             }
         } else {
             // We're in a "simple" value - explode to next comma
-            $val=explode(',',$challenge,2);
+            $val = explode(',', $challenge, 2);
             if (isset($val[1])) {
-                $challenge=$val[1];
+                $challenge = $val[1];
             } else {
-                unset($challenge);
+                $challenge = '';
             }
-            $value=$val[0];
+            $value = $val[0];
         }
-        $parsed["$key"]=$value;
+        $parsed["$key"] = $value;
     } // End of while loop
     return $parsed;
 }

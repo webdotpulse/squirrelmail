@@ -162,9 +162,9 @@ class Rfc822Header {
         if (is_array($hdr)) {
             $hdr = implode('', $hdr);
         }
-        /* First we replace \r\n by \n and unfold the header */
-        /* FIXME: unfolding header with multiple spaces "\n( +)" */
-        $hdr = trim(str_replace(array("\r\n", "\n\t", "\n "),array("\n", ' ', ' '), $hdr));
+        /* Unfold header lines with single/multiple spaces or tabs (\r?\n[ \t]+) */
+        $hdr = preg_replace("/\r?\n[ \t]+/", ' ', $hdr);
+        $hdr = trim(str_replace("\r", '', $hdr));
 
         /* Now we can make a new header array with */
         /* each element representing a headerline  */
@@ -183,6 +183,7 @@ class Rfc822Header {
         if (!is_object($this->content_type)) {
             $this->parseContentType('text/plain; charset=us-ascii');
         }
+        return $this;
     }
 
     /**
@@ -745,16 +746,19 @@ class Rfc822Header {
         foreach ($aCharset as $key) {
             $value = $aResults[$key];
             // extract the charset & language
-            $charset = substr($value,0,strpos($value,"'"));
-            $value = substr($value,strlen($charset)+1);
-            $language = substr($value,0,strpos($value,"'"));
-            $value = substr($value,strlen($charset)+1);
-            /* FIXME: What's the status of charset decode with language information ????
-             * Maybe language information contains only ascii text and charset_decode() 
-             * only runs sm_encode_html_special_chars() on it. If it contains 8bit information, you 
-             * get html encoded text in charset used by selected translation.
-             */
-            $value = charset_decode($charset,$value);
+            $first_quote = strpos($value, "'");
+            if ($first_quote !== false) {
+                $charset = substr($value, 0, $first_quote);
+                $value = substr($value, strlen($charset) + 1);
+                $second_quote = strpos($value, "'");
+                if ($second_quote !== false) {
+                    $language = substr($value, 0, $second_quote);
+                    $value = substr($value, strlen($language) + 1);
+                }
+            } else {
+                $charset = '';
+            }
+            $value = charset_decode($charset, $value);
             $aResults[$key] = $value;
         }
         return $aResults;

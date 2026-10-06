@@ -173,14 +173,11 @@ if ($addrquery == '' || ! empty($listall)) {
 }
 
 if ($addrquery == '' || sizeof($res) == 0) {
-//FIXME don't echo HTML from core -- especially convoluted given that there is template code immediately above AND below this block
-    echo '<div style="text-align: center;">'.
+    echo '<div style="text-align: center; margin: 1em 0;">'.
         addForm('compose.php','post','k', '', '', array(), TRUE);
     addr_insert_hidden();
-    echo '<input type="submit" value="' . _("Return") . '" name="return" />' . "\n" .
-         '</form></div></nobr>';
+    echo '<input type="submit" class="sm-btn" value="' . _("Return") . '" name="return" />' . "\n" .
+         '</form></div>';
 }
-
-echo '<hr />';
 
 $oTemplate->display('footer.tpl');

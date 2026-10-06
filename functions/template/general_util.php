@@ -34,6 +34,7 @@ function create_css_link($uri, $name='', $alt=TRUE, $mtype='screen') {
     }
 
     sqGetGlobalVar('HTTP_USER_AGENT', $browser_user_agent, SQ_SERVER);
+    $is_IE = false;
 
     if (!empty($browser_user_agent)) {
         if (stristr($browser_user_agent, "msie 4")) {

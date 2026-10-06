@@ -665,6 +665,7 @@ function sqimap_get_small_header_list($imap_stream, $msg_list,
 function parseFetch(&$aResponse,$aMessageList = array()) {
     for ($j=0,$iCnt=count($aResponse);$j<$iCnt;++$j) {
         $aMsg = array();
+        $unique_id = '';
 
         $read = implode('',$aResponse[$j]);
         // free up memmory
@@ -814,12 +815,13 @@ function parseFetch(&$aResponse,$aMessageList = array()) {
         if (!empty($unique_id)) {
             $msgi = "$unique_id";
             $aMsg['UID'] = $unique_id;
-       } else {
-//FIXME: under what circumstances does this happen? We can't use an empty string as an array index in the line just below, so we need to use something else here
-            $msgi = '';
-       }
-       $aMessageList[$msgi] = $aMsg;
-       $aResponse[$j] = NULL;
+        } else if (!empty($id)) {
+            $msgi = "$id";
+        } else {
+            $msgi = (string) $j;
+        }
+        $aMessageList[$msgi] = $aMsg;
+        $aResponse[$j] = NULL;
     }
     return $aMessageList;
 }

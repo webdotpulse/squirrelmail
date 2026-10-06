@@ -456,11 +456,8 @@ function compose_Header($color, $mailbox, $sHeaderJs='', $sOnload = '') {
         $sOnload = '';
     }
 
-// FIXME: change the colorization attributes below to a CSS class!
-    $class = '';
-    $aAttribs = array('text' => $color[8], 'bgcolor' => $color[4],
-                      'link' => $color[7], 'vlink' => $color[7],
-                      'alink' => $color[7]);
+    $class = 'sm-compose-body';
+    $aAttribs = array();
 
     // this is template-safe (see create_body() function)
     echo create_body($sOnload, $class, $aAttribs);

@@ -461,6 +461,12 @@ $list_special_folders_first = true;
 $default_sub_of_inbox = true;
 
 /**
+ * Treat all subfolders of INBOX as special folders
+ * @global bool $subfolders_of_inbox_are_special
+ */
+$subfolders_of_inbox_are_special = false;
+
+/**
  * Subfolder Format Control
  *
  * Some IMAP daemons (UW) handle folders weird. They only allow a
