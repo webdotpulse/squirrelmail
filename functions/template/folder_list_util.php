@@ -75,7 +75,7 @@ function getBoxStructure ($boxes) {
     $box['CummulativeUnreadCount'] = getMessageCount($boxes, 'unseen');
     
     $box['ViewLink'] = array( 'Target' => '',
-                              'URL'    => 'right_main.php?PG_SHOWALL=0&amp;startMessage=1&amp;mailbox='.$mailboxURL
+                              'URL'    => sqm_baseuri() . 'src/webmail.php?mailbox='.$mailboxURL
                             );
                               
     $box['IsRecent'] = isset($boxes->recent) && $boxes->recent;
@@ -107,7 +107,7 @@ function getBoxStructure ($boxes) {
     $icon = getIcon($icon_theme_path, $icon_file, $text_icon, $icon_alt);
     
     $box['CollapseLink'] = array ( 'Target' => '',
-                                   'URL'    => 'left_main.php?'.($box['IsCollapsed'] ? 'unfold' : 'fold') .'='.$mailboxURL,
+                                   'URL'    => sqm_baseuri() . 'src/left_main.php?'.($box['IsCollapsed'] ? 'unfold' : 'fold') .'='.$mailboxURL,
                                    'Icon'   => $icon .'&nbsp;'
                                  ); 
 

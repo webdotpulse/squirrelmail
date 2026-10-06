@@ -554,14 +554,15 @@ function get_location () {
  */
 function get_message_list_uri($mailbox, $startMessage, $what='') {
 
-    global $base_uri;
-
     $urlMailbox = urlencode($mailbox);
 
-    $list_xtra = "?where=read_body.php&what=$what&mailbox=" . $urlMailbox.
-                 "&startMessage=$startMessage";
+    $list_xtra = "?mailbox=" . $urlMailbox .
+                 "&startMessage=" . (int)$startMessage;
+    if ($what !== '') {
+        $list_xtra .= "&what=" . urlencode($what);
+    }
 
-    return $base_uri .'src/right_main.php'. $list_xtra;
+    return sqm_baseuri() . 'src/webmail.php' . $list_xtra;
 }
 
 

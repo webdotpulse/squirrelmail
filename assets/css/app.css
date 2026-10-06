@@ -742,27 +742,101 @@ button, input, select, textarea {
   vertical-align: middle;
 }
 
-.sm-message-row {
+.sm-message-row,
+table.table_messageList tr.even,
+table.table_messageList tr.odd {
   transition: background-color var(--sm-transition-fast);
   cursor: pointer;
 }
 
-.sm-message-row:hover {
-  background-color: var(--sm-hover-bg);
+.table_messageListWrapper {
+  width: 100% !important;
+  background-color: var(--sm-bg-surface) !important;
+  border: 1px solid var(--sm-border) !important;
+  border-radius: var(--sm-radius-md) !important;
+  overflow: hidden !important;
+  box-shadow: var(--sm-shadow-sm) !important;
 }
 
-.sm-message-row.unread {
-  background-color: var(--sm-unread-bg);
-  color: var(--sm-text-primary);
-  font-weight: 600;
+table.table_messageList {
+  width: 100% !important;
+  border-collapse: collapse !important;
+  border-spacing: 0 !important;
+  background-color: var(--sm-bg-surface) !important;
+  color: var(--sm-text-primary) !important;
 }
 
-.sm-message-row.unread td {
-  color: var(--sm-text-primary);
+table.table_messageList tr.headerRow {
+  background-color: var(--sm-bg-canvas) !important;
+  color: var(--sm-text-secondary) !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  border-bottom: 1px solid var(--sm-border) !important;
 }
 
-.sm-message-row.selected {
-  background-color: var(--sm-selected-bg);
+table.table_messageList tr.headerRow td,
+table.table_messageList tr.headerRow th {
+  padding: 10px 12px !important;
+  background-color: transparent !important;
+  color: var(--sm-text-secondary) !important;
+}
+
+table.table_messageList tr.even,
+table.table_messageList tr.odd {
+  background-color: var(--sm-bg-surface) !important;
+}
+
+.sm-message-row:hover,
+table.table_messageList tr:hover,
+table.table_messageList tr.mouse_over {
+  background-color: var(--sm-hover-bg) !important;
+}
+
+.sm-message-row.unread,
+table.table_messageList tr.unread {
+  background-color: var(--sm-unread-bg) !important;
+  color: var(--sm-text-primary) !important;
+  font-weight: 600 !important;
+}
+
+.sm-message-row.unread td,
+table.table_messageList tr.unread td {
+  color: var(--sm-text-primary) !important;
+}
+
+.sm-message-row.selected,
+table.table_messageList tr.clicked,
+table.table_messageList tr.selected {
+  background-color: var(--sm-selected-bg) !important;
+}
+
+table.table_messageList td {
+  padding: 10px 12px !important;
+  border-bottom: 1px solid var(--sm-border-light) !important;
+  background-color: transparent !important;
+  color: var(--sm-text-primary) !important;
+  vertical-align: middle !important;
+}
+
+table.table_messageList td a {
+  color: var(--sm-text-primary) !important;
+  transition: color 0.15s ease !important;
+}
+
+table.table_messageList td a:hover {
+  color: var(--sm-primary) !important;
+}
+
+table.table_messageList tr.spacer,
+table.table_messageList td.spacer {
+  height: 1px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  line-height: 1px !important;
+  background-color: var(--sm-border-light) !important;
+  border: none !important;
 }
 
 .sm-sender-chip {

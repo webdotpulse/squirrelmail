@@ -28,6 +28,9 @@ include_once(SM_PATH . 'functions/forms.php');
   */
 function get_paginator_link($box, $start_msg, $text, $accesskey='NONE') {
     sqgetGlobalVar('PHP_SELF',$php_self,SQ_SERVER);
+    if (strpos($php_self, 'right_main.php') !== false) {
+        $php_self = sqm_baseuri() . 'src/webmail.php';
+    }
     return create_hyperlink("$php_self?startMessage=$start_msg&amp;mailbox=$box"
                             . (strpos($php_self, 'src/search.php') ? '&amp;smtoken=' . sm_generate_security_token() : ''),
                             $text, '', '', '', '', '',
@@ -67,6 +70,9 @@ function get_compact_paginator_str($box, $iOffset, $iTotal, $iLimit, $bShowAll, 
     $display_iterations++;
 
     sqgetGlobalVar('PHP_SELF',$php_self,SQ_SERVER);
+    if (strpos($php_self, 'right_main.php') !== false) {
+        $php_self = sqm_baseuri() . 'src/webmail.php';
+    }
 
     /* Initialize paginator string chunks. */
     $prv_str = '';
@@ -209,6 +215,9 @@ function get_paginator_str($box, $iOffset, $iTotal, $iLimit, $bShowAll,$page_sel
     /* This will be used as a space. */
     global $oTemplate, $nbsp;
     sqgetGlobalVar('PHP_SELF',$php_self,SQ_SERVER);
+    if (strpos($php_self, 'right_main.php') !== false) {
+        $php_self = sqm_baseuri() . 'src/webmail.php';
+    }
 
     /* Initialize paginator string chunks. */
     $prv_str = '';

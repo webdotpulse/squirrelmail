@@ -353,7 +353,7 @@ if ($pageOffset < $end_msg) {
     // this stuff does the auto row highlighting on mouseover
     //
     if ($javascript_on && $fancy_index_highlite) {
-        $row_extra = ' onmouseover="rowOver(\''.$form_id . '_msg' . $i.'\');" onmouseout="setPointer(this, ' . $i . ', \'out\', \'' . $non_clicked_class . '\', \'mouse_over\', \'clicked\');" onmousedown="setPointer(this, ' . $i . ', \'click\', \'' . $non_clicked_class . '\', \'mouse_over\', \'clicked\');"';
+        $row_extra = ' onmouseover="rowOver(\''.$form_id . '_msg' . $i.'\');" onmouseout="setPointer(this, ' . $i . ', \'out\', \'' . $non_clicked_class . '\', \'mouse_over\', \'clicked\', event);" onmousedown="setPointer(this, ' . $i . ', \'click\', \'' . $non_clicked_class . '\', \'mouse_over\', \'clicked\', event);"';
     }
     // this does the auto-checking of the checkbox no matter
     // where on the row you click
@@ -396,13 +396,20 @@ if ($non_clicked_class != 'even' && $non_clicked_class != 'odd'
 }
 
 
+$is_unread = false;
+if (isset($aColumns[SQM_COL_FLAGS])) {
+    if (!in_array('seen',$aFlags) || !$aFlags['seen']) {
+        $is_unread = true;
+    }
+}
+$row_class = trim((empty($class) ? '' : $class) . ' sm-message-row' . ($is_unread ? ' unread' : ''));
 ?>
-<tr <?php echo (empty($class) ? '' : 'class="'.$class.'" ');  echo $row_extra;?>>
+<tr class="<?php echo $row_class; ?>" <?php echo $row_extra;?>>
 <?php
     // flag style mumbo jumbo
     $sPre = $sEnd = '';
     if (isset($aColumns[SQM_COL_FLAGS])) {
-        if (!in_array('seen',$aFlags) || !$aFlags['seen']) {
+        if ($is_unread) {
             $sPre = '<span class="unread">'; $sEnd = '</span>';
         }
         if (in_array('deleted',$aFlags) && $aFlags['deleted']) {
@@ -475,7 +482,7 @@ if ($non_clicked_class != 'even' && $non_clicked_class != 'odd'
             if ($link_extra) { $sText .= " $link_extra";          }
             if ($javascript_on && $fancy_index_highlite) {
                   $sText .= " onmousedown=\"row_click('$form_id"."_msg$i', event, '$form_name', 'msg[' + $i + ']', '$row_click_extra'); setPointer(this." . (empty($bold) ? '' : 'parentNode.') .
-                            'parentNode.parentNode, ' . $i . ', \'click\', \''. $non_clicked_class. '\', \'mouse_over\', \'clicked\');"';
+                            'parentNode.parentNode, ' . $i . ', \'click\', \''. $non_clicked_class. '\', \'mouse_over\', \'clicked\', event);"';
             }
             $sText .= ">"
                    . $value . '</a>';

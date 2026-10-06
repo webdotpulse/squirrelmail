@@ -26,7 +26,7 @@
 function error_message($message, $mailbox, $sort, $startMessage) {
     $urlMailbox = urlencode($mailbox);
     $link = array (
-        'URL'   => sqm_baseuri()."src/right_main.php?sort=$sort&amp;startMessage=$startMessage&amp;mailbox=$urlMailbox",
+        'URL'   => sqm_baseuri()."src/webmail.php?sort=$sort&amp;startMessage=$startMessage&amp;mailbox=$urlMailbox",
         'TEXT'  => sprintf (_("Click here to return to %s"),
                             strtoupper($mailbox) == 'INBOX' ? _("INBOX") : sm_encode_html_special_chars(imap_utf7_decode_local($mailbox))) 
                    );

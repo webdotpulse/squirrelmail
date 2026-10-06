@@ -78,142 +78,66 @@ function setCSSClass (obj, newClass) {
  */
 function rowOver(chkboxName) {
     var chkbox = document.getElementById(chkboxName);
-    var rowClass, rowNum, overClass, clickedClass;
-    if (chkbox) {
-        if (!orig_row_colors[chkboxName]) {
-            rowClass = getCSSClass(chkbox.parentNode.parentNode);
-            if (rowClass.indexOf("clicked_") == 0)
-                rowClass = rowClass.substring(8, rowClass.length);
-            orig_row_colors[chkboxName] = rowClass;
-        } else {
-            rowClass = orig_row_colors[chkboxName];
-        }
-        rowNum = chkboxName.substring(chkboxName.length - 1, chkboxName.length);
-
-/*
- * The mouseover and clicked CSS classes are always the same name!
- */        
-        overClass = 'mouse_over';
-        clickedClass = 'clicked';
-        setPointer(chkbox.parentNode.parentNode, rowNum, 'over' , rowClass, overClass, clickedClass);
+    if (!chkbox) return;
+    var tr = chkbox.closest ? chkbox.closest('tr') : (chkbox.parentNode ? chkbox.parentNode.parentNode : null);
+    if (tr) {
+        tr.classList.add('mouse_over');
     }
 }
 
 /*
  * (un)Checks all checkboxes for the message list from a specific form
  * when it gets clicked.
- *
- * @param   string   the id of the form where all checkboxes should be (un)checked
- * @param   string   the first three characters of target checkboxes, if any
- * @param   boolean  use fancy row coloring when a checkbox is checked
- * @param   string   new color of the checked rows
  */
 function toggle_all(formname, name_prefix, fancy) {
-    var TargetForm = document.getElementById(formname);
-    var j = 0;
-    for (var i = 0; i < TargetForm.elements.length; i++) {
-        if (TargetForm.elements[i].type == 'checkbox' && (name_prefix == '' || TargetForm.elements[i].name.substring(0,3) == name_prefix)) {
-            if (fancy) {
-                array_key = TargetForm.elements[i].getAttribute('id');
-                // initialize orig_row_color if not defined already
-                if (!orig_row_colors[array_key]) {
-                    rowClass = getCSSClass(TargetForm.elements[i].parentNode.parentNode);
-                    if (rowClass.indexOf("clicked_") == 0)
-                        rowClass = rowClass.substring(8, rowClass.length);
-                    orig_row_colors[array_key] = rowClass;
+    var targetForm = document.getElementById(formname);
+    if (!targetForm) return;
+    var master = targetForm.querySelector ? targetForm.querySelector('#toggleAll, #checkall') : null;
+    var checkboxes = targetForm.querySelectorAll ? targetForm.querySelectorAll('input[type="checkbox"]') : targetForm.elements;
+    var isMasterChecked = master ? master.checked : null;
+
+    for (var i = 0; i < checkboxes.length; i++) {
+        var cb = checkboxes[i];
+        if (cb.type === 'checkbox' && cb !== master && (!name_prefix || cb.name.substring(0, 3) === name_prefix)) {
+            cb.checked = (isMasterChecked !== null) ? isMasterChecked : !cb.checked;
+            var tr = cb.closest ? cb.closest('tr') : (cb.parentNode ? cb.parentNode.parentNode : null);
+            if (tr) {
+                if (cb.checked) {
+                    tr.classList.add('clicked', 'selected');
+                } else {
+                    tr.classList.remove('clicked', 'selected');
                 }
-                origClass = orig_row_colors[array_key];
-                clickedClass = 'clicked';
-                setPointer(TargetForm.elements[i].parentNode.parentNode, j,'click' , origClass, origClass, clickedClass);
-                j++
             }
-            TargetForm.elements[i].checked = !(TargetForm.elements[i].checked);
         }
     }
 }
 
 /*
  * Sets/unsets the pointer and marker in browse mode
- *
- * @param object  theRow         the table row
- * @param integer theRowNum      the row number
- * @param string  theAction      the action calling this script (over, out or click)
- * @param string  defaultClass   the default background CSS class
- * @param string  mouseoverClass the CSS class to use for mouseover
- * @param string  clickedClass   the CSS class to use for marking a row
- *
- * @return  boolean  whether pointer is set or not
  */
-function setPointer(theRow, theRowNum, theAction, defaultClass, mouseoverClass, clickedClass)
+function setPointer(theRow, theRowNum, theAction, defaultClass, mouseoverClass, clickedClass, optEvent)
 {
-    // 1. Pointer and mark feature are disabled or the browser can't get the
-    //    row -> exits
-    if ((mouseoverClass == '' && clickedClass == '')
-        || typeof(theRow.className) == 'undefined') {
+    if (!theRow) return false;
+    var e = optEvent || window.event;
+
+    // Prevent flickering when moving between cells or children within the same row
+    if (theAction === 'out' && e && e.relatedTarget && theRow.contains(e.relatedTarget)) {
         return false;
     }
 
-    // 2. Verify we can get the current row or exit
-    if (typeof(document.getElementsByTagName) != 'undefined') {
-		// We are ok
-    }
-    else if (typeof(theRow) != 'undefined') {
-    	// We are ok
-    }
-    else {
-        return false;
-    }
+    mouseoverClass = mouseoverClass || 'mouse_over';
+    clickedClass = clickedClass || 'clicked';
 
-    // 3. Gets the current CSS class...
-    var newClass     = null;
-    var currentClass = getCSSClass(theRow);
-    if (currentClass.indexOf("clicked_") == 0)
-        currentClass = 'clicked';
-    
-    // 4. Defines the new class
-    // 4.1 Current class is the default one
-    if (currentClass == ''
-        || currentClass.toLowerCase() == defaultClass.toLowerCase()) {
-        if (theAction == 'over' && mouseoverClass != '') {
-            newClass = mouseoverClass;
+    if (theAction === 'over') {
+        theRow.classList.add(mouseoverClass);
+    } else if (theAction === 'out') {
+        theRow.classList.remove(mouseoverClass);
+    } else if (theAction === 'click') {
+        theRow.classList.toggle(clickedClass);
+        theRow.classList.toggle('selected', theRow.classList.contains(clickedClass));
+        if (typeof theRowNum !== 'undefined') {
+            marked_row[theRowNum] = theRow.classList.contains(clickedClass);
         }
-        else if (theAction == 'click' && clickedClass != '') {
-            newClass = clickedClass;
-            marked_row[theRowNum] = true;
-            // deactivated onclick marking of the checkbox because it's also executed
-            // when an action (clicking on the checkbox itself) on a single item is
-            // performed. Then the checkbox would get deactived, even though we need
-            // it activated. Maybe there is a way to detect if the row was clicked,
-            // and not an item therein...
-            //document.getElementById('msg[' + theRowNum + ']').checked = true;
-        }
-    }
-    // 4.1.2 Current class is the mouseover one
-    else if (currentClass.toLowerCase() == mouseoverClass.toLowerCase()
-             && (typeof(marked_row[theRowNum]) == 'undefined' || !marked_row[theRowNum])) {
-        if (theAction == 'out') {
-            newClass = defaultClass;
-        }
-        else if (theAction == 'click' && clickedClass != '') {
-            newClass = clickedClass;
-            marked_row[theRowNum] = true;
-            //document.getElementById('msg[' + theRowNum + ']').checked = true;
-        }
-    }
-    // 4.1.3 Current color is the clicked one
-    else if (currentClass.toLowerCase() == clickedClass.toLowerCase()) {
-        if (theAction == 'click') {
-            newClass              = (mouseoverClass != '')
-                                  ? mouseoverClass
-                                  : defaultClass;
-            marked_row[theRowNum] = false;
-            //document.getElementById('msg[' + theRowNum + ']').checked = false;
-        }
-    } // end 4
-
-    // 5. Sets the new color...
-    if (newClass) {
-    	setCSSClass(theRow, newClass);
     }
 
     return true;

@@ -333,11 +333,18 @@ function displayPageHeader($color, $mailbox='', $sHeaderJs='', $sOnload = '') {
     $frame_top = '';
 
     if (!sqm_is_ajax() && empty($GLOBALS['in_webmail_shell']) && defined('PAGE_NAME') && PAGE_NAME !== 'webmail' && PAGE_NAME !== 'login' && PAGE_NAME !== 'redirect' && PAGE_NAME !== 'signout' && PAGE_NAME !== 'style' && PAGE_NAME !== 'download' && PAGE_NAME !== 'image') {
-        $view_url = basename($_SERVER['PHP_SELF']);
-        if (!empty($_SERVER['QUERY_STRING'])) {
-            $view_url .= '?' . $_SERVER['QUERY_STRING'];
+        $qs = !empty($_SERVER['QUERY_STRING']) ? $_SERVER['QUERY_STRING'] : '';
+        // Clean out archaic/broken PG_SHOWALL parameter
+        $qs = preg_replace('/(^|&)PG_SHOWALL=[^&]*(&|$)/i', '$1', $qs);
+        $qs = trim($qs, '&');
+
+        $script_name = basename($_SERVER['PHP_SELF']);
+        if ($script_name === 'right_main.php') {
+            sqm_redirect(sqm_baseuri() . 'src/webmail.php' . ($qs !== '' ? '?' . $qs : ''));
+        } else {
+            $view_url = $script_name . ($qs !== '' ? '?' . $qs : '');
+            sqm_redirect(sqm_baseuri() . 'src/webmail.php?right_frame=' . urlencode($view_url));
         }
-        sqm_redirect(sqm_baseuri() . 'src/webmail.php?right_frame=' . urlencode($view_url));
     }
 
     if ($mailbox && strcasecmp($mailbox, 'None') !== 0) {

@@ -125,31 +125,48 @@ if (empty($right_frame_url)) {
 
 $GLOBALS['in_webmail_shell'] = true;
 
-// Pre-render the sidebar
-ob_start();
-include(SM_PATH . 'src/left_main.php');
-$sidebar_content = ob_get_clean();
-
 // Pre-render initial workspace view
 if (!empty($right_frame) && strpos($right_frame, '?') !== false) {
-    parse_str(parse_url($right_frame, PHP_URL_QUERY), $query_params);
-    if (!empty($query_params)) {
-        foreach ($query_params as $qk => $qv) {
-            $_GET[$qk] = $qv;
-            ${$qk} = $qv;
+    $parsed_query = parse_url($right_frame, PHP_URL_QUERY);
+    if (!empty($parsed_query)) {
+        parse_str($parsed_query, $query_params);
+        if (!empty($query_params)) {
+            unset($query_params['PG_SHOWALL']);
+            foreach ($query_params as $qk => $qv) {
+                $_GET[$qk] = $qv;
+                ${$qk} = $qv;
+            }
         }
     }
 }
 
 ob_start();
-$target_script = !empty($right_frame_file) ? basename($right_frame_file) : 'right_main.php';
-if ($target_script != 'webmail.php' && file_exists(SM_PATH . 'src/' . $target_script)) {
-    include(SM_PATH . 'src/' . $target_script);
+$target_script = !empty($right_frame_file) ? ltrim($right_frame_file, '/') : 'src/right_main.php';
+if (strpos($target_script, '..') === false && file_exists(SM_PATH . $target_script)) {
+    include(SM_PATH . $target_script);
 } else {
-    include(SM_PATH . 'src/right_main.php');
+    $base_script = basename($target_script);
+    if ($base_script != 'webmail.php' && file_exists(SM_PATH . 'src/' . $base_script)) {
+        include(SM_PATH . 'src/' . $base_script);
+    } else {
+        include(SM_PATH . 'src/right_main.php');
+    }
 }
 $workspace_content = ob_get_clean();
 
+$GLOBALS['in_webmail_shell'] = false;
+
+// For AJAX workspace navigation, return only the workspace fragment
+if (function_exists('sqm_is_ajax') && sqm_is_ajax()) {
+    echo '<div id="sm-workspace-content">' . $workspace_content . '</div>';
+    exit;
+}
+
+// Pre-render the sidebar for initial full page loads
+$GLOBALS['in_webmail_shell'] = true;
+ob_start();
+include(SM_PATH . 'src/left_main.php');
+$sidebar_content = ob_get_clean();
 $GLOBALS['in_webmail_shell'] = false;
 
 $oErrorHandler->setDelayedErrors(true);

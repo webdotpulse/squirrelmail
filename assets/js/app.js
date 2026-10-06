@@ -21,78 +21,74 @@
     window.marked_row = window.marked_row || [];
     window.orig_row_colors = window.orig_row_colors || [];
 
-    if (typeof window.rowOver !== 'function') {
-        window.rowOver = function (chkboxName) {
-            var chkbox = document.getElementById(chkboxName);
-            if (!chkbox) return;
-            var tr = chkbox.closest('tr');
-            if (tr) {
-                if (typeof window.setPointer === 'function') {
-                    var rowNum = chkboxName.substring(chkboxName.length - 1);
-                    var currentClass = tr.className || 'even';
-                    window.setPointer(tr, rowNum, 'over', currentClass, 'mouse_over', 'clicked');
-                } else {
-                    tr.classList.add('mouse_over');
-                }
-            }
-        };
-    }
+    window.rowOver = function (chkboxName) {
+        var chkbox = document.getElementById(chkboxName);
+        if (!chkbox) return;
+        var tr = chkbox.closest ? chkbox.closest('tr') : (chkbox.parentNode ? chkbox.parentNode.parentNode : null);
+        if (tr) {
+            tr.classList.add('mouse_over');
+        }
+    };
 
-    if (typeof window.setPointer !== 'function') {
-        window.setPointer = function (theRow, theRowNum, theAction, defaultClass, mouseoverClass, clickedClass) {
-            if (!theRow) return;
-            mouseoverClass = mouseoverClass || 'mouse_over';
-            clickedClass = clickedClass || 'clicked';
-            defaultClass = defaultClass || 'even';
+    window.setPointer = function (theRow, theRowNum, theAction, defaultClass, mouseoverClass, clickedClass, optEvent) {
+        if (!theRow) return;
+        var e = optEvent || window.event;
+        mouseoverClass = mouseoverClass || 'mouse_over';
+        clickedClass = clickedClass || 'clicked';
 
-            if (theAction === 'over') {
-                if (!theRow.classList.contains(clickedClass)) {
-                    theRow.classList.add(mouseoverClass);
-                }
-            } else if (theAction === 'out') {
-                theRow.classList.remove(mouseoverClass);
-            } else if (theAction === 'click') {
-                theRow.classList.toggle(clickedClass);
+        // Prevent flickering when moving between cells or children within the same row
+        if (theAction === 'out' && e && e.relatedTarget && theRow.contains(e.relatedTarget)) {
+            return false;
+        }
+
+        if (theAction === 'over') {
+            theRow.classList.add(mouseoverClass);
+        } else if (theAction === 'out') {
+            theRow.classList.remove(mouseoverClass);
+        } else if (theAction === 'click') {
+            theRow.classList.toggle(clickedClass);
+            theRow.classList.toggle('selected', theRow.classList.contains(clickedClass));
+            if (typeof theRowNum !== 'undefined') {
                 window.marked_row[theRowNum] = theRow.classList.contains(clickedClass);
             }
-        };
-    }
+        }
+        return true;
+    };
 
-    if (typeof window.row_click !== 'function') {
-        window.row_click = function (chkboxName, event, formName, checkboxRealName, extra) {
-            var chkbox = document.getElementById(chkboxName);
-            if (chkbox) {
-                chkbox.checked = !chkbox.checked;
-                var tr = chkbox.closest('tr');
+    window.row_click = function (chkboxName, event, formName, checkboxRealName, extra) {
+        var chkbox = document.getElementById(chkboxName);
+        if (chkbox) {
+            chkbox.checked = !chkbox.checked;
+            var tr = chkbox.closest ? chkbox.closest('tr') : (chkbox.parentNode ? chkbox.parentNode.parentNode : null);
+            if (tr) {
+                tr.classList.toggle('selected', chkbox.checked);
+                tr.classList.toggle('clicked', chkbox.checked);
+            }
+            if (extra) {
+                try { (0, eval)(extra); } catch (e) {}
+            }
+        }
+    };
+
+    window.toggle_all = function (formname, name_prefix, fancy) {
+        var targetForm = document.getElementById(formname);
+        if (!targetForm) return;
+        var master = targetForm.querySelector ? targetForm.querySelector('#toggleAll, #checkall') : null;
+        var isChecked = master ? master.checked : null;
+        var checkboxes = targetForm.querySelectorAll ? targetForm.querySelectorAll('input[type="checkbox"]') : targetForm.elements;
+
+        for (var i = 0; i < checkboxes.length; i++) {
+            var cb = checkboxes[i];
+            if (cb.type === 'checkbox' && cb !== master && (!name_prefix || (cb.name && cb.name.substring(0, 3) === name_prefix))) {
+                cb.checked = (isChecked !== null) ? isChecked : !cb.checked;
+                var tr = cb.closest ? cb.closest('tr') : (cb.parentNode ? cb.parentNode.parentNode : null);
                 if (tr) {
-                    tr.classList.toggle('selected', chkbox.checked);
-                    tr.classList.toggle('clicked', chkbox.checked);
-                }
-                if (extra) {
-                    try { (0, eval)(extra); } catch (e) {}
+                    tr.classList.toggle('selected', cb.checked);
+                    tr.classList.toggle('clicked', cb.checked);
                 }
             }
-        };
-    }
-
-    if (typeof window.toggle_all !== 'function') {
-        window.toggle_all = function (formname, name_prefix, fancy) {
-            var targetForm = document.getElementById(formname);
-            if (!targetForm) return;
-            var master = targetForm.querySelector('#toggleAll');
-            var isChecked = master ? master.checked : true;
-            targetForm.querySelectorAll('input[type="checkbox"]').forEach(function (cb) {
-                if (!name_prefix || (cb.name && cb.name.substring(0, 3) === name_prefix)) {
-                    cb.checked = isChecked;
-                    var tr = cb.closest('tr');
-                    if (tr) {
-                        tr.classList.toggle('selected', isChecked);
-                        tr.classList.toggle('clicked', isChecked);
-                    }
-                }
-            });
-        };
-    }
+        }
+    };
 
     if (typeof window.checkForm !== 'function') {
         window.checkForm = function () {};
@@ -272,7 +268,23 @@
                     return;
                 }
 
-                const url = new URL(link.href, window.location.origin);
+                // Resolve relative URLs correctly even when current page is in plugins/ or deep subpath
+                let resolvedHref = href;
+                const base = this.getBaseUri();
+                if (!/^https?:\/\/|^\/\//i.test(href)) {
+                    if (href.startsWith('/')) {
+                        resolvedHref = window.location.origin + href;
+                    } else if (href.startsWith('../')) {
+                        resolvedHref = window.location.origin + base + href.replace(/^\.\.\//, '');
+                    } else if (href.startsWith('src/') || href.startsWith('plugins/') || href.startsWith('templates/')) {
+                        resolvedHref = window.location.origin + base + href;
+                    } else {
+                        // Standard SquirrelMail core script (e.g. right_main.php, webmail.php, compose.php, options.php)
+                        resolvedHref = window.location.origin + base + 'src/' + href;
+                    }
+                }
+
+                const url = new URL(resolvedHref, window.location.origin);
                 // Check if external domain
                 if (url.origin !== window.location.origin) {
                     return;
@@ -281,6 +293,16 @@
                 // Check for signout or download
                 if (url.pathname.includes('signout.php') || url.pathname.includes('download.php')) {
                     return;
+                }
+
+                // Normalize right_main.php to webmail.php in SPA router
+                if (url.pathname.endsWith('/right_main.php')) {
+                    url.pathname = url.pathname.replace(/\/right_main\.php$/, '/webmail.php');
+                }
+
+                // Clean out archaic/broken PG_SHOWALL parameter
+                if (url.searchParams.has('PG_SHOWALL')) {
+                    url.searchParams.delete('PG_SHOWALL');
                 }
 
                 e.preventDefault();
@@ -411,7 +433,20 @@
                 const form = e.target;
                 if (!form || form.getAttribute('target') === '_blank') return;
 
-                const action = (e.submitter && e.submitter.formAction) || form.action || window.location.href;
+                let action = (e.submitter && e.submitter.formAction) || form.getAttribute('action') || form.action || window.location.href;
+                // If relative action, resolve against base + 'src/'
+                if (action && !/^https?:\/\/|^\/\//i.test(action)) {
+                    if (action.startsWith('/')) {
+                        action = window.location.origin + action;
+                    } else if (action.startsWith('../')) {
+                        action = window.location.origin + this.getBaseUri() + action.replace(/^\.\.\//, '');
+                    } else if (action.startsWith('src/') || action.startsWith('plugins/')) {
+                        action = window.location.origin + this.getBaseUri() + action;
+                    } else {
+                        action = window.location.origin + this.getBaseUri() + 'src/' + action;
+                    }
+                }
+
                 // Do not intercept auth, redirect, signout, install, or forms outside the SPA shell
                 if (form.id === 'login_form' || 
                     form.name === 'login_form' || 
@@ -669,13 +704,16 @@
         // Message List Check-All & Row Highlighting
         // -------------------------------------------------------------------------
         setupMessageListHelpers(container) {
-            const checkAll = container.querySelector('#checkall, input[name="checkall"]');
+            const checkAll = container.querySelector('#checkall, input[name="checkall"], #toggleAll');
             if (checkAll) {
                 checkAll.addEventListener('change', () => {
                     container.querySelectorAll('input[type="checkbox"][name^="msg["]').forEach(cb => {
                         cb.checked = checkAll.checked;
                         const row = cb.closest('tr');
-                        if (row) row.classList.toggle('selected', cb.checked);
+                        if (row) {
+                            row.classList.toggle('selected', cb.checked);
+                            row.classList.toggle('clicked', cb.checked);
+                        }
                     });
                 });
             }
@@ -683,8 +721,17 @@
             container.querySelectorAll('input[type="checkbox"][name^="msg["]').forEach(cb => {
                 cb.addEventListener('change', () => {
                     const row = cb.closest('tr');
-                    if (row) row.classList.toggle('selected', cb.checked);
+                    if (row) {
+                        row.classList.toggle('selected', cb.checked);
+                        row.classList.toggle('clicked', cb.checked);
+                    }
                 });
+            });
+
+            // Native mouseenter / mouseleave eliminates any browser mouseout boundary glitches
+            container.querySelectorAll('.table_messageList tr.sm-message-row, .table_messageList tr.even, .table_messageList tr.odd, tr.sm-message-row').forEach(row => {
+                row.addEventListener('mouseenter', () => row.classList.add('mouse_over'));
+                row.addEventListener('mouseleave', () => row.classList.remove('mouse_over'));
             });
         },
 
@@ -719,21 +766,34 @@
         },
 
         updateSidebarActiveFolder(url) {
-            const parsed = new URL(url, window.location.origin);
-            const mailbox = parsed.searchParams.get('mailbox');
-            if (!mailbox) return;
-
-            document.querySelectorAll('#sm-sidebar .sm-folder-link').forEach(link => {
-                const linkHref = link.getAttribute('href') || '';
-                const linkUrl = new URL(link.href, window.location.origin);
-                const linkBox = linkUrl.searchParams.get('mailbox');
-
-                if (linkBox && linkBox.toLowerCase() === mailbox.toLowerCase()) {
-                    link.classList.add('active');
-                } else {
-                    link.classList.remove('active');
+            try {
+                const parsed = new URL(url, window.location.origin);
+                let mailbox = parsed.searchParams.get('mailbox');
+                if (!mailbox) {
+                    const rf = parsed.searchParams.get('right_frame');
+                    if (rf && rf.includes('mailbox=')) {
+                        const rfParams = new URLSearchParams(rf.includes('?') ? rf.split('?')[1] : rf);
+                        mailbox = rfParams.get('mailbox');
+                    }
                 }
-            });
+                if (!mailbox) return;
+
+                const targetMb = decodeURIComponent(mailbox).trim().toLowerCase();
+
+                document.querySelectorAll('#sm-sidebar a').forEach(link => {
+                    const linkHref = link.getAttribute('href') || '';
+                    if (!linkHref.includes('mailbox=')) return;
+                    try {
+                        const linkUrl = new URL(link.href, window.location.origin);
+                        const linkBox = linkUrl.searchParams.get('mailbox');
+                        if (linkBox && decodeURIComponent(linkBox).trim().toLowerCase() === targetMb) {
+                            link.classList.add('active');
+                        } else {
+                            link.classList.remove('active');
+                        }
+                    } catch(e) {}
+                });
+            } catch(err) {}
         }
     };
 
