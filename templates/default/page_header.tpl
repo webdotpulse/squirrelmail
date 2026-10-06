@@ -54,7 +54,7 @@ $help_str = $help_link_default;
 $compose_link = makeComposeLink('src/compose.php?mailbox=' . $urlMailbox
                                 . '&amp;startMessage=' . $startMessage,
                                 $compose_str, '', $accesskey_menubar_compose);
-$signout_link = makeInternalLink('src/signout.php', $signout_str, $frame_top,
+$signout_link = makeInternalLink('src/signout.php', $signout_str, '',
                                  $accesskey_menubar_signout);
 $address_link = makeInternalLink('src/addressbook.php', $address_str, '',
                                  $accesskey_menubar_addresses);
@@ -72,27 +72,26 @@ $help_link    = makeInternalLink('src/help.php', $help_str, '',
 <div id="page_header">
 <a name="pagetop"></a>
 <?php if (!empty($plugin_output['page_header_top'])) echo $plugin_output['page_header_top']; ?>
-<!-- Begin Header Navigation Table -->
-<table class="table_empty" cellspacing="0">
- <tr>
-  <td class="sqm_currentFolder">
+<nav class="sqm_page_header_nav" aria-label="Quick Navigation">
+ <div class="sqm_header_row">
+  <div class="sqm_currentFolder">
    <?php echo $current_folder_str; ?>
-  </td>
-  <td class="sqm_headerSignout">
+  </div>
+  <div class="sqm_headerSignout">
    <?php echo $signout_link; ?>
-  </td>
- </tr>
- <tr>
-  <td class="sqm_topNavigation">
-   <?php echo $compose_link; ?>&nbsp;&nbsp;
-   <?php echo $address_link; ?>&nbsp;&nbsp;
-   <?php echo $folders_link; ?>&nbsp;&nbsp;
-   <?php echo $options_link; ?>&nbsp;&nbsp;
-   <?php echo $search_link; ?>&nbsp;&nbsp;
-   <?php echo $help_link; ?>&nbsp;&nbsp;
+  </div>
+ </div>
+ <div class="sqm_header_actions">
+  <div class="sqm_topNavigation">
+   <?php echo $compose_link; ?>
+   <?php echo $address_link; ?>
+   <?php echo $folders_link; ?>
+   <?php echo $options_link; ?>
+   <?php echo $search_link; ?>
+   <?php echo $help_link; ?>
    <?php if (!empty($plugin_output['menuline'])) echo $plugin_output['menuline']; ?>
-  </td>
-  <td class="sqm_providerInfo">
+  </div>
+  <div class="sqm_providerInfo">
    <?php 
        if (!empty($plugin_output['provider_link_before']))
            echo $plugin_output['provider_link_before'];
@@ -101,9 +100,8 @@ $help_link    = makeInternalLink('src/help.php', $help_str, '',
        if (!empty($plugin_output['provider_link_after']))
            echo $plugin_output['provider_link_after'];
    ?>
-  </td>
- </tr>
-</table>
+  </div>
+ </div>
+</nav>
 </div>
-<br />
-<!-- End Header Navigation Table -->
+

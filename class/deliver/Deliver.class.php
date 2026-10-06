@@ -26,6 +26,7 @@
  * @author  Marc Groot Koerkamp
  * @package squirrelmail
  */
+#[\AllowDynamicProperties]
 class Deliver {
 
     /**

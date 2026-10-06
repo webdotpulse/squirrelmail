@@ -32,6 +32,7 @@
  *       "AddressBook" class instead.
  * @package squirrelmail
  */
+#[\AllowDynamicProperties]
 class abook_local_file extends addressbook_backend {
     /**
      * Backend type

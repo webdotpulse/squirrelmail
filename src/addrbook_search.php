@@ -81,7 +81,7 @@ $abook = addressbook_init($showerr);
 
 /* Create search form (top frame) */
 if ($show == 'form' && ! isset($listall)) {
-    echo "<form name=\"sform\" target=\"abookres\" action=\"addrbook_search.php\" method=\"post\">\n";
+    echo "<form name=\"sform\" action=\"addrbook_search.php\" method=\"post\">\n";
     
     $oTemplate->assign('compose_addr_pop', true);
     $oTemplate->assign('backends', getBackends());

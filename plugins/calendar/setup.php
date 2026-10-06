@@ -56,7 +56,7 @@ function calendar_read_body_header_right(&$links)
     }
 
     $url = SM_PATH . 'plugins/calendar/calendar.php?action=new&title=' . $subject;
-    $link = '<a href="' . $url . '" class="btn btn-secondary" target="right" '
+    $link = '<a href="' . $url . '" class="btn btn-secondary" '
           . 'title="' . _("Add this email to your calendar") . '" '
           . 'style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; font-size: 12px; font-weight: 500; border-radius: 4px; text-decoration: none; background: #f8f9fa; color: #1a73e8; border: 1px solid #dadce0;">'
           . '<span>📅</span> <span>' . _("Add to Calendar") . '</span>'

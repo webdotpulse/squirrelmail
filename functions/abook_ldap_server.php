@@ -76,6 +76,7 @@
  * @package squirrelmail
  * @subpackage addressbook
  */
+#[\AllowDynamicProperties]
 class abook_ldap_server extends addressbook_backend {
     /**
      * @var string backend type

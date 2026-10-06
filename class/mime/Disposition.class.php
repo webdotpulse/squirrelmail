@@ -20,6 +20,7 @@
  * @subpackage mime
  * @since 1.3.0
  */
+#[\AllowDynamicProperties]
 class Disposition {
     var $name;
     var $properties;

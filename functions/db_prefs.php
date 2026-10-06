@@ -129,6 +129,7 @@ function cachePrefValues($username) {
  * @since 1.1.3
  *
  */
+#[\AllowDynamicProperties]
 class dbPrefs {
     /**
      * Table used to store preferences

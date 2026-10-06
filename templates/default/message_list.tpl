@@ -119,70 +119,31 @@ if ($pageOffset < $end_msg) {
 <div id="message_list">
 <form id="<?php echo $form_name;?>" name="<?php echo $form_name;?>" method="post" action="<?php echo $php_self;?>">
 <input type="hidden" name="smtoken" value="<?php echo sm_generate_security_token(); ?>" />
-<table class="table_empty" cellspacing="0">
-  <tr>
-   <td>
-    <table class="table_standard" cellspacing="0">
-      <tr>
-        <td>
-          <table class="table_empty" cellspacing="0">
-            <tr>
-              <td class="links_paginator">
+<div class="sm-message-list-header-bar" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
+  <div class="links_paginator" style="display: flex; align-items: center; gap: 8px;">
 <!-- paginator and thread link string -->
-                  <?php
-                     /**
-                       * The following line gets the output from a separate 
-                       * template altogether (called "paginator.tpl").
-                       * $this is the Template class object.
-                       */
-                      $paginator_str = $this->fetch('paginator.tpl');
-                      echo $paginator_str . '<small>[<a href="' . $thread_link_uri
-                                          . ($accesskey_mailbox_thread != 'NONE'
-                                          ? '" accesskey="' . $accesskey_mailbox_thread . '">'
-                                          : '">')
-                                          . $thread_name . '</a>]</small>&nbsp;&nbsp;';
-                      if (!empty($plugin_output['mailbox_paginator_after'])) echo $plugin_output['mailbox_paginator_after'];
-                  ?>
+      <?php
+          $paginator_str = $this->fetch('paginator.tpl');
+          echo $paginator_str . '<small>[<a href="' . $thread_link_uri
+                              . ($accesskey_mailbox_thread != 'NONE'
+                              ? '" accesskey="' . $accesskey_mailbox_thread . '">'
+                              : '">')
+                              . $thread_name . '</a>]</small>&nbsp;&nbsp;';
+          if (!empty($plugin_output['mailbox_paginator_after'])) echo $plugin_output['mailbox_paginator_after'];
+      ?>
 <!-- end paginator and thread link string -->
-              </td>
-<!-- message count string -->
-              <td class="message_count"><?php echo $msg_cnt_str; ?></td>
-<!-- end message count string -->
-            </tr>
-          </table>
-        </td>
-      </tr>
+  </div>
+  <div class="message_count"><?php echo $msg_cnt_str; ?></div>
+</div>
 <?php
     if (count($aFormElements)) {
+        $message_list_controls = $this->fetch('message_list_controls.tpl');
+        echo $message_list_controls . "\n";
+    }
+    if (!empty($plugin_output['mailbox_form_before'])) echo $plugin_output['mailbox_form_before'];
 ?>
-<!-- start message list form control -->
-      <tr class="message_list_controls">
-        <td>
-                  <?php
-                     /**
-                       * The following line gets the output from a separate
-                       * template altogether (called "message_list_controls.tpl").
-                       * $this is the Template class object.
-                       */
-                      $message_list_controls = $this->fetch('message_list_controls.tpl');
-                      echo $message_list_controls ."\n"; ?>
-        </td>
-      </tr>
-<!-- end message list form control -->
-<?php
-    } // if (count($aFormElements))
-?>
-    </table>
-<?php if (!empty($plugin_output['mailbox_form_before'])) echo $plugin_output['mailbox_form_before']; ?>
-    </td>
-  </tr>
-  <tr><td class="spacer"></td></tr>
-  <tr>
-    <td>
-      <table class="table_messageListWrapper" cellspacing="0">
-        <tr>
-          <td>
-            <table class="table_messageList" cellspacing="0">
+<div class="table_messageListWrapper" style="overflow-x: auto; width: 100%;">
+  <table class="table_messageList" cellspacing="0">
 <!-- table header start -->
 <?php
 /*
@@ -565,44 +526,25 @@ if ($non_clicked_class != 'even' && $non_clicked_class != 'odd'
 
 ?>
 <!-- Message headers end -->
-                </table>
-              </td>
-            </tr>
-          </table>
-        </td>
-      </tr>
-      <tr><td class="spacer"></td></tr>
-      <tr>
-        <td>
-          <table class="table_standard" cellspacing="0">
-            <tr>
-              <td>
-                <table class="table_empty" cellspacing="0">
-                  <tr>
-                    <td class="links_paginator"><?php 
-                     /**
-                       * The following line gets the output from a separate 
-                       * template altogether (called "paginator.tpl").
-                       * $this is the Template class object.
-                       */
-                      $paginator_str = $this->fetch('paginator.tpl');
-                      echo $paginator_str; 
-                      if (!empty($plugin_output['mailbox_paginator_after'])) echo $plugin_output['mailbox_paginator_after'];
-                    ?></td>
-                    <td class="message_count"><?php echo $msg_cnt_str; ?></td>
-                  </tr>
-                </table>
-              </td>
-            </tr>
-          </table>
-        </td>
-      </tr>
-      <tr>
-        <td align="right">
-<?php if (!empty($plugin_output['mailbox_index_after'])) echo $plugin_output['mailbox_index_after']; ?>
-        </td>
-      </tr>
-    </table>
+  </table>
+</div>
+
+<div class="sm-message-list-footer-bar" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 12px;">
+  <div class="links_paginator">
+    <?php
+      $paginator_str = $this->fetch('paginator.tpl');
+      echo $paginator_str; 
+      if (!empty($plugin_output['mailbox_paginator_after'])) echo $plugin_output['mailbox_paginator_after'];
+    ?>
+  </div>
+  <div class="message_count"><?php echo $msg_cnt_str; ?></div>
+</div>
+
+<?php if (!empty($plugin_output['mailbox_index_after'])): ?>
+<div style="text-align: right; margin-top: 8px;">
+  <?php echo $plugin_output['mailbox_index_after']; ?>
+</div>
+<?php endif; ?>
 </form>
 </div>
 

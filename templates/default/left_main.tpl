@@ -122,7 +122,7 @@ function buildMailboxTree ($box, $settings, $icon_theme_path, $indent_factor=0) 
     if (sizeof($box['ChildBoxes'])>0 && $settings['collapsableFoldersEnabled'])    {
         $link = $indent .
                 '<a href="'.$box['CollapseLink']['URL'].'" ' .
-                'target="'.$box['CollapseLink']['Target'].'" ' .
+                (!empty($box['CollapseLink']['Target']) ? 'target="'.$box['CollapseLink']['Target'].'" ' : '') .
                 'style="text-decoration:none" ' .
                 '>' .
                 $box['CollapseLink']['Icon'] .
@@ -177,7 +177,7 @@ function buildMailboxTree ($box, $settings, $icon_theme_path, $indent_factor=0) 
      */
     $view_link = '<a href="'.$box['ViewLink']['URL'].'" ' .
                  ($accesskey == '' ? '' : 'accesskey="' . $accesskey . '" ') .
-                 'target="'.$box['ViewLink']['Target'].'" ' .
+                 (!empty($box['ViewLink']['Target']) ? 'target="'.$box['ViewLink']['Target'].'" ' : '') .
                  'title="'.$box['MailboxName'].'" ' .
                  'style="text-decoration:none">';
 
@@ -263,22 +263,15 @@ extract($t);
 <body class="sqm_leftMain">
 <div class="sqm_leftMain">
 <?php if (!empty($plugin_output['left_main_before'])) echo $plugin_output['left_main_before']; ?>
-<table class="sqm_wrapperTable" cellspacing="0">
- <tr>
-  <td>
-   <table cellspacing="0">
-    <tr>
-     <td style="text-align:center">
-      <span class="sqm_folderHeader"><?php echo _("Folders"); ?></span><br />
-      <span class="sqm_clock"><?php echo $clock; ?></span>
-      <span class="sqm_refreshButton"><small>[<a href="../src/left_main.php" <?php if ($accesskey_folders_refresh != 'NONE') echo 'accesskey="' . $accesskey_folders_refresh . '" '; ?>target="left"><?php echo _("Check Mail"); ?></a>]</small></span>
-     </td>
-    </tr>
-   </table>
-   <br />
-   <?php echo buildMailboxTree($mailboxes, $settings, $icon_theme_path); ?>
-  </td>
- </tr>
-</table>
+<div class="sm-sidebar-folders-wrapper">
+ <div class="sm-sidebar-folders-header">
+  <span class="sqm_folderHeader"><?php echo _("Folders"); ?></span>
+  <span class="sqm_clock"><?php echo $clock; ?></span>
+  <span class="sqm_refreshButton"><small>[<a href="../src/left_main.php" <?php if ($accesskey_folders_refresh != 'NONE') echo 'accesskey="' . $accesskey_folders_refresh . '" '; ?>class="sm-folder-refresh-btn"><?php echo _("Check Mail"); ?></a>]</small></span>
+ </div>
+ <div class="sm-sidebar-tree-container">
+  <?php echo buildMailboxTree($mailboxes, $settings, $icon_theme_path); ?>
+ </div>
+</div>
 <?php if (!empty($plugin_output['left_main_after'])) echo $plugin_output['left_main_after']; ?>
 </div>

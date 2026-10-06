@@ -57,7 +57,7 @@ extract ($t);
     </tr>
     <tr>
      <td class="error_header">
-      <?php echo '<a href="'.$login_link['URI'].'" target="'.$login_link['FRAME'].'">'. _("Go to the login page") .'</a>'; ?>
+      <?php echo '<a href="'.$login_link['URI'].'"' . (!empty($login_link['FRAME']) ? ' target="'.$login_link['FRAME'].'"' : '') . '>'. _("Go to the login page") .'</a>'; ?>
      </td>
     </tr>
    </table>

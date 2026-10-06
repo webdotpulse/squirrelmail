@@ -19,6 +19,7 @@
  * Don't use it unless it is marked as implemented.
  * @package squirrelmail
  */
+#[\AllowDynamicProperties]
 class VCard {
     /**
      * Create vcard from information stored in array

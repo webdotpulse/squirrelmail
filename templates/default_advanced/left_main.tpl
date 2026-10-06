@@ -291,7 +291,7 @@ extract($t);
      <td style="text-align:center">
       <span class="sqm_folderHeader"><?php echo _("Folders"); ?></span><br />
       <span class="sqm_clock"><?php echo $clock; ?></span>
-      <span class="sqm_refreshButton"><small>[<a href="../src/left_main.php" <?php if ($accesskey_folders_refresh != 'NONE') echo 'accesskey="' . $accesskey_folders_refresh . '" '; ?>target="left"><?php echo _("Check Mail"); ?></a>]</small></span>
+      <span class="sqm_refreshButton"><small>[<a href="../src/left_main.php" <?php if ($accesskey_folders_refresh != 'NONE') echo 'accesskey="' . $accesskey_folders_refresh . '" '; ?>><?php echo _("Check Mail"); ?></a>]</small></span>
      </td>
     </tr>
    </table>

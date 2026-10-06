@@ -123,13 +123,43 @@ if (empty($right_frame_url)) {
     }
 }
 
+$GLOBALS['in_webmail_shell'] = true;
+
+// Pre-render the sidebar
+ob_start();
+include(SM_PATH . 'src/left_main.php');
+$sidebar_content = ob_get_clean();
+
+// Pre-render initial workspace view
+if (!empty($right_frame) && strpos($right_frame, '?') !== false) {
+    parse_str(parse_url($right_frame, PHP_URL_QUERY), $query_params);
+    if (!empty($query_params)) {
+        foreach ($query_params as $qk => $qv) {
+            $_GET[$qk] = $qv;
+            ${$qk} = $qv;
+        }
+    }
+}
+
+ob_start();
+$target_script = !empty($right_frame_file) ? basename($right_frame_file) : 'right_main.php';
+if ($target_script != 'webmail.php' && file_exists(SM_PATH . 'src/' . $target_script)) {
+    include(SM_PATH . 'src/' . $target_script);
+} else {
+    include(SM_PATH . 'src/right_main.php');
+}
+$workspace_content = ob_get_clean();
+
+$GLOBALS['in_webmail_shell'] = false;
+
 $oErrorHandler->setDelayedErrors(true);
 
-$oTemplate->assign('nav_size', $left_size);
-$oTemplate->assign('nav_on_left', $location_of_bar=='left');
+$oTemplate->assign('sidebar_content', $sidebar_content);
+$oTemplate->assign('workspace_content', $workspace_content);
+$oTemplate->assign('mailbox', $mailbox);
 $oTemplate->assign('right_frame_url', $right_frame_url);
 
-displayHtmlHeader($org_title, '', false, true);
+displayHtmlHeader($org_title, '', false, false);
 
 $oTemplate->display('webmail.tpl');
 

@@ -98,6 +98,7 @@ if (!$use_pdo)
  * @package squirrelmail
  * @subpackage addressbook
  */
+#[\AllowDynamicProperties]
 class abook_database extends addressbook_backend {
     /**
      * Backend type

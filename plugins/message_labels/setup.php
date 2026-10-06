@@ -55,7 +55,7 @@ function ml_left_main()
     $html = '<div style="margin-top: 16px; padding: 0 10px; font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, sans-serif;">'
           . '<div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #5f6368; letter-spacing: 0.8px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between;">'
           . '<span>🏷️ ' . _("Labels") . '</span>'
-          . '<a href="../plugins/message_labels/options.php" target="right" style="color: #1a73e8; text-decoration: none; font-size: 14px;" title="' . _("Manage Labels") . '">+</a>'
+          . '<a href="../plugins/message_labels/options.php" style="color: #1a73e8; text-decoration: none; font-size: 14px;" title="' . _("Manage Labels") . '">+</a>'
           . '</div>'
           . '<div style="display: flex; flex-direction: column; gap: 2px;">';
 
@@ -64,7 +64,7 @@ function ml_left_main()
         $color = $lDef['color'];
         $url = '../src/right_main.php?mailbox=INBOX&label_filter=' . urlencode($lid);
 
-        $html .= '<a href="' . $url . '" target="right" style="display: flex; align-items: center; justify-content: space-between; padding: 5px 8px; border-radius: 6px; text-decoration: none; font-size: 13px; color: #3c4043; transition: background 0.15s;" onmouseover="this.style.background=\'#f1f3f4\'" onmouseout="this.style.background=\'transparent\'">'
+        $html .= '<a href="' . $url . '" style="display: flex; align-items: center; justify-content: space-between; padding: 5px 8px; border-radius: 6px; text-decoration: none; font-size: 13px; color: #3c4043; transition: background 0.15s;" onmouseover="this.style.background=\'#f1f3f4\'" onmouseout="this.style.background=\'transparent\'">'
                . '<div style="display: flex; align-items: center; gap: 8px;">'
                . '<span style="width: 10px; height: 10px; border-radius: 50%; background: ' . htmlspecialchars($color) . '; display: inline-block;"></span>'
                . '<span>' . htmlspecialchars($lDef['name']) . '</span>'

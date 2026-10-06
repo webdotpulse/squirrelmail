@@ -22,6 +22,7 @@ require_once(SM_PATH . 'class/deliver/Deliver.class.php');
  * Delivers messages using the sendmail binary
  * @package squirrelmail
  */
+#[\AllowDynamicProperties]
 class Deliver_SendMail extends Deliver {
     /**
      * Extra sendmail arguments

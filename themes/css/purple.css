@@ -1,0 +1,23 @@
+/**
+ * Modern Royal Violet Theme
+ */
+:root {
+  --sm-bg-canvas: #faf5ff;
+  --sm-bg-surface: #ffffff;
+  --sm-bg-sidebar: #faf5ff;
+  --sm-bg-card: #ffffff;
+  --sm-border: #e9d5ff;
+  --sm-border-light: #f3e8ff;
+  --sm-border-hover: #d8b4fe;
+  --sm-text-primary: #3b0764;
+  --sm-text-secondary: #6b21a8;
+  --sm-text-muted: #a855f7;
+  --sm-primary: #7e22ce;
+  --sm-primary-hover: #6b21a8;
+  --sm-primary-light: #f3e8ff;
+  --sm-primary-border: #c084fc;
+  --sm-accent: #9333ea;
+  --sm-hover-bg: #f3e8ff;
+  --sm-unread-bg: #f3e8ff;
+  --sm-selected-bg: #e9d5ff;
+}

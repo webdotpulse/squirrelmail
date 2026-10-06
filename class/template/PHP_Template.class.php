@@ -27,6 +27,7 @@
   * @package squirrelmail
   *
   */
+#[\AllowDynamicProperties]
 class PHP_Template extends Template
 {
 

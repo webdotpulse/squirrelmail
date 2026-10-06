@@ -24,6 +24,7 @@
  * @subpackage mime
  * @since 1.3.0
  */
+#[\AllowDynamicProperties]
 class Message {
     var $header;
     /**

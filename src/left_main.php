@@ -12,8 +12,9 @@
  * @package squirrelmail
  */
 
-/** This is the left_main page */
-define('PAGE_NAME', 'left_main');
+if (!defined('PAGE_NAME')) {
+    define('PAGE_NAME', 'left_main');
+}
 
 /**
  * Include the SquirrelMail initialization file.
@@ -106,6 +107,11 @@ if ($auto_create_special && !isset($auto_create_done)) {
     // reload mailbox list
     if ($folders_created)
         $mailboxes=sqimap_get_mailboxes($imapConnection,true,$show_only_subscribed_folders);
+}
+
+// Release session lock early for asynchronous folder polling
+if (function_exists('sqm_is_ajax') && sqm_is_ajax()) {
+    session_write_close();
 }
 
 $clock = '';

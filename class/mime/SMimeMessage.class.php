@@ -20,6 +20,7 @@
  * @subpackage mime
  * @todo implement smime parsing
  */
+#[\AllowDynamicProperties]
 class SMimeMessage {
 
 }

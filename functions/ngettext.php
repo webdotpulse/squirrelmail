@@ -26,13 +26,15 @@
  * @param integer $number number that shows used quantity
  * @return string translated string
  */
-function ngettext($single, $plural, $number) {
-    global $l10n, $gettext_domain;
-    if (! isset($l10n[$gettext_domain]) ||
-        ! is_object($l10n[$gettext_domain]) ||
-        $l10n[$gettext_domain]->error==1)
-        return ($number==1 ? $single : $plural);
-    return $l10n[$gettext_domain]->ngettext($single, $plural, $number);
+if (!function_exists('ngettext')) {
+    function ngettext($single, $plural, $number) {
+        global $l10n, $gettext_domain;
+        if (! isset($l10n[$gettext_domain]) ||
+            ! is_object($l10n[$gettext_domain]) ||
+            $l10n[$gettext_domain]->error==1)
+            return ($number==1 ? $single : $plural);
+        return $l10n[$gettext_domain]->ngettext($single, $plural, $number);
+    }
 }
 
 /**

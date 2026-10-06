@@ -23,6 +23,7 @@
  * @subpackage mime
  * @since 1.3.0
  */
+#[\AllowDynamicProperties]
 class Rfc822Header {
     /**
      * All headers, unparsed

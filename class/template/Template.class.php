@@ -41,6 +41,7 @@ require(SM_PATH . 'functions/template/general_util.php');
   * @package squirrelmail
   *
   */
+#[\AllowDynamicProperties]
 class Template
 {
 

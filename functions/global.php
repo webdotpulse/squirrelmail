@@ -962,4 +962,45 @@ function get_process_owner_info()
     return $process_info;
 }
 
+/**
+ * Detect if the current request is an asynchronous AJAX / fetch request
+ *
+ * @return bool
+ */
+function sqm_is_ajax()
+{
+    if (isset($_SERVER['HTTP_X_REQUESTED_WITH'])
+        && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+        return TRUE;
+    }
+    if (sqgetGlobalVar('ajax', $ajax, SQ_GET) && $ajax == '1') {
+        return TRUE;
+    }
+    if (sqgetGlobalVar('ajax', $ajax, SQ_POST) && $ajax == '1') {
+        return TRUE;
+    }
+    return FALSE;
+}
+
+/**
+ * Handle HTTP redirects gracefully for both full-page and AJAX requests.
+ *
+ * @param string $url Target redirect URL
+ * @return void
+ */
+function sqm_redirect($url)
+{
+    if (sqm_is_ajax()) {
+        header('X-Redirect-Location: ' . $url);
+        header('HX-Redirect: ' . $url);
+        header('HX-Location: ' . $url);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(array('redirect' => $url));
+        exit;
+    }
+    header('Location: ' . $url);
+    exit;
+}
+
+
 

@@ -30,13 +30,15 @@ include_once(SM_PATH . 'functions/ngettext.php');
  * @return string translated string
  * @since 1.1.2
  */
-function _($str) {
-    global $l10n, $gettext_domain;
-    if (! isset($l10n[$gettext_domain]) ||
-        ! is_object($l10n[$gettext_domain]) ||
-        $l10n[$gettext_domain]->error==1)
-        return $str;
-    return $l10n[$gettext_domain]->translate($str);
+if (!function_exists('_')) {
+    function _($str) {
+        global $l10n, $gettext_domain;
+        if (! isset($l10n[$gettext_domain]) ||
+            ! is_object($l10n[$gettext_domain]) ||
+            $l10n[$gettext_domain]->error==1)
+            return $str;
+        return $l10n[$gettext_domain]->translate($str);
+    }
 }
 
 /**
@@ -50,15 +52,17 @@ function _($str) {
  * @return string path to translation directory
  * @since 1.1.2
  */
-function bindtextdomain($domain, $dir) {
-    global $l10n, $sm_notAlias;
-    if (substr($dir, -1) != '/') $dir .= '/';
-    $mofile=$dir . $sm_notAlias . '/LC_MESSAGES/' . $domain . '.mo';
+if (!function_exists('bindtextdomain')) {
+    function bindtextdomain($domain, $dir) {
+        global $l10n, $sm_notAlias;
+        if (substr($dir, -1) != '/') $dir .= '/';
+        $mofile=$dir . $sm_notAlias . '/LC_MESSAGES/' . $domain . '.mo';
 
-    $input = new FileReader($mofile);
-    $l10n[$domain] = new gettext_reader($input);
+        $input = new FileReader($mofile);
+        $l10n[$domain] = new gettext_reader($input);
 
-    return $dir;
+        return $dir;
+    }
 }
 
 /**
@@ -72,10 +76,12 @@ function bindtextdomain($domain, $dir) {
  * @return string gettext domain name
  * @since 1.1.2
  */
-function textdomain($name = false) {
-    global $gettext_domain;
-    if ($name) $gettext_domain=$name;
-    return $gettext_domain;
+if (!function_exists('textdomain')) {
+    function textdomain($name = false) {
+        global $gettext_domain;
+        if ($name) $gettext_domain=$name;
+        return $gettext_domain;
+    }
 }
 
 /**

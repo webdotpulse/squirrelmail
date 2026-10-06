@@ -1,0 +1,23 @@
+/**
+ * Modern Warm Amber Theme
+ */
+:root {
+  --sm-bg-canvas: #fffbeb;
+  --sm-bg-surface: #ffffff;
+  --sm-bg-sidebar: #fffbeb;
+  --sm-bg-card: #ffffff;
+  --sm-border: #fde68a;
+  --sm-border-light: #fef3c7;
+  --sm-border-hover: #fcd34d;
+  --sm-text-primary: #78350f;
+  --sm-text-secondary: #92400e;
+  --sm-text-muted: #d97706;
+  --sm-primary: #d97706;
+  --sm-primary-hover: #b45309;
+  --sm-primary-light: #fef3c7;
+  --sm-primary-border: #fcd34d;
+  --sm-accent: #f59e0b;
+  --sm-hover-bg: #fef3c7;
+  --sm-unread-bg: #fef3c7;
+  --sm-selected-bg: #fde68a;
+}

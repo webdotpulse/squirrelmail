@@ -78,6 +78,21 @@ function load_optpage_data_display() {
     // Always provide the template default first.
     $theme_values['none'] = 'Template Default Theme';
 
+    // Modern CSS Themes from themes/css/
+    $css_theme_files = glob(SM_PATH . 'themes/css/*.css');
+    if ($css_theme_files) {
+        foreach ($css_theme_files as $filepath) {
+            $filename = basename($filepath);
+            // Skip font-size helper stylesheets
+            if (preg_match('/^(comic-sans|sans|serif|tahoma|verdana)-\d+\.css$/', $filename)) {
+                continue;
+            }
+            $theme_id = substr($filename, 0, strrpos($filename, '.'));
+            $name = ucwords(str_replace('_', ' ', $theme_id));
+            $theme_values['themes/css/' . $filename] = sm_encode_html_special_chars($name) . ' (CSS)';
+        }
+    }
+
     // List alternate themes provided by templates first
     $template_themes = $oTemplate->get_alternative_stylesheets(true);
     asort($template_themes);
@@ -92,7 +107,7 @@ function load_optpage_data_display() {
         $theme_values[$style['PATH']] = 'User Theme - '.sm_encode_html_special_chars($style['NAME']);
     }
 
-    if (count($user_themes) + count($template_themes) > 1) {
+    if (count($theme_values) > 1) {
         $optvals[SMOPT_GRP_GENERAL][] = array(
             'name'    => 'chosen_theme',
             'caption' => _("Theme"),
@@ -361,16 +376,6 @@ FIXME!
         'refresh' => SMOPT_REFRESH_NONE
     );
 
-    if ($use_iframe) {
-        // Type is set to string in order to be able to use 100%.
-        $optvals[SMOPT_GRP_MESSAGE][] = array(
-            'name'    => 'iframe_height',
-            'caption' => _("Height of inline frame"),
-            'type'    => SMOPT_TYPE_STRING,
-            'size'    => SMOPT_SIZE_TINY,
-            'refresh' => SMOPT_REFRESH_NONE
-        );
-    }
     $optvals[SMOPT_GRP_MESSAGE][] = array(
         'name'    => 'enable_forward_as_attachment',
         'caption' => _("Enable Forward as Attachment"),

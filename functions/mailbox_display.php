@@ -704,7 +704,7 @@ function prepareMessageList(&$aMailbox, $aProps) {
  * @author Marc Groot Koerkamp
  */
 function highlightMessage($sCol, $sVal, $highlight_list, &$aFormat) {
-    if (!is_array($highlight_list) && count($highlight_list) == 0) {
+    if (empty($highlight_list) || !is_array($highlight_list)) {
         return false;
     }
     $hlt_color = false;

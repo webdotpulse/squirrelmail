@@ -48,7 +48,7 @@ extract($t);
             ?>
     <tr>
      <td class="error_header">
-      <a href="<?php echo $link['URL']; ?>" target="<?php echo $link['FRAME']; ?>"><?php echo $link['TEXT']; ?></a>
+      <a href="<?php echo $link['URL']; ?>"><?php echo $link['TEXT']; ?></a>
      </td>
     </tr>
             

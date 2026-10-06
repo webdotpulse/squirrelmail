@@ -147,7 +147,7 @@ function multi_account_left_main_do()
     </style>
 
     <div class="sqm-multi-account-container" id="sqm-multi-account-widget">
-        <a href="<?php echo htmlspecialchars($inboxUrl); ?>" target="right" class="sqm-multi-unified-header" title="<?php echo _("Open Unified Inbox with all accounts"); ?>">
+        <a href="<?php echo htmlspecialchars($inboxUrl); ?>" class="sqm-multi-unified-header" title="<?php echo _("Open Unified Inbox with all accounts"); ?>">
             <span class="sqm-unified-title">
                 <span>📬</span> <?php echo _("Unified Inbox"); ?>
             </span>
@@ -160,7 +160,7 @@ function multi_account_left_main_do()
             <ul class="sqm-accounts-tree">
                 <!-- Primary Account Item -->
                 <li class="sqm-account-item">
-                    <a href="<?php echo htmlspecialchars($inboxUrl . '?account=primary'); ?>" target="right" class="sqm-account-link" title="<?php echo htmlspecialchars($username); ?>">
+                    <a href="<?php echo htmlspecialchars($inboxUrl . '?account=primary'); ?>" class="sqm-account-link" title="<?php echo htmlspecialchars($username); ?>">
                         <span class="sqm-acc-info">
                             <span class="sqm-acc-dot" style="background-color: #1a73e8;"></span>
                             <span style="font-weight: 500;"><?php echo _("Primary"); ?></span>
@@ -182,7 +182,7 @@ function multi_account_left_main_do()
                     $accColor = !empty($acc['color']) ? $acc['color'] : '#34a853';
                 ?>
                 <li class="sqm-account-item">
-                    <a href="<?php echo htmlspecialchars($inboxUrl . '?account=' . urlencode($accId)); ?>" target="right" class="sqm-account-link" title="<?php echo htmlspecialchars($acc['name'] . ' (' . $acc['email'] . ')'); ?>">
+                    <a href="<?php echo htmlspecialchars($inboxUrl . '?account=' . urlencode($accId)); ?>" class="sqm-account-link" title="<?php echo htmlspecialchars($acc['name'] . ' (' . $acc['email'] . ')'); ?>">
                         <span class="sqm-acc-info">
                             <span class="sqm-acc-dot" style="background-color: <?php echo htmlspecialchars($accColor); ?>;"></span>
                             <span><?php echo htmlspecialchars($acc['name']); ?></span>
@@ -197,7 +197,7 @@ function multi_account_left_main_do()
         <?php endif; ?>
 
         <div class="sqm-acc-actions">
-            <a href="<?php echo htmlspecialchars($optionsUrl); ?>" target="right" class="sqm-acc-action-link">
+            <a href="<?php echo htmlspecialchars($optionsUrl); ?>" class="sqm-acc-action-link">
                 ⚙️ <?php echo _("Manage Accounts"); ?>
             </a>
             <a href="javascript:void(0);" onclick="sqmRefreshMultiCounts();" class="sqm-acc-action-link" title="<?php echo _("Refresh unread counters"); ?>">

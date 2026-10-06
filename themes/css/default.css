@@ -1,0 +1,23 @@
+/**
+ * Modern Default Theme
+ */
+:root {
+  --sm-bg-canvas: #f8fafc;
+  --sm-bg-surface: #ffffff;
+  --sm-bg-sidebar: #f8fafc;
+  --sm-bg-card: #ffffff;
+  --sm-border: #e2e8f0;
+  --sm-border-light: #f1f5f9;
+  --sm-border-hover: #cbd5e1;
+  --sm-text-primary: #0f172a;
+  --sm-text-secondary: #475569;
+  --sm-text-muted: #94a3b8;
+  --sm-primary: #2563eb;
+  --sm-primary-hover: #1d4ed8;
+  --sm-primary-light: #eff6ff;
+  --sm-primary-border: #bfdbfe;
+  --sm-accent: #3b82f6;
+  --sm-hover-bg: #f1f5f9;
+  --sm-unread-bg: #eff6ff;
+  --sm-selected-bg: #e0e7ff;
+}

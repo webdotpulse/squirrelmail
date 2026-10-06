@@ -305,18 +305,16 @@ if ($optpage == SMOPT_PAGE_MAIN) {
         /* If $max_refresh != SMOPT_REFRESH_NONE, provide a refresh link. */
         if ( !isset( $max_refresh ) ) {
         } else if ($max_refresh == SMOPT_REFRESH_FOLDERLIST) {
-//FIXME: REMOVE HTML FROM CORE - when migrating, keep in mind that the javascript below assumes the folder list is in a separate sibling frame under the same parent, and it is called "left"
             if (checkForJavascript()) {
-                $notice .= sprintf(_("Folder list should automatically %srefresh%s."), '<a href="../src/left_main.php" target="left">', '</a>') . '<br /><script type="text/javascript">' . "\n<!--\nparent.left.location = '../src/left_main.php';\n// -->\n</script>\n";
+                $notice .= _("Folder list updated.") . '<script type="text/javascript">' . "\n<!--\nif (window.sqmApp && window.sqmApp.refreshFolders) { window.sqmApp.refreshFolders(); }\n// -->\n</script>\n";
             } else {
-                $notice .= '<a href="../src/left_main.php" target="left">' . _("Refresh Folder List") . '</a><br />';
+                $notice .= '<a href="../src/webmail.php">' . _("Refresh Folder List") . '</a><br />';
             }
         } else if ($max_refresh) {
             if (checkForJavascript()) {
-//FIXME: REMOVE HTML FROM CORE - when migrating, keep in mind that the javascript below assumes the parent is the top-most SM frame and is what should be refreshed with webmail.php
-                $notice .= sprintf(_("This page should automatically %srefresh%s."), '<a href="../src/webmail.php?right_frame=options.php" target="' . $frame_top . '">', '</a>') . '<br /><script type="text/javascript">' . "\n<!--\nparent.location = '../src/webmail.php?right_frame=options.php';\n// -->\n</script>\n";
+                $notice .= _("Preferences saved successfully.") . '<script type="text/javascript">' . "\n<!--\nif (window.sqmApp && window.sqmApp.refreshFolders) { window.sqmApp.refreshFolders(); }\n// -->\n</script>\n";
             } else {
-                $notice .= '<a href="../src/webmail.php?right_frame=options.php" target="' . $frame_top . '">' . _("Refresh Page") . '</a><br />';
+                $notice .= '<a href="../src/options.php">' . _("Refresh Page") . '</a><br />';
             }
         }
     }

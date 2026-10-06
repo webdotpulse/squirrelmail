@@ -1397,8 +1397,7 @@ if (isset($aMailbox['FORWARD_SESSION'])) {
                   . '&session='.$aMailbox['FORWARD_SESSION']['SESSION_NUMBER']
                   . '&smaction=forward_as_attachment'
                   . '&fwduid=' . implode('_', $aMailbox['FORWARD_SESSION']['UIDS']);
-        header("Location: $location");
-        exit;
+        sqm_redirect($location);
     }
 } else {
     displayPageHeader($color, $mailbox);

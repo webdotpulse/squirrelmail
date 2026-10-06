@@ -168,6 +168,14 @@ function displayHtmlHeader( $title = 'SquirrelMail', $xtra = '', $do_hook = TRUE
     // 5. Printer friendly stylesheet
     $header_tags .= create_css_link($base_uri . 'css/print.css', 'printerfriendly', false, 'print');
 
+    // Modern Application Shell Stylesheet & SPA Scripts
+    $header_tags .= '<link rel="stylesheet" type="text/css" href="' . sqm_baseuri() . 'assets/css/app.css" />' . "\n";
+    if (!empty($chosen_theme) && substr($chosen_theme, -4) === '.css') {
+        $header_tags .= '<link rel="stylesheet" type="text/css" href="' . sqm_baseuri() . $chosen_theme . '" id="sm-custom-theme-css" />' . "\n";
+    }
+    $header_tags .= '<script src="' . sqm_baseuri() . 'assets/js/dompurify.min.js" type="text/javascript"></script>' . "\n";
+    $header_tags .= '<script src="' . sqm_baseuri() . 'assets/js/app.js" type="text/javascript"></script>' . "\n";
+
     if ($squirrelmail_language == 'ja_JP') {
         /*
          * force correct detection of charset, when browser does not follow
@@ -223,15 +231,17 @@ body {
 
 EOS;
 
-    $oTemplate->assign('header_tags', $header_tags);
-    $oTemplate->display('protocol_header.tpl');
-
-    /* this is used to check elsewhere whether we should call this function */
     $pageheader_sent = TRUE;
     if (isset($oErrorHandler)) {
         $oErrorHandler->HeaderSent();
     }
 
+    if ((function_exists('sqm_is_ajax') && sqm_is_ajax()) || !empty($GLOBALS['in_webmail_shell'])) {
+        return;
+    }
+
+    $oTemplate->assign('header_tags', $header_tags);
+    $oTemplate->display('protocol_header.tpl');
 }
 
 /**
@@ -300,33 +310,17 @@ function displayPageHeader($color, $mailbox='', $sHeaderJs='', $sOnload = '') {
 
     sqgetGlobalVar('delimiter', $delimiter, SQ_SESSION );
 
-    if (!isset($frame_top)) {
-        $frame_top = '_top';
+    $frame_top = '';
+
+    if (!sqm_is_ajax() && empty($GLOBALS['in_webmail_shell']) && defined('PAGE_NAME') && PAGE_NAME !== 'webmail' && PAGE_NAME !== 'login' && PAGE_NAME !== 'redirect' && PAGE_NAME !== 'signout' && PAGE_NAME !== 'style' && PAGE_NAME !== 'download' && PAGE_NAME !== 'image') {
+        $view_url = basename($_SERVER['PHP_SELF']);
+        if (!empty($_SERVER['QUERY_STRING'])) {
+            $view_url .= '?' . $_SERVER['QUERY_STRING'];
+        }
+        sqm_redirect(sqm_baseuri() . 'src/webmail.php?right_frame=' . urlencode($view_url));
     }
 
-//FIXME: does checkForJavascript() make the 2nd part of the if() below unneccessary?? (that is, I think checkForJavascript() might already look for new_js_autodetect_results...(?))
-    if( checkForJavascript() || strpos($sHeaderJs, 'new_js_autodetect_results.value') ) {
-        $js_includes = $oTemplate->get_javascript_includes(TRUE);
-        $sJsBlock = '';
-        foreach ($js_includes as $js_file) {
-            $sJsBlock .= '<script src="'.$js_file.'" type="text/javascript"></script>' ."\n";
-        }
-        if ($sHeaderJs) {
-            $sJsBlock .= "\n<script type=\"text/javascript\">" .
-                        "\n<!--\n" .
-                        $sHeaderJs . "\n\n// -->\n</script>\n";
-        }
-        displayHtmlHeader ($org_title, $sJsBlock);
-    } else {
-        /* do not use JavaScript */
-        displayHtmlHeader ($org_title);
-        $sOnload = '';
-    }
     if ($mailbox && strcasecmp($mailbox, 'None') !== 0) {
-        /*
-        * this explains the imap_mailbox.php dependency. We should instead store
-        * the selected mailbox in the session and fallback to the session var.
-        */
         if (!function_exists('imap_utf7_decode_local')) {
             if (file_exists(SM_PATH . 'functions/imap_utf7_local.php')) {
                 require_once(SM_PATH . 'functions/imap_utf7_local.php');
@@ -347,6 +341,32 @@ function displayPageHeader($color, $mailbox='', $sHeaderJs='', $sOnload = '') {
     } else {
         $shortBoxName = '';
         $urlMailbox = '';
+    }
+
+    if ((function_exists('sqm_is_ajax') && sqm_is_ajax()) || !empty($GLOBALS['in_webmail_shell'])) {
+        echo '<div id="sm-active-mailbox-data" style="display:none;" data-mailbox="' . sm_encode_html_special_chars($mailbox) . '" data-shortname="' . $shortBoxName . '"></div>';
+        global $null;
+        do_hook('page_header_bottom', $null);
+        return;
+    }
+
+//FIXME: does checkForJavascript() make the 2nd part of the if() below unneccessary?? (that is, I think checkForJavascript() might already look for new_js_autodetect_results...(?))
+    if( checkForJavascript() || strpos($sHeaderJs, 'new_js_autodetect_results.value') ) {
+        $js_includes = $oTemplate->get_javascript_includes(TRUE);
+        $sJsBlock = '';
+        foreach ($js_includes as $js_file) {
+            $sJsBlock .= '<script src="'.$js_file.'" type="text/javascript"></script>' ."\n";
+        }
+        if ($sHeaderJs) {
+            $sJsBlock .= "\n<script type=\"text/javascript\">" .
+                        "\n<!--\n" .
+                        $sHeaderJs . "\n\n// -->\n</script>\n";
+        }
+        displayHtmlHeader ($org_title, $sJsBlock);
+    } else {
+        /* do not use JavaScript */
+        displayHtmlHeader ($org_title);
+        $sOnload = '';
     }
 
     $provider_link = '';

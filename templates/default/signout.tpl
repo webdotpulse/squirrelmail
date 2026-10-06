@@ -25,7 +25,7 @@ extract($t);
 <?php if (!empty($plugin_output['signout_message'])) echo $plugin_output['signout_message']; ?>
 <tr width="100%"><td>
   <?php echo _("You have been successfully signed out."); ?><br />
-  <a href="<?php echo $login_uri; ?>" target="<?php echo $frame_top; ?>"><?php echo _("Click here to log back in."); ?></a><br />
+  <a href="<?php echo $login_uri; ?>"><?php echo _("Click here to log back in."); ?></a><br />
 </td></tr>
 <tr width="100%"><td class="sqm_signoutBar"><br /></td></tr>
 </table>

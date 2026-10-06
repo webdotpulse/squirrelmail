@@ -37,8 +37,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'delete' && !empty($_GET['id']
     $delId = trim($_GET['id']);
     $mgr->deleteAccount($delId);
     $mgr->syncSquirrelMailIdentities();
-    header('Location: options.php?msg=deleted');
-    exit;
+    sqm_redirect('options.php?msg=deleted');
 }
 
 // Handle Save (Add or Update)
@@ -71,8 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_account'])) {
             'enabled'  => $enabled
         ]);
         $mgr->syncSquirrelMailIdentities();
-        header('Location: options.php?msg=saved');
-        exit;
+        sqm_redirect('options.php?msg=saved');
     }
 }
 

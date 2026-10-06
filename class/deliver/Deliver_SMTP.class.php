@@ -21,6 +21,7 @@ include_once(SM_PATH . 'class/deliver/Deliver.class.php');
  * Deliver messages using SMTP
  * @package squirrelmail
  */
+#[\AllowDynamicProperties]
 class Deliver_SMTP extends Deliver {
     /**
      * Array keys are uppercased ehlo keywords

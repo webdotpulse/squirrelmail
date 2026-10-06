@@ -18,6 +18,7 @@
  * @package squirrelmail
  * @subpackage prefs
  */
+#[\AllowDynamicProperties]
 class SquirrelOption {
     /**
      * The original option configuration array

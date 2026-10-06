@@ -302,12 +302,15 @@ displayPageHeader($color, null);
             <span class="meta-val"><?php echo htmlspecialchars($dateDisplay); ?></span>
         </div>
 
-        <!-- Email Body -->
-        <div class="msg-body-frame">
-            <?php echo $bodyHtml; ?>
+        <!-- Email Body with Shadow DOM sandboxing -->
+        <div class="msg-body-frame sm-email-shadow-container" id="sm-email-shadow-host">
+            <template class="sm-email-raw-template"><?php echo $bodyHtml; ?></template>
+            <noscript><?php echo strip_tags($bodyHtml, '<p><br><b><strong><i><em><u><a><ul><ol><li>'); ?></noscript>
         </div>
     </div>
 </div>
 
+<script src="../../assets/js/dompurify.min.js"></script>
+<script src="../../assets/js/app.js"></script>
 </body>
 </html>

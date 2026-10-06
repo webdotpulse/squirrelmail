@@ -21,6 +21,7 @@
  * @subpackage mime
  * @since 1.3.0
  */
+#[\AllowDynamicProperties]
 class Language {
     var $name;
     var $properties;

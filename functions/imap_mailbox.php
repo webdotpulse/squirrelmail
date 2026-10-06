@@ -31,6 +31,7 @@ require_once(SM_PATH . 'functions/imap_utf7_local.php');
  * @subpackage imap
  * @since 1.5.0
  */
+#[\AllowDynamicProperties]
 class mailboxes {
     var $mailboxname_full = '', $mailboxname_sub= '', $is_noselect = false, $is_noinferiors = false,
         $is_special = false, $is_root = false, $is_inbox = false, $is_sent = false,

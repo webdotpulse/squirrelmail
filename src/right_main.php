@@ -12,8 +12,9 @@
  * @package squirrelmail
  */
 
-/** This is the right_main page */
-define('PAGE_NAME', 'right_main');
+if (!defined('PAGE_NAME')) {
+    define('PAGE_NAME', 'right_main');
+}
 
 //xdebug_start_profiling("/var/spool/xdebug/right_main.txt");
 
@@ -25,8 +26,7 @@ include('../include/init.php');
 /* If email_address not set and admin wants us to ask user for it,
  * redirect to options page. */
 if ( $ask_user_info && getPref($data_dir, $username,'email_address') == "" ) {
-    header("Location: " . get_location() . "/options.php?optpage=personal");
-    exit;
+    sqm_redirect(get_location() . "/options.php?optpage=personal");
 }
 
 /* SquirrelMail required files. */
@@ -283,8 +283,7 @@ if (isset($aMailbox['FORWARD_SESSION'])) {
                   . '&session='.$aMailbox['FORWARD_SESSION']['SESSION_NUMBER']
                   . '&smaction=forward_as_attachment'
                   . '&fwduid=' . implode('_', $aMailbox['FORWARD_SESSION']['UIDS']);
-        header("Location: $location");
-        exit;
+        sqm_redirect($location);
     }
 }
 

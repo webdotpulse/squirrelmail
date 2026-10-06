@@ -19,6 +19,7 @@ require_once(SM_PATH . 'class/deliver/Deliver.class.php');
  * This class is incomplete and entirely undocumented.
  * @package squirrelmail
  */
+#[\AllowDynamicProperties]
 class Deliver_IMAP extends Deliver {
 
     function getBcc() {

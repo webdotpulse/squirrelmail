@@ -8,6 +8,7 @@
  * @subpackage ai_agent
  */
 
+#[\AllowDynamicProperties]
 class SquirrelMailGeminiClient
 {
     private $apiKey;

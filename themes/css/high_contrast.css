@@ -1,0 +1,23 @@
+/**
+ * Modern High Contrast Accessible Theme
+ */
+:root {
+  --sm-bg-canvas: #000000;
+  --sm-bg-surface: #0a0a0a;
+  --sm-bg-sidebar: #000000;
+  --sm-bg-card: #141414;
+  --sm-border: #ffffff;
+  --sm-border-light: #888888;
+  --sm-border-hover: #ffff00;
+  --sm-text-primary: #ffffff;
+  --sm-text-secondary: #eeeeee;
+  --sm-text-muted: #cccccc;
+  --sm-primary: #ffff00;
+  --sm-primary-hover: #ffffff;
+  --sm-primary-light: #222200;
+  --sm-primary-border: #ffff00;
+  --sm-accent: #00ffff;
+  --sm-hover-bg: #1f1f1f;
+  --sm-unread-bg: #222200;
+  --sm-selected-bg: #333300;
+}

@@ -2,35 +2,23 @@
 /**
  * addressbook_popup.tpl
  *
- * Description
- * 
- * The following variables are available in this template:
+ * Template for address book search popup
  *
  * @copyright 1999-2026 The SquirrelMail Project Team
  * @license http://opensource.org/licenses/gpl-license.php GNU Public License
- * @version $Id$
  * @package squirrelmail
  * @subpackage templates
  */
 
-/** add required includes **/
-
-/** extract template variables **/
 extract($t);
-
-/** Begin template **/
 ?>
-<frameset rows="95,*" border="0">
-    <frame name="abookmain"
-           marginwidth="0"
-           scrolling="no"
-           border="0"
-           src="addrbook_search.php?show=form" />
-    <frame name="abookres"
-           marginwidth="0"
-           border="0"
-           src="addrbook_search.php?show=blank" />
-</frameset>
-
-</html>
-
+<div class="sm-addrbook-popup-container" style="padding: 16px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+    <div class="sm-addrbook-popup-content">
+        <?php
+        if (file_exists(SM_PATH . 'src/addrbook_search.php')) {
+            $show = 'form';
+            include(SM_PATH . 'src/addrbook_search.php');
+        }
+        ?>
+    </div>
+</div>

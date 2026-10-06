@@ -1,0 +1,23 @@
+/**
+ * Modern Emerald Forest Theme
+ */
+:root {
+  --sm-bg-canvas: #f0fdf4;
+  --sm-bg-surface: #ffffff;
+  --sm-bg-sidebar: #f0fdf4;
+  --sm-bg-card: #ffffff;
+  --sm-border: #bbf7d0;
+  --sm-border-light: #dcfce7;
+  --sm-border-hover: #86efac;
+  --sm-text-primary: #064e3b;
+  --sm-text-secondary: #047857;
+  --sm-text-muted: #10b981;
+  --sm-primary: #059669;
+  --sm-primary-hover: #047857;
+  --sm-primary-light: #ecfdf5;
+  --sm-primary-border: #6ee7b7;
+  --sm-accent: #10b981;
+  --sm-hover-bg: #dcfce7;
+  --sm-unread-bg: #dcfce7;
+  --sm-selected-bg: #a7f3d0;
+}

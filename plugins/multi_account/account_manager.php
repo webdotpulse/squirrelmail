@@ -23,6 +23,7 @@ if (!function_exists('decodeHeader') && file_exists(SM_PATH . 'functions/mime.ph
     require_once(SM_PATH . 'functions/mime.php');
 }
 
+#[\AllowDynamicProperties]
 class MultiAccountManager
 {
     private $dataDir;

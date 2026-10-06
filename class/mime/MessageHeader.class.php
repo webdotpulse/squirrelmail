@@ -22,6 +22,7 @@
  * @subpackage mime
  * @since 1.3.2
  */
+#[\AllowDynamicProperties]
 class MessageHeader {
     var $entity_id;
     var $lines;

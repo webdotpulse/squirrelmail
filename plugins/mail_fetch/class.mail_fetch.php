@@ -40,6 +40,7 @@
  * @package plugins
  * @subpackage mail_fetch
  */
+#[\AllowDynamicProperties]
 class mail_fetch {
     /**
      * Server name

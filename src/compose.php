@@ -471,7 +471,7 @@ if ($draft) {
 
         if ($compose_new_win == '1') {
             if ( !isset($pageheader_sent) || !$pageheader_sent ) {
-                header("Location: $location/compose.php?saved_draft=yes&session=$composesession");
+                sqm_redirect("$location/compose.php?saved_draft=yes&session=$composesession");
             } else {
 //FIXME: DON'T ECHO HTML FROM CORE!
                 echo '   <br><br><div style="text-align: center;"><a href="' . $location
@@ -481,7 +481,7 @@ if ($draft) {
             exit();
         } else {
             if ( !isset($pageheader_sent) || !$pageheader_sent ) {
-                header("Location: $location/right_main.php?mailbox=" . urlencode($draft_folder) .
+                sqm_redirect("$location/right_main.php?mailbox=" . urlencode($draft_folder) .
                    "&startMessage=1&note=".urlencode($draft_message));
             } else {
 //FIXME: DON'T ECHO HTML FROM CORE!
@@ -588,7 +588,7 @@ if ($send) {
 
         if ($compose_new_win == '1') {
             if ( !isset($pageheader_sent) || !$pageheader_sent ) {
-                header("Location: $location/compose.php?mail_sent=$mail_sent");
+                sqm_redirect("$location/compose.php?mail_sent=$mail_sent");
             } else {
 //FIXME: DON'T ECHO HTML FROM CORE!
                 echo '   <br><br><div style="text-align: center;"><a href="' . $location
@@ -601,10 +601,10 @@ if ($send) {
                 global $return_to_message_after_reply;
                 if (($action === 'reply' || $action === 'reply_all' || $action === 'forward' || $action === 'forward_as_attachment')
                  && $return_to_message_after_reply && $passed_id)
-                    header("Location: $location/read_body.php?passed_id=$passed_id&mailbox=$urlMailbox".
+                    sqm_redirect("$location/read_body.php?passed_id=$passed_id&mailbox=$urlMailbox".
                             "&startMessage=$startMessage&mail_sent=$mail_sent");
                 else
-                    header("Location: $location/right_main.php?mailbox=$urlMailbox".
+                    sqm_redirect("$location/right_main.php?mailbox=$urlMailbox".
                             "&startMessage=$startMessage&mail_sent=$mail_sent");
             } else {
 //FIXME: DON'T ECHO HTML FROM CORE!

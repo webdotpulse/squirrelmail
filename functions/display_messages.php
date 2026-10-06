@@ -62,7 +62,7 @@ function logout_error( $errString, $errTitle = '' ) {
 
     $login_link = array (
                             'URI'   => $base_uri . 'src/login.php',
-                            'FRAME' => $frame_top
+                            'FRAME' => ''
                         );
                         
     /* As of 1.5.2, plugin parameters are combined into one array; 

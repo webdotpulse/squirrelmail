@@ -383,6 +383,7 @@ function show_abook_sort_button($abook_sort_order, $alt_tag,
  * @package squirrelmail
  * @subpackage addressbook
  */
+#[\AllowDynamicProperties]
 class AddressBook {
     /**
      * Enabled address book backends
@@ -879,6 +880,7 @@ class AddressBook {
  * @package squirrelmail
  * @subpackage addressbook
  */
+#[\AllowDynamicProperties]
 class addressbook_backend {
 
     /* Variables that all backends must provide. */
