@@ -1,0 +1,22 @@
+# Local configuration overrides
+config/config_local.php
+
+# User preferences, address books, and data
+data/*.pref
+data/*.abook
+data/*.sig*
+data/*.log
+data/squirrelmail_fatal.log
+
+# Attachments
+attach/*
+!attach/.htaccess
+!attach/index.php
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.idea/
+.vscode/

@@ -529,7 +529,7 @@ $noselect_fix_enable = false;
  *
  * @global string $data_dir
  */
-$data_dir = '/var/local/squirrelmail/data/';
+$data_dir = SM_PATH . 'data/';
 
 /**
  * Attachments directory
@@ -548,7 +548,7 @@ $data_dir = '/var/local/squirrelmail/data/';
  *    + It should probably be another directory than data_dir.
  * @global string $attachment_dir
  */
-$attachment_dir = '/var/local/squirrelmail/attach/';
+$attachment_dir = SM_PATH . 'attach/';
 
 /**
  * Hash level used for data directory.
@@ -995,7 +995,8 @@ $motd = "";
  * the following.
  *    $plugins[] = 'squirrelspell';
  *    $plugins[] = 'listcommands';
-// Add list of enabled plugins here
+ */
+$plugins = array();
 $plugins[] = 'html_mail';
 $plugins[] = 'ai_agent';
 $plugins[] = 'multi_account';
@@ -1009,7 +1010,6 @@ $plugins[] = 'templates';
 $plugins[] = 'squirrelspell';
 $plugins[] = 'message_details';
 $plugins[] = 'info';
-
 
 /**
  * To disable all plugins regardless of any that are installed 
