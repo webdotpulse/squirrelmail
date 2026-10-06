@@ -415,7 +415,9 @@ function set_up_language($sm_language, $do_search = false, $default = false,
 
     // grab content type if needed
     //
-    if (empty($content_type)) $content_type = $oTemplate->get_content_type();
+    if (empty($content_type) && isset($oTemplate) && is_object($oTemplate)) {
+        $content_type = $oTemplate->get_content_type();
+    }
 
     /**
      * If function is asked to detect preferred language

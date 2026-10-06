@@ -19,6 +19,11 @@ FIXME: disabling this for now, because we now have $sm_debug_mode, but the probl
 //error_reporting(E_ALL);
 
 
+if (defined('SM_INITIALIZED')) {
+    return;
+}
+define('SM_INITIALIZED', true);
+
 /**
  * Make sure we have a page name
  *
@@ -409,6 +414,39 @@ $SQM_INTERNAL_VERSION[2] = intval($SQM_INTERNAL_VERSION[2]);
 
 /* load prefs system; even when user not logged in, should be OK to do this here */
 require(SM_PATH . 'functions/prefs.php');
+
+if (!function_exists('checkForJavascript')) {
+function checkForJavascript($reset = FALSE) {
+  global $data_dir, $username, $javascript_on, $javascript_setting;
+
+  if ( !$reset && sqGetGlobalVar('javascript_on', $javascript_on, SQ_SESSION) )
+    return $javascript_on;
+
+  //FIXME: this isn't used anywhere else in this function; can we remove it?  why is it here?
+  $user_is_logged_in = FALSE;
+  if ( $reset || !isset($javascript_setting) )
+    $javascript_setting = getPref($data_dir, $username, 'javascript_setting', SMPREF_JS_AUTODETECT);
+
+  if ( !sqGetGlobalVar('new_js_autodetect_results', $js_autodetect_results) &&
+       !sqGetGlobalVar('js_autodetect_results', $js_autodetect_results) )
+    $js_autodetect_results = SMPREF_JS_OFF;
+
+  if ( $javascript_setting == SMPREF_JS_AUTODETECT )
+    $javascript_on = $js_autodetect_results;
+  else
+    $javascript_on = $javascript_setting;
+
+  sqsession_register($javascript_on, 'javascript_on');
+  return $javascript_on;
+}
+}
+
+if (!function_exists('sqm_baseuri')) {
+function sqm_baseuri() {
+    global $base_uri;
+    return $base_uri;
+}
+}
 
 
 /* if plugins are disabled only for one user and
@@ -829,45 +867,4 @@ if (version_compare(PHP_VERSION, "4.3.0", ">=")) {
     $oldErrorHandler = set_error_handler(array($oErrorHandler, 'SquirrelMailErrorhandler'));
 } else {
     $oldErrorHandler = set_error_handler('SquirrelMailErrorhandler');
-}
-
-
-// ============================================================================
-// ================= End of Live Code, Beginning of Functions ================= 
-// ============================================================================
-
-
-/**
- * Javascript support detection function
- * @param boolean $reset recheck javascript support if set to true.
- * @return integer SMPREF_JS_ON or SMPREF_JS_OFF ({@see include/constants.php})
- * @since 1.5.1
- */
-function checkForJavascript($reset = FALSE) {
-  global $data_dir, $username, $javascript_on, $javascript_setting;
-
-  if ( !$reset && sqGetGlobalVar('javascript_on', $javascript_on, SQ_SESSION) )
-    return $javascript_on;
-
-  //FIXME: this isn't used anywhere else in this function; can we remove it?  why is it here?
-  $user_is_logged_in = FALSE;
-  if ( $reset || !isset($javascript_setting) )
-    $javascript_setting = getPref($data_dir, $username, 'javascript_setting', SMPREF_JS_AUTODETECT);
-
-  if ( !sqGetGlobalVar('new_js_autodetect_results', $js_autodetect_results) &&
-       !sqGetGlobalVar('js_autodetect_results', $js_autodetect_results) )
-    $js_autodetect_results = SMPREF_JS_OFF;
-
-  if ( $javascript_setting == SMPREF_JS_AUTODETECT )
-    $javascript_on = $js_autodetect_results;
-  else
-    $javascript_on = $javascript_setting;
-
-  sqsession_register($javascript_on, 'javascript_on');
-  return $javascript_on;
-}
-
-function sqm_baseuri() {
-    global $base_uri;
-    return $base_uri;
 }

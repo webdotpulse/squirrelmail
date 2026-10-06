@@ -110,7 +110,7 @@ if ($auto_create_special && !isset($auto_create_done)) {
 }
 
 // Release session lock early for asynchronous folder polling
-if (function_exists('sqm_is_ajax') && sqm_is_ajax()) {
+if (function_exists('sqm_is_ajax') && sqm_is_ajax() && empty($GLOBALS['in_webmail_shell'])) {
     session_write_close();
 }
 
