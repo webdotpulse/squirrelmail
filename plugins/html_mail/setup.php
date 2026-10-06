@@ -21,9 +21,6 @@ function squirrelmail_plugin_init_html_mail()
     $squirrelmail_plugin_hooks['template_construct_compose_buttons.tpl']['html_mail']
         = 'html_mail_compose_buttons';
 
-    $squirrelmail_plugin_hooks['compose_form']['html_mail']
-        = 'html_mail_compose_form';
-
     $squirrelmail_plugin_hooks['template_construct_compose_form_close.tpl']['html_mail']
         = 'html_mail_compose_close';
 
@@ -67,12 +64,6 @@ function html_mail_compose_buttons()
 {
     include_once(SM_PATH . 'plugins/html_mail/html_mail.php');
     return html_mail_compose_buttons_do();
-}
-
-function html_mail_compose_form()
-{
-    include_once(SM_PATH . 'plugins/html_mail/html_mail.php');
-    return html_mail_compose_form_do();
 }
 
 function html_mail_compose_close()

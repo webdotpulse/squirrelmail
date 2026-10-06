@@ -23,8 +23,8 @@ function squirrelmail_plugin_init_ai_agent()
     $squirrelmail_plugin_hooks['template_construct_compose_buttons.tpl']['ai_agent']
         = 'ai_agent_compose_buttons';
 
-    $squirrelmail_plugin_hooks['compose_form']['ai_agent']
-        = 'ai_agent_compose_form';
+    $squirrelmail_plugin_hooks['template_construct_compose_form_close.tpl']['ai_agent']
+        = 'ai_agent_compose_close';
 
     $squirrelmail_plugin_hooks['read_body_header_right']['ai_agent']
         = 'ai_agent_read_toolbar';
@@ -71,10 +71,10 @@ function ai_agent_compose_buttons()
     return ai_agent_compose_buttons_do();
 }
 
-function ai_agent_compose_form()
+function ai_agent_compose_close()
 {
     include_once(SM_PATH . 'plugins/ai_agent/ai_agent.php');
-    return ai_agent_compose_form_do();
+    return ai_agent_compose_close_do();
 }
 
 function ai_agent_read_toolbar(&$links)

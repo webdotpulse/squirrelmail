@@ -29,14 +29,15 @@ function ai_agent_compose_buttons_do()
 }
 
 /**
- * Hook: Injects AI Assistant Modal, styles, and scripts into compose window
+ * Hook: Injects AI Assistant Modal, styles, and scripts into compose form bottom
  */
-function ai_agent_compose_form_do()
+function ai_agent_compose_close_do()
 {
     global $ai_enable_compose, $body, $subject, $action;
-    if (!$ai_enable_compose) return;
+    if (!$ai_enable_compose) return array();
 
     $is_reply = ($action === 'reply' || $action === 'reply_all');
+    ob_start();
     ?>
     <style>
         .ai-modal-backdrop {
@@ -507,6 +508,8 @@ function ai_agent_compose_form_do()
     })();
     </script>
     <?php
+    $output = ob_get_clean();
+    return array('compose_bottom' => $output);
 }
 
 /**

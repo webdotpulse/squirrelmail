@@ -14,74 +14,88 @@
 function html_mail_compose_buttons_do()
 {
     global $data_dir, $username;
-    $default_mode = getPref($data_dir, $username, 'html_mail_default', '1');
+    $default_mode = function_exists('getPref') ? getPref($data_dir, $username, 'html_mail_default', '1') : '1';
 
     $html = '<button type="button" id="html-mail-toggle-btn" class="btn btn-secondary html-mail-mode-btn" '
           . 'onclick="if(window.htmlMailToggleMode) window.htmlMailToggleMode();" '
           . 'title="' . _("Toggle between Rich HTML and Plain Text compose mode") . '" '
           . 'style="margin-left: 6px; padding: 4px 10px; font-size: 12px; font-weight: 500; cursor: pointer; border-radius: 4px; border: 1px solid #c4c7c5; background: #f0f4f9; color: #1f1f1f; display: inline-flex; align-items: center; gap: 4px;">'
-          . '<span id="html-mail-btn-icon">🎨</span> <span id="html-mail-btn-text">' . ($default_mode === '1' ? _("Mode: Rich HTML") : _("Mode: Plain Text")) . '</span>'
+          . '<span id="html-mail-btn-icon">' . ($default_mode === '1' ? '🎨' : '📝') . '</span> '
+          . '<span id="html-mail-btn-text">' . ($default_mode === '1' ? _("Mode: Rich HTML") : _("Mode: Plain Text")) . '</span>'
           . '</button>';
 
     return array('compose_button_row' => $html);
 }
 
 /**
- * Hook: Injects editor styling, toolbar, and container into the compose form
+ * Hook: Injects editor styling, toolbar, container, and synchronization into compose form
  */
-function html_mail_compose_form_do()
+function html_mail_compose_close_do()
 {
-    global $data_dir, $username, $editor_height, $editor_width;
+    global $data_dir, $username;
 
-    $default_mode = getPref($data_dir, $username, 'html_mail_default', '1');
-    $default_font = getPref($data_dir, $username, 'html_mail_font', 'sans-serif');
-    $default_size = getPref($data_dir, $username, 'html_mail_size', '14px');
+    $default_mode = function_exists('getPref') ? getPref($data_dir, $username, 'html_mail_default', '1') : '1';
+    $default_font = function_exists('getPref') ? getPref($data_dir, $username, 'html_mail_font', 'sans-serif') : 'sans-serif';
+    $default_size = function_exists('getPref') ? getPref($data_dir, $username, 'html_mail_size', '14px') : '14px';
 
+    ob_start();
     ?>
+    <!-- Hidden inputs for HTML mail status and content -->
+    <input type="hidden" name="html_mail_enabled" id="html_mail_enabled" value="<?php echo ($default_mode === '1' ? '1' : '0'); ?>" />
+    <input type="hidden" name="html_mail_body" id="html_mail_body" value="" />
+
     <style>
         .html-mail-wrapper {
-            margin: 8px 0;
+            margin: 6px 0;
             width: 100%;
             max-width: 100%;
             box-sizing: border-box;
             font-family: <?php echo htmlspecialchars($default_font); ?>, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            text-align: left;
         }
         .html-mail-toolbar {
             display: flex;
             flex-wrap: wrap;
             align-items: center;
-            gap: 4px;
-            padding: 8px 12px;
+            gap: 3px;
+            padding: 6px 10px;
             background: #f8fafd;
             border: 1px solid #dadce0;
             border-bottom: none;
-            border-top-left-radius: 8px;
-            border-top-right-radius: 8px;
+            border-top-left-radius: 6px;
+            border-top-right-radius: 6px;
+            box-sizing: border-box;
         }
         .html-mail-toolbar .tb-group {
             display: inline-flex;
             align-items: center;
             gap: 2px;
             border-right: 1px solid #e0e2e5;
-            padding-right: 6px;
-            margin-right: 4px;
+            padding-right: 5px;
+            margin-right: 3px;
         }
         .html-mail-toolbar .tb-group:last-child {
             border-right: none;
+            margin-right: 0;
+            padding-right: 0;
         }
         .html-mail-toolbar button, .html-mail-toolbar select {
             background: #ffffff;
             border: 1px solid #dadce0;
             border-radius: 4px;
-            padding: 5px 8px;
-            font-size: 13px;
+            padding: 0 6px;
+            font-size: 12px;
+            font-family: inherit;
             cursor: pointer;
             color: #3c4043;
             transition: all 0.15s ease;
-            height: 30px;
+            height: 28px;
+            min-width: 28px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
+            box-sizing: border-box;
+            line-height: 1;
         }
         .html-mail-toolbar button:hover, .html-mail-toolbar select:hover {
             background: #e8f0fe;
@@ -110,20 +124,24 @@ function html_mail_compose_form_do()
         .html-mail-editor-container {
             position: relative;
             border: 1px solid #dadce0;
-            border-bottom-left-radius: 8px;
-            border-bottom-right-radius: 8px;
+            border-bottom-left-radius: 6px;
+            border-bottom-right-radius: 6px;
             background: #ffffff;
             overflow: hidden;
             box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            box-sizing: border-box;
         }
         #html-mail-wysiwyg {
             min-height: 280px;
-            padding: 16px;
+            max-height: 550px;
+            padding: 14px 16px;
             outline: none;
             overflow-y: auto;
             color: #1f1f1f;
-            line-height: 1.5;
+            line-height: 1.6;
             font-size: <?php echo htmlspecialchars($default_size); ?>;
+            text-align: left;
+            box-sizing: border-box;
         }
         #html-mail-wysiwyg:focus {
             box-shadow: inset 0 0 0 1px #1a73e8;
@@ -131,7 +149,8 @@ function html_mail_compose_form_do()
         #html-mail-source {
             width: 100%;
             min-height: 280px;
-            padding: 14px;
+            max-height: 550px;
+            padding: 14px 16px;
             box-sizing: border-box;
             border: none;
             font-family: Consolas, Monaco, monospace;
@@ -150,6 +169,7 @@ function html_mail_compose_form_do()
             color: #70757a;
             background: #f8fafd;
             border-top: 1px solid #f1f3f4;
+            box-sizing: border-box;
         }
     </style>
 
@@ -176,7 +196,6 @@ function html_mail_compose_form_do()
                 if (rawTextarea) rawTextarea.style.display = 'none';
                 if (wrapper) wrapper.style.display = 'block';
 
-                // Transfer text to HTML if wysiwyg is empty or plain
                 if (wysiwyg && rawTextarea) {
                     if (!wysiwyg.innerHTML.trim() || wysiwyg.innerText.trim() === rawTextarea.value.trim()) {
                         const paras = rawTextarea.value.split("\n\n");
@@ -251,9 +270,9 @@ function html_mail_compose_form_do()
         };
 
         // Initialize editor upon DOM ready
-        document.addEventListener('DOMContentLoaded', function() {
+        function initHtmlMailEditor() {
             const rawTextarea = document.getElementById('body');
-            if (!rawTextarea) return;
+            if (!rawTextarea || document.getElementById('html-mail-wrapper')) return;
 
             // Create wrapper element
             const wrapper = document.createElement('div');
@@ -273,9 +292,9 @@ function html_mail_compose_form_do()
                         </select>
                     </div>
                     <div class="tb-group">
-                        <button type="button" onclick="htmlMailExec('bold')" title="Bold (Ctrl+B)"><strong>B</strong></button>
-                        <button type="button" onclick="htmlMailExec('italic')" title="Italic (Ctrl+I)"><em>I</em></button>
-                        <button type="button" onclick="htmlMailExec('underline')" title="Underline (Ctrl+U)"><u>U</u></button>
+                        <button type="button" onclick="htmlMailExec('bold')" title="Bold"><strong>B</strong></button>
+                        <button type="button" onclick="htmlMailExec('italic')" title="Italic"><em>I</em></button>
+                        <button type="button" onclick="htmlMailExec('underline')" title="Underline"><u>U</u></button>
                         <button type="button" onclick="htmlMailExec('strikeThrough')" title="Strikethrough"><s>S</s></button>
                     </div>
                     <div class="tb-group">
@@ -305,7 +324,7 @@ function html_mail_compose_form_do()
                     </div>
                     <div class="tb-group">
                         <button type="button" onclick="htmlMailInsertLink()" title="Insert Link">🔗 Link</button>
-                        <button type="button" onclick="htmlMailExec('unlink')" title="Remove Link">⛓️ Unlink</button>
+                        <button type="button" onclick="htmlMailExec('unlink')" title="Remove Link">⛓️</button>
                         <button type="button" onclick="htmlMailExec('insertHorizontalRule')" title="Divider Line">—</button>
                     </div>
                     <div class="tb-group">
@@ -323,7 +342,7 @@ function html_mail_compose_form_do()
                 </div>
             `;
 
-            // Insert editor wrapper before or replacing visual of textarea
+            // Insert editor wrapper before rawTextarea
             rawTextarea.parentNode.insertBefore(wrapper, rawTextarea);
 
             const wysiwyg = document.getElementById('html-mail-wysiwyg');
@@ -331,7 +350,6 @@ function html_mail_compose_form_do()
 
             // Populate initial content from textarea
             if (rawTextarea.value.trim().length > 0) {
-                // If it already contains HTML tags, use directly, otherwise convert newlines to paras
                 if (/<[a-z][\s\S]*>/i.test(rawTextarea.value)) {
                     wysiwyg.innerHTML = rawTextarea.value;
                 } else {
@@ -353,7 +371,7 @@ function html_mail_compose_form_do()
                 wrapper.style.display = 'none';
             }
 
-            // Sync on submit
+            // Sync on form submit
             const form = rawTextarea.closest('form');
             if (form) {
                 form.addEventListener('submit', function() {
@@ -375,24 +393,18 @@ function html_mail_compose_form_do()
                     }
                 });
             }
-        });
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initHtmlMailEditor);
+        } else {
+            initHtmlMailEditor();
+        }
     })();
     </script>
     <?php
-}
-
-/**
- * Hook: Add hidden inputs to form close
- */
-function html_mail_compose_close_do()
-{
-    global $data_dir, $username;
-    $default_mode = getPref($data_dir, $username, 'html_mail_default', '1');
-
-    $html = '<input type="hidden" name="html_mail_enabled" id="html_mail_enabled" value="' . ($default_mode === '1' ? '1' : '0') . '" />' . "\n"
-          . '<input type="hidden" name="html_mail_body" id="html_mail_body" value="" />' . "\n";
-
-    return array('compose_bottom' => $html);
+    $output = ob_get_clean();
+    return array('compose_bottom' => $output);
 }
 
 /**
