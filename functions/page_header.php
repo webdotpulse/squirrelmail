@@ -322,13 +322,18 @@ function displayPageHeader($color, $mailbox='', $sHeaderJs='', $sOnload = '') {
         displayHtmlHeader ($org_title);
         $sOnload = '';
     }
-    if ($mailbox) {
+    if ($mailbox && strcasecmp($mailbox, 'None') !== 0) {
         /*
         * this explains the imap_mailbox.php dependency. We should instead store
         * the selected mailbox in the session and fallback to the session var.
         */
-        $shortBoxName = sm_encode_html_special_chars(imap_utf7_decode_local(
-                    readShortMailboxName($mailbox, $delimiter)));
+        if (!function_exists('imap_utf7_decode_local')) {
+            if (file_exists(SM_PATH . 'functions/imap_utf7_local.php')) {
+                require_once(SM_PATH . 'functions/imap_utf7_local.php');
+            }
+        }
+        $shortBoxName = sm_encode_html_special_chars(function_exists('imap_utf7_decode_local') ? imap_utf7_decode_local(
+                    readShortMailboxName($mailbox, $delimiter)) : readShortMailboxName($mailbox, $delimiter));
         if (getPref($data_dir, $username, 'translate_special_folders')) {
             global $sent_folder, $trash_folder, $draft_folder;
             if ($mailbox == $sent_folder)

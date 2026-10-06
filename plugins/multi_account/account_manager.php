@@ -10,6 +10,19 @@
  * @subpackage multi_account
  */
 
+if (!defined('SM_PATH')) {
+    define('SM_PATH', '../../');
+}
+require_once(SM_PATH . 'functions/imap.php');
+require_once(SM_PATH . 'functions/imap_mailbox.php');
+require_once(SM_PATH . 'functions/imap_messages.php');
+if (!function_exists('imap_utf7_decode_local') && file_exists(SM_PATH . 'functions/imap_utf7_local.php')) {
+    require_once(SM_PATH . 'functions/imap_utf7_local.php');
+}
+if (!function_exists('decodeHeader') && file_exists(SM_PATH . 'functions/mime.php')) {
+    require_once(SM_PATH . 'functions/mime.php');
+}
+
 class MultiAccountManager
 {
     private $dataDir;
@@ -244,6 +257,9 @@ class MultiAccountManager
         $ok = false;
         while (!feof($fp)) {
             $line = fgets($fp, 1024);
+            if ($line === false) {
+                break;
+            }
             if (preg_match('/^A001\s+OK/i', $line)) {
                 $ok = true;
                 break;
@@ -281,8 +297,14 @@ class MultiAccountManager
     /**
      * Fetch unread counts across all accounts
      */
-    public function getUnreadCounts()
+    public function getUnreadCounts($useCache = true)
     {
+        if ($useCache && !empty($_SESSION['multi_acc_unread_cache']) && !empty($_SESSION['multi_acc_unread_time'])) {
+            if (time() - $_SESSION['multi_acc_unread_time'] < 30) {
+                return $_SESSION['multi_acc_unread_cache'];
+            }
+        }
+
         $counts = [
             'total_unread' => 0,
             'accounts'     => []
@@ -310,19 +332,24 @@ class MultiAccountManager
         $accounts = $this->getAccounts();
         foreach ($accounts as $acc) {
             if (empty($acc['enabled'])) continue;
-            $pass = $this->decrypt($acc['password']);
-            $fp = $this->openImapStream($acc['host'], $acc['port'], $acc['tls'], $acc['user'], $pass);
             $unseen = 0;
-            if ($fp) {
-                $lines = $this->imapCommand($fp, 'T01', 'STATUS INBOX (UNSEEN)');
-                foreach ($lines as $l) {
-                    if (preg_match('/UNSEEN\s+(\d+)/i', $l, $m)) {
-                        $unseen = intval($m[1]);
-                        break;
+            $fp = null;
+            try {
+                $pass = $this->decrypt($acc['password']);
+                $fp = $this->openImapStream($acc['host'], $acc['port'], $acc['tls'], $acc['user'], $pass);
+                if ($fp) {
+                    $lines = $this->imapCommand($fp, 'T01', 'STATUS INBOX (UNSEEN)');
+                    foreach ($lines as $l) {
+                        if (preg_match('/UNSEEN\s+(\d+)/i', $l, $m)) {
+                            $unseen = intval($m[1]);
+                            break;
+                        }
                     }
+                    $this->imapCommand($fp, 'T02', 'LOGOUT');
+                    @fclose($fp);
                 }
-                $this->imapCommand($fp, 'T02', 'LOGOUT');
-                fclose($fp);
+            } catch (Throwable $e) {
+                if ($fp) @fclose($fp);
             }
             $counts['accounts'][$acc['id']] = [
                 'name'   => $acc['name'],
@@ -330,6 +357,11 @@ class MultiAccountManager
                 'color'  => $acc['color']
             ];
             $counts['total_unread'] += $unseen;
+        }
+
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            $_SESSION['multi_acc_unread_cache'] = $counts;
+            $_SESSION['multi_acc_unread_time'] = time();
         }
 
         return $counts;
@@ -350,53 +382,70 @@ class MultiAccountManager
         $stream = $imapConnection;
         $shouldLogout = false;
 
-        if (!$stream && !empty($_SESSION['onetimepad'])) {
-            $stream = @sqimap_login($username, false, $imapServerAddress, $imapPort, 0, $imap_stream_options);
-            $shouldLogout = true;
-        }
+        try {
+            if (!$stream && !empty($_SESSION['onetimepad']) && function_exists('sqimap_login')) {
+                $stream = @sqimap_login($username, false, $imapServerAddress, $imapPort, 2, $imap_stream_options);
+                if ($stream) {
+                    $shouldLogout = true;
+                }
+            }
 
-        if ($stream) {
-            sqimap_mailbox_select($stream, 'INBOX');
-            $ids = sqimap_run_command($imap_stream = $stream, "SEARCH ALL", true, $r, $m, true);
-            $numIds = [];
-            if (!empty($ids)) {
-                foreach ($ids as $line) {
-                    if (preg_match('/^\*\s+SEARCH\s+(.*)$/i', $line, $match)) {
-                        $parts = preg_split('/\s+/', trim($match[1]));
-                        foreach ($parts as $p) {
-                            if (is_numeric($p) && intval($p) > 0) $numIds[] = intval($p);
+            if ($stream) {
+                sqimap_mailbox_select($stream, 'INBOX');
+                $r = '';
+                $m = '';
+                $ids = sqimap_run_command($stream, "SEARCH ALL", true, $r, $m, true);
+                $numIds = [];
+                if (!empty($ids)) {
+                    foreach ($ids as $line) {
+                        if (preg_match('/^\*\s+SEARCH\s+(.*)$/i', $line, $match)) {
+                            $parts = preg_split('/\s+/', trim($match[1]));
+                            foreach ($parts as $p) {
+                                if (is_numeric($p) && intval($p) > 0) $numIds[] = intval($p);
+                            }
                         }
                     }
                 }
-            }
 
-            if (!empty($numIds)) {
-                // Take newest $limitPerAccount
-                $slice = array_slice($numIds, -$limitPerAccount);
-                foreach ($slice as $id) {
-                    $header = sqimap_get_small_header($stream, $id, false);
-                    $seen = in_array('\\seen', array_map('strtolower', (array)($header->flags ?? [])));
-                    $flagged = in_array('\\flagged', array_map('strtolower', (array)($header->flags ?? [])));
+                if (!empty($numIds)) {
+                    // Take newest $limitPerAccount
+                    $slice = array_slice($numIds, -$limitPerAccount);
+                    $msgs = sqimap_get_small_header_list($stream, $slice);
+                    if (is_array($msgs)) {
+                        foreach ($msgs as $id => $header) {
+                            $seen = isset($header['FLAGS']['\\seen']);
+                            $flagged = isset($header['FLAGS']['\\flagged']);
 
-                    $unified[] = [
-                        'account_id'    => 'primary',
-                        'account_name'  => 'Primary',
-                        'account_color' => '#1a73e8',
-                        'account_email' => $username,
-                        'uid'           => $id,
-                        'subject'       => !empty($header->subject) ? $header->subject : '(No Subject)',
-                        'from'          => !empty($header->from) ? $header->from : 'Unknown',
-                        'date'          => !empty($header->date) ? $header->date : '',
-                        'timestamp'     => !empty($header->date) ? strtotime($header->date) : time(),
-                        'seen'          => $seen,
-                        'flagged'       => $flagged,
-                        'is_primary'    => true
-                    ];
+                            $subject = !empty($header['subject']) ? self::decodeHeader($header['subject']) : '(No Subject)';
+                            $from = !empty($header['from']) ? self::decodeHeader($header['from']) : 'Unknown';
+                            $date = !empty($header['date']) ? $header['date'] : '';
+
+                            $unified[] = [
+                                'account_id'    => 'primary',
+                                'account_name'  => 'Primary',
+                                'account_color' => '#1a73e8',
+                                'account_email' => $username,
+                                'uid'           => $id,
+                                'subject'       => $subject,
+                                'from'          => $from,
+                                'date'          => $date,
+                                'timestamp'     => !empty($date) ? strtotime($date) : time(),
+                                'seen'          => $seen,
+                                'flagged'       => $flagged,
+                                'is_primary'    => true
+                            ];
+                        }
+                    }
+                }
+
+                if ($shouldLogout) {
+                    sqimap_logout($stream);
                 }
             }
-
-            if ($shouldLogout) {
-                sqimap_logout($stream);
+        } catch (Throwable $e) {
+            // Gracefully catch any primary mailbox errors
+            if ($shouldLogout && $stream) {
+                @sqimap_logout($stream);
             }
         }
 
@@ -405,86 +454,90 @@ class MultiAccountManager
         foreach ($accounts as $acc) {
             if (empty($acc['enabled'])) continue;
 
-            $pass = $this->decrypt($acc['password']);
-            $fp = $this->openImapStream($acc['host'], $acc['port'], $acc['tls'], $acc['user'], $pass);
-            if (!$fp) continue;
+            $fp = null;
+            try {
+                $pass = $this->decrypt($acc['password']);
+                $fp = $this->openImapStream($acc['host'], $acc['port'], $acc['tls'], $acc['user'], $pass);
+                if (!$fp) continue;
 
-            // Select INBOX
-            $this->imapCommand($fp, 'T01', 'SELECT INBOX');
+                // Select INBOX
+                $this->imapCommand($fp, 'T01', 'SELECT INBOX');
 
-            // Search ALL
-            $searchLines = $this->imapCommand($fp, 'T02', 'SEARCH ALL');
-            $accIds = [];
-            foreach ($searchLines as $sl) {
-                if (preg_match('/^\*\s+SEARCH\s+(.*)$/i', $sl, $sm)) {
-                    $parts = preg_split('/\s+/', trim($sm[1]));
-                    foreach ($parts as $p) {
-                        if (is_numeric($p) && intval($p) > 0) $accIds[] = intval($p);
-                    }
-                }
-            }
-
-            if (!empty($accIds)) {
-                $slice = array_slice($accIds, -$limitPerAccount);
-                $idList = implode(',', $slice);
-
-                // Fetch envelope & flags
-                $fetchLines = $this->imapCommand($fp, 'T03', "FETCH $idList (FLAGS INTERNALDATE RFC822.SIZE BODY.PEEK[HEADER.FIELDS (FROM TO SUBJECT DATE)])");
-                
-                $currentMsg = null;
-                foreach ($fetchLines as $fl) {
-                    if (preg_match('/^\*\s+(\d+)\s+FETCH\s+\((.*)/i', $fl, $fm)) {
-                        if ($currentMsg && isset($currentMsg['uid'])) {
-                            $unified[] = $currentMsg;
-                        }
-                        $msgId = intval($fm[1]);
-                        $details = $fm[2];
-                        $seen = (stripos($details, '\\Seen') !== false);
-                        $flagged = (stripos($details, '\\Flagged') !== false);
-                        
-                        $currentMsg = [
-                            'account_id'    => $acc['id'],
-                            'account_name'  => $acc['name'],
-                            'account_color' => $acc['color'],
-                            'account_email' => $acc['email'],
-                            'uid'           => $msgId,
-                            'subject'       => '(No Subject)',
-                            'from'          => 'Unknown',
-                            'date'          => '',
-                            'timestamp'     => time(),
-                            'seen'          => $seen,
-                            'flagged'       => $flagged,
-                            'is_primary'    => false
-                        ];
-                    } elseif ($currentMsg) {
-                        if (preg_match('/^Subject:\s*(.*)$/i', $fl, $sm)) {
-                            $currentMsg['subject'] = trim($sm[1]);
-                        } elseif (preg_match('/^From:\s*(.*)$/i', $fl, $fm)) {
-                            $currentMsg['from'] = trim($fm[1]);
-                        } elseif (preg_match('/^Date:\s*(.*)$/i', $fl, $dm)) {
-                            $currentMsg['date'] = trim($dm[1]);
-                            $currentMsg['timestamp'] = strtotime($currentMsg['date']) ?: time();
+                // Search ALL
+                $searchLines = $this->imapCommand($fp, 'T02', 'SEARCH ALL');
+                $accIds = [];
+                foreach ($searchLines as $sl) {
+                    if (preg_match('/^\*\s+SEARCH\s+(.*)$/i', $sl, $sm)) {
+                        $parts = preg_split('/\s+/', trim($sm[1]));
+                        foreach ($parts as $p) {
+                            if (is_numeric($p) && intval($p) > 0) $accIds[] = intval($p);
                         }
                     }
                 }
-                if ($currentMsg && isset($currentMsg['uid'])) {
-                    $unified[] = $currentMsg;
-                }
-            }
 
-            $this->imapCommand($fp, 'T04', 'LOGOUT');
-            fclose($fp);
+                if (!empty($accIds)) {
+                    $slice = array_slice($accIds, -$limitPerAccount);
+                    $idList = implode(',', $slice);
+
+                    // Fetch envelope & flags
+                    $fetchLines = $this->imapCommand($fp, 'T03', "FETCH $idList (FLAGS INTERNALDATE RFC822.SIZE BODY.PEEK[HEADER.FIELDS (FROM TO SUBJECT DATE)])");
+                    
+                    $currentMsg = null;
+                    foreach ($fetchLines as $fl) {
+                        if (preg_match('/^\*\s+(\d+)\s+FETCH\s+\((.*)/i', $fl, $fm)) {
+                            if ($currentMsg && isset($currentMsg['uid'])) {
+                                $unified[] = $currentMsg;
+                            }
+                            $msgId = intval($fm[1]);
+                            $details = $fm[2];
+                            $seen = (stripos($details, '\\Seen') !== false);
+                            $flagged = (stripos($details, '\\Flagged') !== false);
+                            
+                            $currentMsg = [
+                                'account_id'    => $acc['id'],
+                                'account_name'  => $acc['name'],
+                                'account_color' => $acc['color'],
+                                'account_email' => $acc['email'],
+                                'uid'           => $msgId,
+                                'subject'       => '(No Subject)',
+                                'from'          => 'Unknown',
+                                'date'          => '',
+                                'timestamp'     => time(),
+                                'seen'          => $seen,
+                                'flagged'       => $flagged,
+                                'is_primary'    => false
+                            ];
+                        } elseif ($currentMsg) {
+                            if (preg_match('/^Subject:\s*(.*)$/i', $fl, $sm)) {
+                                $currentMsg['subject'] = self::decodeHeader(trim($sm[1]));
+                            } elseif (preg_match('/^From:\s*(.*)$/i', $fl, $fm)) {
+                                $currentMsg['from'] = self::decodeHeader(trim($fm[1]));
+                            } elseif (preg_match('/^Date:\s*(.*)$/i', $fl, $dm)) {
+                                $currentMsg['date'] = trim($dm[1]);
+                                $currentMsg['timestamp'] = strtotime($currentMsg['date']) ?: time();
+                            }
+                        }
+                    }
+                    if ($currentMsg && isset($currentMsg['uid'])) {
+                        $unified[] = $currentMsg;
+                    }
+                }
+
+                $this->imapCommand($fp, 'T04', 'LOGOUT');
+                @fclose($fp);
+            } catch (Throwable $e) {
+                if ($fp) @fclose($fp);
+            }
         }
 
         // 3. Sort chronologically: newest emails first
         usort($unified, function($a, $b) {
-            return $b['timestamp'] - $a['timestamp'];
+            return ($b['timestamp'] ?? 0) - ($a['timestamp'] ?? 0);
         });
 
         return $unified;
     }
 
-    /**
     /**
      * Mark a message as seen or unseen on a secondary IMAP account
      */

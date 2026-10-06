@@ -13,6 +13,12 @@
 header('Content-Type: application/json; charset=utf-8');
 
 require('../../include/init.php');
+require_once(SM_PATH . 'functions/imap.php');
+require_once(SM_PATH . 'functions/imap_mailbox.php');
+require_once(SM_PATH . 'functions/imap_messages.php');
+if (!function_exists('imap_utf7_decode_local') && file_exists(SM_PATH . 'functions/imap_utf7_local.php')) {
+    require_once(SM_PATH . 'functions/imap_utf7_local.php');
+}
 require_once(SM_PATH . 'plugins/multi_account/account_manager.php');
 
 global $data_dir, $username;
@@ -28,9 +34,9 @@ $action = $_GET['action'] ?? ($_POST['action'] ?? '');
 switch ($action) {
     case 'get_unread_counts':
         try {
-            $data = $mgr->getUnreadCounts();
+            $data = $mgr->getUnreadCounts(false);
             echo json_encode($data);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             echo json_encode(['total_unread' => 0, 'accounts' => [], 'error' => $e->getMessage()]);
         }
         break;

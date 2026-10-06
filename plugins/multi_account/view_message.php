@@ -11,6 +11,13 @@
  */
 
 require('../../include/init.php');
+require_once(SM_PATH . 'functions/imap.php');
+require_once(SM_PATH . 'functions/imap_mailbox.php');
+require_once(SM_PATH . 'functions/imap_messages.php');
+if (!function_exists('imap_utf7_decode_local') && file_exists(SM_PATH . 'functions/imap_utf7_local.php')) {
+    require_once(SM_PATH . 'functions/imap_utf7_local.php');
+}
+require_once(SM_PATH . 'functions/page_header.php');
 require_once(SM_PATH . 'plugins/multi_account/account_manager.php');
 
 global $data_dir, $username, $color;
@@ -45,7 +52,7 @@ if (isset($_GET['action'])) {
 // Fetch and automatically mark message as seen
 $msgData = $mgr->fetchMessage($accountId, $uid);
 if (!$msgData || empty($msgData['parsed'])) {
-    displayPageHeader($color, 'None');
+    displayPageHeader($color, null);
     echo '<div style="padding: 30px; font-family: sans-serif; text-align: center;">';
     echo '<h3>Message could not be retrieved from the mail server.</h3>';
     echo '<p><a href="unified_inbox.php">&larr; Return to Unified Inbox</a></p>';
@@ -100,14 +107,9 @@ if (empty($bodyHtml) && !empty($bodyText)) {
     $bodyHtml = '<pre style="font-family: inherit; white-space: pre-wrap; word-break: break-word; font-size: 14px; line-height: 1.6; margin: 0;">' . $safeText . '</pre>';
 }
 
-displayPageHeader($color, 'None');
+displayPageHeader($color, null);
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <title><?php echo htmlspecialchars($subject); ?> - SquirrelMail</title>
-    <style>
+<style>
         :root {
             --primary: #1a73e8;
             --primary-hover: #1557b0;
@@ -245,8 +247,6 @@ displayPageHeader($color, 'None');
             min-height: 120px;
         }
     </style>
-</head>
-<body>
 
 <div class="viewer-container">
     <!-- Top Bar -->

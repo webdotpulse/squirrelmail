@@ -1027,3 +1027,33 @@ function parse_message_entities(&$msg, $id, $imap_stream) {
         }
     }
 }
+
+/**
+ * Retrieve header information for a single message
+ *
+ * @param resource $imap_stream IMAP connection stream
+ * @param int $id Message sequence number or UID
+ * @param mixed $mailbox (optional) Mailbox name
+ * @return object|false Object with properties subject, from, to, date, flags, or false on error
+ */
+if (!function_exists('sqimap_get_small_header')) {
+    function sqimap_get_small_header($imap_stream, $id, $mailbox = false) {
+        if (empty($id)) {
+            return false;
+        }
+        $list = sqimap_get_small_header_list($imap_stream, array($id));
+        if (empty($list)) {
+            return false;
+        }
+        $msg = reset($list);
+        $hdr = new stdClass();
+        $hdr->ID = $id;
+        $hdr->subject = isset($msg['subject']) ? $msg['subject'] : '';
+        $hdr->from = isset($msg['from']) ? $msg['from'] : '';
+        $hdr->to = isset($msg['to']) ? $msg['to'] : '';
+        $hdr->date = isset($msg['date']) ? $msg['date'] : '';
+        $hdr->flags = isset($msg['FLAGS']) ? array_keys($msg['FLAGS']) : array();
+        return $hdr;
+    }
+}
+

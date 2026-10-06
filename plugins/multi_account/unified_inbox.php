@@ -11,6 +11,13 @@
  */
 
 require('../../include/init.php');
+require_once(SM_PATH . 'functions/imap.php');
+require_once(SM_PATH . 'functions/imap_mailbox.php');
+require_once(SM_PATH . 'functions/imap_messages.php');
+if (!function_exists('imap_utf7_decode_local') && file_exists(SM_PATH . 'functions/imap_utf7_local.php')) {
+    require_once(SM_PATH . 'functions/imap_utf7_local.php');
+}
+require_once(SM_PATH . 'functions/page_header.php');
 require_once(SM_PATH . 'plugins/multi_account/account_manager.php');
 
 global $data_dir, $username, $color;
@@ -32,21 +39,21 @@ $errorNotice = '';
 $messages = [];
 try {
     $messages = $mgr->fetchUnifiedInbox($limit);
-} catch (Exception $e) {
+} catch (Throwable $e) {
     $errorNotice = $e->getMessage();
 }
 
-$unreadCounts = $mgr->getUnreadCounts();
+$unreadCounts = ['total_unread' => 0, 'accounts' => []];
+try {
+    $unreadCounts = $mgr->getUnreadCounts(false);
+} catch (Throwable $e) {
+    // Ignore fallback
+}
 $totalUnread = $unreadCounts['total_unread'] ?? 0;
 
-displayPageHeader($color, 'None');
+displayPageHeader($color, null);
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <title>Unified Inbox - SquirrelMail</title>
-    <style>
+<style>
         :root {
             --primary: #1a73e8;
             --primary-hover: #1557b0;
@@ -383,8 +390,6 @@ displayPageHeader($color, 'None');
             color: var(--text-dark);
         }
     </style>
-</head>
-<body>
 
 <div class="uni-container">
     <!-- Header -->
@@ -410,6 +415,13 @@ displayPageHeader($color, 'None');
             </a>
         </div>
     </div>
+
+    <?php if (!empty($errorNotice)): ?>
+        <div style="background: #fde8e8; border: 1px solid #f8b4b4; color: #9b1c1c; padding: 10px 14px; border-radius: 8px; margin-bottom: 14px; font-size: 13px; display: flex; align-items: center; gap: 8px;">
+            <span>⚠️</span>
+            <span><?php echo htmlspecialchars($errorNotice); ?></span>
+        </div>
+    <?php endif; ?>
 
     <!-- Toolbar: Filter Pills & Search Box -->
     <div class="uni-toolbar-row">

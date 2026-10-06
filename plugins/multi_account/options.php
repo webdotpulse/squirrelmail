@@ -11,6 +11,13 @@
  */
 
 require('../../include/init.php');
+require_once(SM_PATH . 'functions/imap.php');
+require_once(SM_PATH . 'functions/imap_mailbox.php');
+require_once(SM_PATH . 'functions/imap_messages.php');
+if (!function_exists('imap_utf7_decode_local') && file_exists(SM_PATH . 'functions/imap_utf7_local.php')) {
+    require_once(SM_PATH . 'functions/imap_utf7_local.php');
+}
+require_once(SM_PATH . 'functions/page_header.php');
 require_once(SM_PATH . 'plugins/multi_account/account_manager.php');
 
 global $data_dir, $username, $color;
@@ -94,14 +101,9 @@ if (isset($_GET['action']) && $_GET['action'] === 'edit' && !empty($_GET['id']))
 
 $accounts = $mgr->getAccounts(); // refresh list
 
-displayPageHeader($color, 'None');
+displayPageHeader($color, null);
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <title>Multi-Account Manager - SquirrelMail</title>
-    <style>
+<style>
         :root {
             --primary: #1a73e8;
             --primary-hover: #1557b0;
@@ -353,8 +355,6 @@ displayPageHeader($color, 'None');
             gap: 6px;
         }
     </style>
-</head>
-<body>
 
 <div class="mgr-container">
     <div class="mgr-header">
