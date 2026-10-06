@@ -1258,6 +1258,7 @@ if ($is_already_installed) {
                     <select id="server_preset" name="server_preset">
                         <option value="custom">Standard / Custom IMAP &amp; SMTP</option>
                         <option value="gmail" selected>Gmail / Google Workspace (imap.gmail.com / smtp.gmail.com)</option>
+                        <option value="combell">Combell Mail (imap.mailprotect.be / smtp-auth.mailprotect.be)</option>
                         <option value="dovecot">Dovecot IMAP Server</option>
                         <option value="courier">Courier IMAP Server</option>
                         <option value="cyrus">Cyrus IMAP Server</option>
@@ -1513,10 +1514,17 @@ if ($is_already_installed) {
                     <h3 class="form-section-title">Recommended Plugins to Enable</h3>
                     <div class="plugins-grid">
                         <label class="plugin-check">
-                            <input type="checkbox" name="plugins[]" value="delete_move_next" checked>
+                            <input type="checkbox" name="plugins[]" value="html_mail" checked>
                             <div>
-                                <strong>delete_move_next</strong>
-                                <div class="field-desc">Automatically open next email upon deletion.</div>
+                                <strong>html_mail</strong>
+                                <div class="field-desc">Rich HTML WYSIWYG compose &amp; multipart/alternative delivery.</div>
+                            </div>
+                        </label>
+                        <label class="plugin-check">
+                            <input type="checkbox" name="plugins[]" value="ai_agent" checked>
+                            <div>
+                                <strong>ai_agent</strong>
+                                <div class="field-desc">AI Email Assistant (Gemini 3.8: spam filter, auto-label, drafts, scam check).</div>
                             </div>
                         </label>
                         <label class="plugin-check">
@@ -1613,6 +1621,22 @@ if ($is_already_installed) {
                 smtp_tls: '1',
                 smtp_auth: '1',
                 domain: 'gmail.com'
+            },
+            combell: {
+                imap_host: 'imap.mailprotect.be',
+                imap_port: 993,
+                imap_tls: '1',
+                imap_type: 'other',
+                folder_prefix: '',
+                imap_delimiter: 'detect',
+                trash_folder: 'Trash',
+                sent_folder: 'Sent',
+                draft_folder: 'Drafts',
+                smtp_host: 'smtp-auth.mailprotect.be',
+                smtp_port: 465,
+                smtp_tls: '1',
+                smtp_auth: '1',
+                domain: ''
             },
             dovecot: {
                 imap_host: 'localhost',
