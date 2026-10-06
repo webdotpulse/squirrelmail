@@ -1528,6 +1528,13 @@ if ($is_already_installed) {
                             </div>
                         </label>
                         <label class="plugin-check">
+                            <input type="checkbox" name="plugins[]" value="multi_account" checked>
+                            <div>
+                                <strong>multi_account</strong>
+                                <div class="field-desc">Unified multi-account inbox, account switcher, and identity management.</div>
+                            </div>
+                        </label>
+                        <label class="plugin-check">
                             <input type="checkbox" name="plugins[]" value="squirrelspell" checked>
                             <div>
                                 <strong>squirrelspell</strong>
