@@ -781,6 +781,9 @@ $user_themes[1]['NAME'] = 'Blue Options';
 $user_themes[2]['PATH'] = '../css/gmail/';
 $user_themes[2]['NAME'] = 'Gmail';
 
+$user_themes[3]['PATH'] = '../css/modern_responsive/';
+$user_themes[3]['NAME'] = 'Modern Responsive';
+
 /**
  * Message Icons control
  *

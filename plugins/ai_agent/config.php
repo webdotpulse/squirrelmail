@@ -24,6 +24,11 @@ $gemini_api_key = getenv('GEMINI_API_KEY') ?: '';
 // Supported models: 'gemini-3.8-flash' (recommended), 'gemini-3.8-pro', 'gemini-2.5-flash'
 $gemini_model = 'gemini-3.8-flash';
 
+// Load persistent local configuration if exists
+if (file_exists(__DIR__ . '/config_local.php')) {
+    include(__DIR__ . '/config_local.php');
+}
+
 // 3. Web UI Feature Toggles
 $ai_enable_compose     = true;
 $ai_enable_reply       = true;

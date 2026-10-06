@@ -17,7 +17,7 @@ include_once(SM_PATH . 'plugins/ai_agent/gemini_client.php');
 header('Content-Type: application/json; charset=utf-8');
 
 // Ensure user is authenticated
-global $username;
+global $username, $data_dir;
 if (empty($username)) {
     echo json_encode(['success' => false, 'error' => 'Authentication required. Please log in to SquirrelMail.']);
     exit;

@@ -232,7 +232,9 @@ function save_configuration($data) {
 
     // Determine default user theme index
     $user_theme_default_idx = 0;
-    if ($chosen_theme === 'gmail') {
+    if ($chosen_theme === 'modern_responsive') {
+        $user_theme_default_idx = 3;
+    } elseif ($chosen_theme === 'gmail') {
         $user_theme_default_idx = 2;
     } elseif ($chosen_theme === 'blue') {
         $user_theme_default_idx = 1;
@@ -347,6 +349,9 @@ function save_configuration($data) {
 
 \$user_themes[2]['PATH'] = '../css/gmail/';
 \$user_themes[2]['NAME'] = 'Gmail';
+
+\$user_themes[3]['PATH'] = '../css/modern_responsive/';
+\$user_themes[3]['NAME'] = 'Modern Responsive';
 
 \$icon_theme_def = 1;
 \$icon_theme_fallback = 3;
@@ -1453,12 +1458,26 @@ if ($is_already_installed) {
                 <!-- Theme Selection -->
                 <div class="form-section">
                     <h3 class="form-section-title">Select Default Theme</h3>
-                    <input type="hidden" id="default_theme" name="default_theme" value="gmail">
+                    <input type="hidden" id="default_theme" name="default_theme" value="modern_responsive">
 
                     <div class="theme-cards">
+                        <!-- Modern Responsive Theme -->
+                        <div class="theme-card featured selected" data-theme="modern_responsive" id="theme-card-modern_responsive">
+                            <span class="theme-badge">RECOMMENDED &bull; RESPONSIVE</span>
+                            <div class="theme-name">Modern Responsive</div>
+                            <div class="theme-desc">Contemporary clean aesthetic with tailored HSL palette, royal blue accents, and seamless mobile responsiveness.</div>
+                            <div class="theme-palette">
+                                <div class="swatch" style="background: #2563eb;" title="Vibrant Blue"></div>
+                                <div class="swatch" style="background: #0f172a;" title="Slate 900"></div>
+                                <div class="swatch" style="background: #f8fafc;" title="Slate 50"></div>
+                                <div class="swatch" style="background: #ffffff;" title="Clean White"></div>
+                                <div class="swatch" style="background: #e2e8f0;" title="Slate 200"></div>
+                            </div>
+                            <div style="font-size: 11px; color: var(--primary); font-weight: 600; margin-top: 6px;">✓ Active Theme (Mobile Ready)</div>
+                        </div>
+
                         <!-- Gmail Theme -->
-                        <div class="theme-card featured selected" data-theme="gmail" id="theme-card-gmail">
-                            <span class="theme-badge">RECOMMENDED</span>
+                        <div class="theme-card" data-theme="gmail" id="theme-card-gmail">
                             <div class="theme-name">Gmail Theme</div>
                             <div class="theme-desc">Modern Google Material design with clean white surfaces, Google Blue accents, and sleek typography.</div>
                             <div class="theme-palette">
@@ -1468,7 +1487,6 @@ if ($is_already_installed) {
                                 <div class="swatch" style="background: #ffffff;" title="Canvas White"></div>
                                 <div class="swatch" style="background: #202124;" title="Google Dark"></div>
                             </div>
-                            <div style="font-size: 11px; color: var(--primary); font-weight: 600; margin-top: 6px;">✓ Active Theme</div>
                         </div>
 
                         <!-- Default SquirrelMail Theme -->

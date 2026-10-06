@@ -99,6 +99,7 @@ function displayHtmlHeader( $title = 'SquirrelMail', $xtra = '', $do_hook = TRUE
     $oTemplate->assign('lang', $squirrelmail_language);
 
     $header_tags .= "<meta name=\"robots\" content=\"noindex,nofollow\" />\n"
+                  . "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n"
 
     // For adding a favicon or anything else that should be inserted in *ALL* <head> for *ALL* documents,
     // define $head_tag_extra in config/config_local.php

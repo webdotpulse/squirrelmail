@@ -22,6 +22,35 @@ if (empty($username)) {
 $updated = false;
 $test_result = null;
 
+function ai_agent_persist_key($apiKey, $model = 'gemini-3.8-flash') {
+    global $data_dir, $username;
+    
+    // 1. Session
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        $_SESSION['ai_agent_api_key'] = $apiKey;
+        $_SESSION['ai_agent_model'] = $model;
+    }
+
+    // 2. User Prefs
+    if (!empty($data_dir) && !empty($username) && function_exists('setPref')) {
+        setPref($data_dir, $username, 'ai_agent_api_key', $apiKey);
+        setPref($data_dir, $username, 'ai_agent_model', $model);
+    }
+
+    // 3. Local persistent PHP config
+    $cfgPath = __DIR__ . '/config_local.php';
+    $cfgCode = "<?php\n// Persistent Google Gemini AI configuration\n"
+             . "\$gemini_api_key = " . var_export($apiKey, true) . ";\n"
+             . "\$gemini_model = " . var_export($model, true) . ";\n";
+    @file_put_contents($cfgPath, $cfgCode);
+
+    // 4. Data directory file
+    $dataDir = !empty($data_dir) ? $data_dir : (defined('SM_PATH') ? SM_PATH . 'data' : __DIR__ . '/../../data');
+    if (is_dir($dataDir) && is_writable($dataDir)) {
+        @file_put_contents(rtrim($dataDir, '/') . '/ai_gemini_key.dat', $apiKey);
+    }
+}
+
 // Handle Form Submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['save_ai_agent_options'])) {
@@ -32,8 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $autoLabel = isset($_POST['ai_agent_auto_label']) && $_POST['ai_agent_auto_label'] === '1' ? '1' : '0';
         $autoDraft = isset($_POST['ai_agent_auto_draft']) && $_POST['ai_agent_auto_draft'] === '1' ? '1' : '0';
 
-        setPref($data_dir, $username, 'ai_agent_api_key', $apiKey);
-        setPref($data_dir, $username, 'ai_agent_model', $model);
+        ai_agent_persist_key($apiKey, $model);
         setPref($data_dir, $username, 'ai_agent_spam_filter', $spamFilt);
         setPref($data_dir, $username, 'ai_agent_spam_action', $spamAct);
         setPref($data_dir, $username, 'ai_agent_auto_label', $autoLabel);
@@ -50,9 +78,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $testRes = $client->callGemini('Say "Gemini 3.8 AI is active and connected!" in one sentence.');
         if ($testRes['success']) {
+            // Automatically persist verified key so user never loses it
+            ai_agent_persist_key($testKey, $testModel);
             $test_result = [
                 'success' => true,
-                'message' => 'Connection Successful! Model ' . htmlspecialchars($testModel) . ' responded: "' . htmlspecialchars($testRes['text']) . '"'
+                'message' => 'Connection Successful! Model ' . htmlspecialchars($testModel) . ' responded: "' . htmlspecialchars($testRes['text']) . '" - Your key has been validated and permanently saved.'
             ];
         } else {
             $test_result = [
@@ -63,9 +93,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Current Preferences
-$current_key   = getPref($data_dir, $username, 'ai_agent_api_key', $gemini_api_key ?: '');
-$current_model = getPref($data_dir, $username, 'ai_agent_model', $gemini_model ?: 'gemini-3.8-flash');
+// Current Preferences (using multi-tier resolver)
+$keyResolver   = new SquirrelMailGeminiClient();
+$current_key   = $keyResolver->getApiKey();
+$current_model = $keyResolver->getModel() ?: 'gemini-3.8-flash';
 $current_spam  = getPref($data_dir, $username, 'ai_agent_spam_filter', '1');
 $current_act   = getPref($data_dir, $username, 'ai_agent_spam_action', 'trash');
 $current_label = getPref($data_dir, $username, 'ai_agent_auto_label', '1');

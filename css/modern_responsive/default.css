@@ -1,0 +1,420 @@
+/* ==========================================================================
+   SquirrelMail - Modern Responsive Theme
+   A contemporary, clean, and mobile-responsive aesthetic for SquirrelMail
+   ========================================================================== */
+
+/* Modern CSS Reset & Typography */
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+:root {
+    --sm-primary: #2563eb;
+    --sm-primary-hover: #1d4ed8;
+    --sm-primary-light: #eff6ff;
+    --sm-text-dark: #0f172a;
+    --sm-text-body: #1e293b;
+    --sm-text-muted: #64748b;
+    --sm-bg-body: #ffffff;
+    --sm-bg-sidebar: #f8fafc;
+    --sm-bg-surface: #ffffff;
+    --sm-bg-alt: #f8fafc;
+    --sm-border: #e2e8f0;
+    --sm-border-light: #f1f5f9;
+    --sm-danger: #ef4444;
+    --sm-danger-light: #fef2f2;
+    --sm-radius-sm: 4px;
+    --sm-radius-md: 6px;
+    --sm-radius-lg: 8px;
+    --sm-radius-pill: 9999px;
+    --sm-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --sm-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+    --sm-font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+body {
+    font-family: var(--sm-font-stack);
+    color: var(--sm-text-body);
+    background-color: var(--sm-bg-body);
+    line-height: 1.5;
+    margin: 0;
+    padding: 12px 16px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Modern Sleek Scrollbars */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Base Links */
+a:link, a:visited {
+    color: var(--sm-primary);
+    text-decoration: none;
+    transition: color 0.15s ease, background 0.15s ease;
+}
+a:hover, a:active {
+    color: var(--sm-primary-hover);
+    text-decoration: underline;
+}
+
+/* Form Controls (Inputs, Selects, Buttons) */
+input[type="text"],
+input[type="password"],
+input[type="email"],
+select,
+textarea {
+    font-family: var(--sm-font-stack);
+    font-size: 13.5px;
+    padding: 7px 11px;
+    border: 1px solid var(--sm-border);
+    border-radius: var(--sm-radius-md);
+    background-color: #ffffff;
+    color: var(--sm-text-dark);
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    box-sizing: border-box;
+    max-width: 100%;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="email"]:focus,
+select:focus,
+textarea:focus {
+    border-color: var(--sm-primary);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
+}
+
+/* Buttons */
+input[type="submit"],
+input[type="button"],
+input[type="reset"],
+button {
+    font-family: var(--sm-font-stack);
+    font-size: 13px;
+    font-weight: 500;
+    padding: 7px 14px;
+    border-radius: var(--sm-radius-md);
+    border: 1px solid var(--sm-border);
+    background-color: #ffffff;
+    color: var(--sm-text-dark);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.15s ease;
+    line-height: 1.4;
+}
+
+input[type="submit"]:hover,
+input[type="button"]:hover,
+button:hover {
+    background-color: #f8fafc;
+    border-color: #cbd5e1;
+    color: var(--sm-primary);
+}
+
+/* Primary Action Buttons */
+input[type="submit"][name="send"],
+input[type="submit"][value*="Send"],
+.btn-primary {
+    background-color: var(--sm-primary) !important;
+    border-color: var(--sm-primary) !important;
+    color: #ffffff !important;
+    font-weight: 600;
+}
+input[type="submit"][name="send"]:hover,
+input[type="submit"][value*="Send"]:hover,
+.btn-primary:hover {
+    background-color: var(--sm-primary-hover) !important;
+    color: #ffffff !important;
+}
+
+/* Left Navigation Sidebar (Folder Tree) */
+body.sqm_leftMain {
+    background-color: var(--sm-bg-sidebar) !important;
+    color: var(--sm-text-dark);
+    padding: 10px 12px;
+    border-right: 1px solid var(--sm-border);
+}
+
+.sqm_leftMain a:link, .sqm_leftMain a:visited {
+    color: var(--sm-text-dark);
+    text-decoration: none;
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: var(--sm-radius-md);
+    font-size: 13px;
+    font-weight: 500;
+    transition: background-color 0.15s ease;
+}
+
+.sqm_leftMain a:hover, .sqm_leftMain a:active {
+    background-color: #e2e8f0;
+    color: var(--sm-primary);
+    text-decoration: none;
+}
+
+.leftunseen {
+    color: var(--sm-primary) !important;
+    font-weight: 700 !important;
+}
+
+.leftspecial, .leftspecial a:link, .leftspecial a:visited {
+    color: #e11d48 !important;
+    font-weight: 600 !important;
+}
+
+.sqm_folderHeader {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--sm-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--sm-border);
+    margin-bottom: 8px;
+    display: block;
+}
+
+/* Top App Header & Menuline */
+td.header1, .sqm_loginOrgName, .sqm_signoutBar {
+    background-color: #ffffff !important;
+    border-bottom: 1px solid var(--sm-border);
+    padding: 10px 16px;
+}
+
+.sqm_menuline {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px 0 14px 0;
+    border-bottom: 1px solid var(--sm-border);
+    margin-bottom: 16px;
+}
+
+.sqm_menuline a:link, .sqm_menuline a:visited {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 12px;
+    border-radius: var(--sm-radius-md);
+    background-color: #f1f5f9;
+    color: var(--sm-text-dark);
+    font-size: 12.5px;
+    font-weight: 500;
+    text-decoration: none;
+    border: 1px solid transparent;
+    transition: all 0.15s ease;
+}
+
+.sqm_menuline a:hover, .sqm_menuline a:active {
+    background-color: var(--sm-primary-light);
+    color: var(--sm-primary);
+    border-color: #bfdbfe;
+    text-decoration: none;
+}
+
+/* Message List Table */
+table.table1, table.table_empty, .sqm_wrapperTable {
+    width: 100% !important;
+    border-collapse: collapse;
+    background-color: #ffffff;
+    border: 1px solid var(--sm-border);
+    border-radius: var(--sm-radius-lg);
+    overflow: hidden;
+    box-shadow: var(--sm-shadow-sm);
+    margin-bottom: 16px;
+}
+
+/* Table Headers */
+tr.header5, tr.header4, th, .thead_caption {
+    background-color: #f8fafc !important;
+    color: var(--sm-text-muted) !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    border-bottom: 1px solid var(--sm-border);
+    padding: 9px 12px !important;
+    text-align: left;
+}
+
+/* Table Data Rows */
+table.table1 td, tr.even td, tr.odd td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--sm-border-light);
+    vertical-align: middle;
+    font-size: 13.5px;
+    transition: background 0.1s ease;
+}
+
+tr.odd, tr.even {
+    background-color: #ffffff;
+}
+
+tr.odd:hover, tr.even:hover {
+    background-color: #f8fafc !important;
+}
+
+/* Bold Styling for Unread Messages */
+tr.unread td, tr.unread b, tr.unread a {
+    font-weight: 700 !important;
+    color: var(--sm-text-dark) !important;
+}
+
+/* Message View / Reading Pane Card */
+.read-message-card {
+    background: #ffffff;
+    border: 1px solid var(--sm-border);
+    border-radius: var(--sm-radius-lg);
+    box-shadow: var(--sm-shadow-sm);
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.read-message-headers {
+    border-bottom: 1px solid var(--sm-border);
+    padding-bottom: 14px;
+    margin-bottom: 16px;
+    font-size: 13.5px;
+    line-height: 1.6;
+}
+
+.read-message-body {
+    font-size: 14px;
+    line-height: 1.6;
+    color: #1e293b;
+    word-break: break-word;
+    overflow-x: auto;
+}
+
+/* Compose Screen */
+.compose-table {
+    width: 100%;
+    max-width: 900px;
+    margin: 0 auto;
+    background: #ffffff;
+    border: 1px solid var(--sm-border);
+    border-radius: var(--sm-radius-lg);
+    padding: 16px;
+    box-shadow: var(--sm-shadow-sm);
+}
+
+.compose-table td {
+    padding: 8px 10px;
+}
+
+textarea#body {
+    width: 100% !important;
+    min-height: 280px;
+    border: 1px solid var(--sm-border);
+    border-radius: var(--sm-radius-md);
+    padding: 12px;
+    font-size: 14px;
+    font-family: inherit;
+    line-height: 1.6;
+    box-sizing: border-box;
+}
+
+/* Error and Alert Boxes */
+.error_table, .sqm_errorBox {
+    background-color: var(--sm-danger-light) !important;
+    border: 1px solid #fecaca !important;
+    color: #991b1b !important;
+    border-radius: var(--sm-radius-md);
+    padding: 12px 16px;
+    margin: 12px 0;
+    font-weight: 500;
+}
+
+/* ==========================================================================
+   Mobile Responsive Adjustments
+   ========================================================================== */
+
+@media screen and (max-width: 768px) {
+    body {
+        padding: 8px;
+    }
+
+    /* Wrap menuline gracefully */
+    .sqm_menuline {
+        gap: 6px;
+        justify-content: flex-start;
+    }
+    .sqm_menuline a:link, .sqm_menuline a:visited {
+        padding: 6px 10px;
+        font-size: 12px;
+    }
+
+    /* Table adjustments */
+    table.table1 {
+        display: block;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        border-radius: var(--sm-radius-md);
+    }
+
+    table.table1 td, table.table1 th {
+        padding: 8px 8px;
+        font-size: 12.5px;
+    }
+
+    /* Hide non-essential columns on tablet/mobile to focus on Sender and Subject */
+    .col-priority,
+    .col-size,
+    .col-flags,
+    td[headers*="priority"],
+    th[id*="priority"] {
+        display: none !important;
+    }
+
+    /* Full-width inputs on mobile */
+    input[type="text"],
+    input[type="password"],
+    input[type="email"],
+    select {
+        width: 100% !important;
+        font-size: 15px !important; /* Prevents auto-zoom on iOS */
+    }
+
+    /* Touch-friendly buttons */
+    input[type="submit"],
+    input[type="button"],
+    button {
+        min-height: 38px;
+        padding: 8px 14px;
+    }
+
+    .compose-table {
+        padding: 8px;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    body {
+        padding: 4px;
+    }
+
+    .sqm_folderHeader {
+        font-size: 12px;
+    }
+
+    table.table1 td {
+        padding: 8px 6px;
+    }
+}

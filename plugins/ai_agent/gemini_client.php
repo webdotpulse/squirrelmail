@@ -20,7 +20,12 @@ class SquirrelMailGeminiClient
         // 1. Passed in argument
         $this->apiKey = $apiKey;
 
-        // 2. User preference override
+        // 2. Session cache
+        if (empty($this->apiKey) && !empty($_SESSION['ai_agent_api_key'])) {
+            $this->apiKey = $_SESSION['ai_agent_api_key'];
+        }
+
+        // 3. User preference override
         if (empty($this->apiKey) && !empty($data_dir) && !empty($username) && function_exists('getPref')) {
             $userKey = getPref($data_dir, $username, 'ai_agent_api_key', '');
             if (!empty($userKey)) {
@@ -28,19 +33,47 @@ class SquirrelMailGeminiClient
             }
         }
 
-        // 3. Plugin config or environment
+        // 4. Local persistent config file
+        if (empty($this->apiKey) && file_exists(__DIR__ . '/config_local.php')) {
+            @include(__DIR__ . '/config_local.php');
+            if (!empty($gemini_api_key)) {
+                $this->apiKey = $gemini_api_key;
+            }
+        }
+
+        // 5. Data dir persistent key file
+        if (empty($this->apiKey)) {
+            $dataDir = !empty($data_dir) ? $data_dir : (defined('SM_PATH') ? SM_PATH . 'data' : __DIR__ . '/../../data');
+            $keyFile = rtrim($dataDir, '/') . '/ai_gemini_key.dat';
+            if (file_exists($keyFile) && is_readable($keyFile)) {
+                $this->apiKey = trim((string)@file_get_contents($keyFile));
+            }
+        }
+
+        // 6. Plugin config or environment
         if (empty($this->apiKey)) {
             $this->apiKey = !empty($gemini_api_key) ? $gemini_api_key : (getenv('GEMINI_API_KEY') ?: '');
+        }
+
+        // Cache into session for speed and stability
+        if (!empty($this->apiKey) && session_status() === PHP_SESSION_ACTIVE) {
+            $_SESSION['ai_agent_api_key'] = $this->apiKey;
         }
 
         // Model
         if (!empty($model)) {
             $this->model = $model;
+        } elseif (!empty($_SESSION['ai_agent_model'])) {
+            $this->model = $_SESSION['ai_agent_model'];
         } elseif (!empty($data_dir) && !empty($username) && function_exists('getPref')) {
             $userModel = getPref($data_dir, $username, 'ai_agent_model', '');
             $this->model = !empty($userModel) ? $userModel : (!empty($gemini_model) ? $gemini_model : 'gemini-3.8-flash');
         } else {
             $this->model = !empty($gemini_model) ? $gemini_model : 'gemini-3.8-flash';
+        }
+
+        if (!empty($this->model) && session_status() === PHP_SESSION_ACTIVE) {
+            $_SESSION['ai_agent_model'] = $this->model;
         }
     }
 

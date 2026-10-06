@@ -1120,3 +1120,46 @@ hr.entity_sep {
     height: 1px;
     background-color: gray;
 }
+
+/* ==========================================================================
+   Responsive Base Rules for SquirrelMail Default Template
+   ========================================================================== */
+@media screen and (max-width: 768px) {
+    *, *::before, *::after {
+        box-sizing: border-box;
+    }
+
+    body {
+        padding: 6px !important;
+    }
+
+    table.table1, table.table_empty, .sqm_wrapperTable {
+        display: block !important;
+        width: 100% !important;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    input[type="text"],
+    input[type="password"],
+    input[type="email"],
+    select,
+    textarea {
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    .sqm_menuline {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 6px !important;
+        align-items: center;
+    }
+
+    .sqm_menuline a:link,
+    .sqm_menuline a:visited {
+        display: inline-block;
+        padding: 4px 8px;
+    }
+}
+
