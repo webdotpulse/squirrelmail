@@ -324,6 +324,34 @@
                     return;
                 }
 
+                // Handle empty_trash.php action: Purge Trash
+                if (url.pathname.endsWith('/empty_trash.php')) {
+                    e.preventDefault();
+                    this.showLoading();
+                    fetch(url.toString(), {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(response => {
+                        this.refreshFolders();
+                        // If current workspace is viewing the Trash mailbox, reload it to reflect empty trash
+                        const current = new URL(this.state.currentUrl, window.location.origin);
+                        if (current.pathname.includes('webmail.php') || current.pathname.includes('right_main.php')) {
+                            this.navigate(this.state.currentUrl, false);
+                        }
+                        this.showToast('Trash emptied successfully.');
+                    })
+                    .catch(err => {
+                        console.error('Error emptying trash:', err);
+                        this.showToast('Failed to empty trash.', 'error');
+                    })
+                    .finally(() => {
+                        this.hideLoading();
+                    });
+                    return;
+                }
+
                 e.preventDefault();
                 this.navigate(url.toString(), true);
             });
@@ -364,8 +392,15 @@
                     }
                 }
 
+                // Safety guard: left_main.php is the sidebar fragment and must NEVER be rendered inside #sm-workspace
+                const effectiveUrl = response.url || url;
+                if (effectiveUrl.includes('/left_main.php')) {
+                    this.refreshFolders();
+                    return;
+                }
+
                 const html = await response.text();
-                this.renderWorkspace(html, response.url || url);
+                this.renderWorkspace(html, effectiveUrl);
 
                 if (pushState) {
                     window.history.pushState({ url: url }, '', url);

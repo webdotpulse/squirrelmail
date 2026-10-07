@@ -1,4 +1,4 @@
-# SquirrelMail 1.5.62
+# SquirrelMail 1.5.64
 
 A modernized, responsive edition of SquirrelMail engineered for PHP 7.0 through 8.2+ with a Single-Page Application (SPA) interface, modern UI styling, and extensive feature enhancements.
 
@@ -57,6 +57,43 @@ This repository includes an [AGENTS.md](file:///home/koen/Git/squirrelmail/AGENT
 ---
 
 ## 📝 Changelog
+
+### Version 1.5.64
+- **Purge Trash Sidebar Reload Fix (`src/empty_trash.php`, `templates/default/left_main.tpl`, `assets/js/app.js`)**:
+  - **Fixed Workspace Inadvertently Rendering the Sidebar**: Resolved an issue where clicking the `[Purge]` button next to Trash in the left sidebar emptied the trash but caused the sidebar (`left_main.php`) to be erroneously loaded and displayed inside the right `#sm-workspace`.
+  - **SPA Router Interception (`assets/js/app.js`)**:
+    - Added dedicated link click interception for `empty_trash.php` in `app.js` to execute the purge asynchronously via `fetch()` with `X-Requested-With: XMLHttpRequest`.
+    - Automatically triggers `refreshFolders()` to update folder unread badges and remove the `[Purge]` link upon emptying.
+    - If the user is currently viewing the Trash folder in `#sm-workspace`, automatically reloads the workspace to display the empty mailbox.
+    - Added an SPA safety guard in `navigate()` preventing any HTTP response URL pointing to `left_main.php` from ever being injected into the right workspace.
+  - **Backend JSON & Redirect Modernization (`src/empty_trash.php`)**:
+    - Replaced the legacy 2002 frameset redirect `header("Location: $location/left_main.php")` with modern AJAX JSON response (`{status: "success"}`) for asynchronous requests and standard redirect to `webmail.php` for fallback requests.
+  - **User Confirmation & Styling (`templates/default/left_main.tpl`)**:
+    - Added a confirmation prompt (`Are you sure you want to empty and purge the Trash folder?`) and CSS class `.sm-purge-trash-link`.
+- **Version Bump**: Incremented version from `1.5.63` to `1.5.64`.
+
+### Version 1.5.63
+- **Conversation Threading, Draft Resumption, and Mailbox View Badges (`plugins/conversation_view`, `src/compose.php`, `functions/imap_messages.php`, `config/plugin_hooks.php`, `assets/css/app.css`)**:
+  - **Mailbox View Badges & Direct Draft Resumption (`plugins/conversation_view/setup.php`, `functions.php`, `conversation.css`, `assets/css/app.css`)**:
+    - Implemented `template_construct_message_list.tpl` hook in `conversation_view` (`cv_mailbox_annotate_messages()`), annotating message subjects with interactive badges:
+      - `📝 Draft`: Directly links to resume the pending draft in Compose (`compose.php?smaction_draft=1&passed_id=$uid&mailbox=$df`) without selecting the row or opening the original message.
+      - `📤 Replied`: Indicates that an email was replied to via IMAP `\Answered` flag or matching sent reply in Sent folder.
+      - `↩️ Draft Reply`: Displayed on draft replies inside the Drafts folder, indicating which mailbox/message it responds to.
+    - Integrated `cv_mailbox_badges` preference toggle in Conversation View Options (`plugins/conversation_view/options.php`).
+    - Registered `template_construct_page_header.tpl` hook to ensure Conversation View stylesheet and JavaScript are loaded globally.
+  - **Thread Timeline Cross-Folder Discovery Fixes (`plugins/conversation_view/functions.php`)**:
+    - Replaced unreliable `sqimap_mailbox_exists()` checks with direct `sqimap_mailbox_select()` calls, preventing Sent and Drafts folders from being erroneously skipped on servers where `LIST ""` requires mailbox wildcards or folder prefixes.
+    - Added multi-criteria Sent and Drafts discovery matching both Message-IDs and clean normalized subjects, as well as fallback small header inspection for recent drafts.
+    - Enhanced `cv_clean_subject()` with a recursive regex loop to symmetrically strip nested prefixes and bracketed mailing-list tags (e.g. `Re[2]:`, `Re: [Project]`, `[Tag] Re:`).
+  - **Reply & Draft Header Retention (`src/compose.php`)**:
+    - Fixed session message persistence in `newMail()` for `case ('reply')` and `case ('reply_all')` by registering `$compose_messages[$session]` and populating `in_reply_to`, `references`, and `X-SM-Flag-Reply` on `$composeMessage->rfc822_header`.
+    - Added hidden form fields (`x_sm_flag_reply`, `in_reply_to`, `references`) in `showInputForm()` to preserve threading context across multi-step edits, saves, and session refreshes.
+    - Resolved draft delivery bug in `deliverMessage()`: unpacked `x_sm_flag_reply` before evaluating `$reply_id`, ensuring resumed drafts mark the original message as `\Answered` upon sending and retain `X-SM-Flag-Reply` if re-saved as a draft.
+  - **IMAP Search UID Parsing Fix (`functions/imap_messages.php`)**:
+    - Updated `parseUidList()` to seamlessly parse both 1D flat string arrays and 2D arrays returned by IMAP search commands, resolving empty UID search result arrays in `cv_run_uid_search()`.
+  - **Smooth Scroll & Micro-interactions (`plugins/conversation_view/conversation.js`)**:
+    - Added click interception and hash-change listeners for `a[href*="#cv-conversation-thread"]` ensuring the "💬 Thread (N)" button smoothly scrolls to the conversation timeline in both traditional and SPA navigation modes.
+- **Version Bump**: Incremented version from `1.5.62` to `1.5.63`.
 
 ### Version 1.5.62
 - **Login Form Text Input Padding on Themes**:

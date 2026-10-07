@@ -23,6 +23,7 @@ $cv_position    = getPref($data_dir, $username, 'conversation_view_position', 'b
 $search_sent    = (int) getPref($data_dir, $username, 'cv_search_sent', 1);
 $search_drafts  = (int) getPref($data_dir, $username, 'cv_search_drafts', 1);
 $search_current = (int) getPref($data_dir, $username, 'cv_search_current', 1);
+$cv_mailbox_badges = (int) getPref($data_dir, $username, 'cv_mailbox_badges', 1);
 
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_settings'])) {
@@ -36,12 +37,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_settings'])) {
         $search_sent    = !empty($_POST['search_sent']) ? 1 : 0;
         $search_drafts  = !empty($_POST['search_drafts']) ? 1 : 0;
         $search_current = !empty($_POST['search_current']) ? 1 : 0;
+        $cv_mailbox_badges = !empty($_POST['cv_mailbox_badges']) ? 1 : 0;
 
         setPref($data_dir, $username, 'conversation_view_enabled', $cv_enabled);
         setPref($data_dir, $username, 'conversation_view_position', $cv_position);
         setPref($data_dir, $username, 'cv_search_sent', $search_sent);
         setPref($data_dir, $username, 'cv_search_drafts', $search_drafts);
         setPref($data_dir, $username, 'cv_search_current', $search_current);
+        setPref($data_dir, $username, 'cv_mailbox_badges', $cv_mailbox_badges);
 
         $msg = _("Conversation View preferences saved successfully!");
         $msg_type = 'success';
@@ -210,6 +213,15 @@ $token = function_exists('sm_generate_security_token') ? sm_generate_security_to
                     <div class="cv-opts-item-content">
                         <label for="search_current" class="cv-opts-item-label"><?php echo _("Include Other Incoming Replies in Current Folder"); ?></label>
                         <div class="cv-opts-item-sub"><?php echo _("Discovers prior or subsequent incoming emails in the same folder that belong to the same conversation thread."); ?></div>
+                    </div>
+                </div>
+
+                <!-- Mailbox View Badges Toggle -->
+                <div class="cv-opts-item">
+                    <input type="checkbox" name="cv_mailbox_badges" id="cv_mailbox_badges" value="1" <?php if ($cv_mailbox_badges) echo 'checked'; ?> class="cv-opts-checkbox">
+                    <div class="cv-opts-item-content">
+                        <label for="cv_mailbox_badges" class="cv-opts-item-label"><?php echo _("Show Conversation Badges in Mailbox View"); ?></label>
+                        <div class="cv-opts-item-sub"><?php echo _("Displays interactive '📝 Draft', '📤 Replied', and '↩️ Draft Reply' indicators directly in the message list."); ?></div>
                     </div>
                 </div>
 

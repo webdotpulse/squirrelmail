@@ -23,6 +23,12 @@ function squirrelmail_plugin_init_conversation_view()
 {
     global $squirrelmail_plugin_hooks;
 
+    $squirrelmail_plugin_hooks['template_construct_page_header.tpl']['conversation_view']
+        = 'conversation_view_page_header';
+
+    $squirrelmail_plugin_hooks['template_construct_message_list.tpl']['conversation_view']
+        = 'conversation_view_message_list';
+
     $squirrelmail_plugin_hooks['read_body_header_right']['conversation_view']
         = 'conversation_view_read_body_header_right';
 
@@ -161,4 +167,66 @@ function conversation_view_optpage_register_block()
         'desc' => _("Configure cross-folder conversation threading, showing sent replies and pending drafts in message view."),
         'js'   => false
     );
+}
+
+/**
+ * Hook: Inject Conversation View CSS & JS into page header
+ *
+ * @return array
+ */
+function conversation_view_page_header()
+{
+    global $data_dir, $username;
+    $enabled = (int) getPref($data_dir, $username, 'conversation_view_enabled', 1);
+    if (!$enabled) {
+        return array();
+    }
+
+    $baseUri = sqm_baseuri();
+    $cssUrl = $baseUri . 'plugins/conversation_view/conversation.css';
+    $jsUrl = $baseUri . 'plugins/conversation_view/conversation.js';
+
+    $html = '<link rel="stylesheet" type="text/css" href="' . htmlspecialchars($cssUrl, ENT_QUOTES, 'UTF-8') . '">' . "\n"
+          . '<script type="text/javascript" src="' . htmlspecialchars($jsUrl, ENT_QUOTES, 'UTF-8') . '"></script>' . "\n";
+
+    return array('page_header_top' => $html);
+}
+
+/**
+ * Hook: Annotate mailbox message list with draft badges and reply indicators
+ *
+ * @param array|null $args Arguments passed from template_construct_message_list.tpl
+ * @return array
+ */
+function conversation_view_message_list($args = null)
+{
+    global $oTemplate, $imapConnection, $data_dir, $username;
+
+    $enabled = (int) getPref($data_dir, $username, 'conversation_view_enabled', 1);
+    if (!$enabled) {
+        return array();
+    }
+
+    $tpl = (is_array($args) && isset($args[1]) && is_object($args[1])) ? $args[1] : $oTemplate;
+    if (!$tpl) {
+        return array();
+    }
+
+    $tplVars = method_exists($tpl, 'get_template_vars') ? $tpl->get_template_vars() : (isset($tpl->values) ? $tpl->values : array());
+    if (empty($tplVars) || empty($tplVars['aMessages']) || !is_array($tplVars['aMessages'])) {
+        return array();
+    }
+
+    $mailbox = isset($tplVars['mailbox']) ? $tplVars['mailbox'] : 'INBOX';
+    $messages = $tplVars['aMessages'];
+
+    try {
+        include_once(SM_PATH . 'plugins/conversation_view/functions.php');
+        cv_mailbox_annotate_messages($messages, $mailbox, $imapConnection);
+        $tpl->assign('aMessages', $messages);
+    } catch (\Throwable $e) {
+        error_log('conversation_view_message_list error: ' . $e->getMessage());
+    }
+
+    return array();
 }

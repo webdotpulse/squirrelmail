@@ -61,8 +61,11 @@ function cv_clean_subject($subject)
         return '';
     }
     $clean = decodeHeader($subject, false, false, true);
-    // Recursively strip [Tag], Re:, Fwd:, Fw:, Aw:, Antw:, Rif:, Sv:
-    $clean = preg_replace('/^\s*(?:\[[^\]]+\]\s*)?(?:(?:re|fwd|fw|aw|antw|rif|sv)\s*:\s*)+/i', '', $clean);
+    $prev = '';
+    while ($clean !== $prev) {
+        $prev = $clean;
+        $clean = preg_replace('/^\s*(?:\[[^\]]+\]|(?:re|fwd|fw|aw|antw|rif|sv)(?:\[\d+\])?)\s*[:\-]?\s*/i', '', $clean);
+    }
     return trim($clean);
 }
 
@@ -269,7 +272,10 @@ function cv_get_conversation_thread($imapConnection, $currentMailbox, $currentUi
         // 2. Determine target folders to inspect with resilient candidate discovery
         $folders_to_check = array();
         if ($search_current && !empty($currentMailbox)) {
-            $folders_to_check[$currentMailbox] = 'received';
+            $cur_info = sqimap_mailbox_select($imapConnection, $currentMailbox, false);
+            if (!empty($cur_info) && isset($cur_info['EXISTS'])) {
+                $folders_to_check[$currentMailbox] = array('type' => 'received', 'info' => $cur_info);
+            }
         }
         if ($search_sent) {
             $sent_candidates = array_unique(array_filter(array(
@@ -282,8 +288,10 @@ function cv_get_conversation_thread($imapConnection, $currentMailbox, $currentUi
                 'Sent Items',
             )));
             foreach ($sent_candidates as $sf) {
-                if ($sf && sqimap_mailbox_exists($imapConnection, $sf)) {
-                    $folders_to_check[$sf] = 'sent';
+                if (!$sf) continue;
+                $mbx_info = sqimap_mailbox_select($imapConnection, $sf, false);
+                if (!empty($mbx_info) && isset($mbx_info['EXISTS'])) {
+                    $folders_to_check[$sf] = array('type' => 'sent', 'info' => $mbx_info);
                     break;
                 }
             }
@@ -297,8 +305,10 @@ function cv_get_conversation_thread($imapConnection, $currentMailbox, $currentUi
                 'INBOX/Drafts',
             )));
             foreach ($draft_candidates as $df) {
-                if ($df && sqimap_mailbox_exists($imapConnection, $df)) {
-                    $folders_to_check[$df] = 'draft';
+                if (!$df) continue;
+                $mbx_info = sqimap_mailbox_select($imapConnection, $df, false);
+                if (!empty($mbx_info) && isset($mbx_info['EXISTS'])) {
+                    $folders_to_check[$df] = array('type' => 'draft', 'info' => $mbx_info);
                     break;
                 }
             }
@@ -307,13 +317,16 @@ function cv_get_conversation_thread($imapConnection, $currentMailbox, $currentUi
         $all_messages = array();
 
         // 3. Search and extract messages from each folder
-        foreach ($folders_to_check as $folderName => $defaultType) {
-            if (!sqimap_mailbox_exists($imapConnection, $folderName)) {
+        foreach ($folders_to_check as $folderName => $fMeta) {
+            $defaultType = $fMeta['type'];
+            $mbx_info = $fMeta['info'];
+            if (empty($mbx_info) || !isset($mbx_info['EXISTS']) || $mbx_info['EXISTS'] == 0) {
                 continue;
             }
 
-            $mbx_info = sqimap_mailbox_select($imapConnection, $folderName, false);
-            if (empty($mbx_info) || !isset($mbx_info['EXISTS']) || $mbx_info['EXISTS'] == 0) {
+            // Ensure this folder is selected on the IMAP stream
+            $cur_sel = sqimap_mailbox_select($imapConnection, $folderName, false);
+            if (empty($cur_sel) || !isset($cur_sel['EXISTS']) || $cur_sel['EXISTS'] == 0) {
                 continue;
             }
 
@@ -366,13 +379,23 @@ function cv_get_conversation_thread($imapConnection, $currentMailbox, $currentUi
                 }
             }
 
-            // 3c. Search by clean subject (always search in drafts, or as fallback in other folders)
-            if (($defaultType === 'draft' || empty($found_uids)) && mb_strlen($clean_subject, 'UTF-8') >= 3) {
+            // 3c. Search by clean subject (always search in drafts and sent, or as fallback in current mailbox)
+            if (($defaultType === 'draft' || $defaultType === 'sent' || empty($found_uids)) && mb_strlen($clean_subject, 'UTF-8') >= 3) {
                 $safe_subj = trim(preg_replace('/[\r\n\x00-\x1F\x7F]+/', '', $clean_subject));
                 $qSubj = 'SUBJECT "' . addcslashes($safe_subj, '"\\') . '"';
                 $resSubj = cv_run_uid_search($imapConnection, $qSubj);
                 if (!empty($resSubj) && is_array($resSubj)) {
                     foreach ($resSubj as $u) {
+                        if (is_numeric($u)) $found_uids[] = (int)$u;
+                    }
+                }
+            }
+
+            // 3d. In Drafts, if specific searches yielded nothing and draft count is small, inspect recent drafts
+            if ($defaultType === 'draft' && empty($found_uids) && $cur_sel['EXISTS'] <= 35) {
+                $resAllDrafts = cv_run_uid_search($imapConnection, 'ALL');
+                if (!empty($resAllDrafts) && is_array($resAllDrafts)) {
+                    foreach ($resAllDrafts as $u) {
                         if (is_numeric($u)) $found_uids[] = (int)$u;
                     }
                 }
@@ -716,5 +739,204 @@ function cv_render_thread_view($imapConnection, $currentMailbox, $currentUid, $c
     <?php
     } catch (\Throwable $e) {
         error_log('cv_render_thread_view error: ' . $e->getMessage());
+    }
+}
+
+/**
+ * Annotate mailbox message list with draft badges, sent reply indicators,
+ * and conversation thread markers.
+ *
+ * @param array $aMessages Reference to message rows in template
+ * @param string $currentMailbox Current mailbox name
+ * @param resource $imapConnection IMAP stream
+ */
+function cv_mailbox_annotate_messages(&$aMessages, $currentMailbox, $imapConnection)
+{
+    global $data_dir, $username, $draft_folder, $sent_folder;
+
+    if (empty($aMessages) || !is_array($aMessages)) {
+        return;
+    }
+
+    $badgesEnabled = (int) getPref($data_dir, $username, 'cv_mailbox_badges', 1);
+    if (!$badgesEnabled) {
+        return;
+    }
+
+    $user_draft = getPref($data_dir, $username, 'draft_folder');
+    if (empty($user_draft)) {
+        $user_draft = $draft_folder;
+    }
+
+    $draft_candidates = array_unique(array_filter(array(
+        $user_draft,
+        $draft_folder,
+        'INBOX.Drafts',
+        'Drafts',
+        'INBOX/Drafts',
+    )));
+
+    $baseUri = sqm_baseuri();
+    $isDraftsMailbox = false;
+    foreach ($draft_candidates as $df) {
+        if ($df && strcasecmp($df, $currentMailbox) === 0) {
+            $isDraftsMailbox = true;
+            break;
+        }
+    }
+
+    try {
+        if ($isDraftsMailbox) {
+            // We are looking at the Drafts folder
+            // Annotate drafts that are replies to original messages
+            $draftUids = array_keys($aMessages);
+            if (!empty($draftUids) && $imapConnection) {
+                $hdr_list = sqimap_get_small_header_list(
+                    $imapConnection,
+                    $draftUids,
+                    array('Date', 'To', 'From', 'Subject', 'Message-ID', 'In-Reply-To', 'References', 'X-SM-Flag-Reply'),
+                    array('FLAGS')
+                );
+                if (!empty($hdr_list) && is_array($hdr_list)) {
+                    foreach ($hdr_list as $duid => $dhdr) {
+                        if (!empty($dhdr['x-sm-flag-reply']) && isset($aMessages[$duid]['columns'][SQM_COL_SUBJ]['value'])) {
+                            $parts = explode('::', $dhdr['x-sm-flag-reply'], 3);
+                            $origBox = isset($parts[2]) ? $parts[2] : '';
+                            $origAction = isset($parts[0]) ? $parts[0] : 'reply';
+                            $actionLabel = ($origAction === 'forward' || $origAction === 'forward_as_attachment')
+                                ? _("Draft Forward")
+                                : _("Draft Reply");
+                            $boxHint = !empty($origBox) ? ' (' . htmlspecialchars($origBox, ENT_QUOTES, 'UTF-8') . ')' : '';
+                            $badge = '<span class="cv-mb-badge cv-mb-badge-reply-to" title="' . sprintf(_("Pending %s to message in %s"), $actionLabel, htmlspecialchars($origBox, ENT_QUOTES, 'UTF-8')) . '">'
+                                   . '↩️ ' . $actionLabel . $boxHint . '</span>';
+                            $aMessages[$duid]['columns'][SQM_COL_SUBJ]['value'] = $badge . $aMessages[$duid]['columns'][SQM_COL_SUBJ]['value'];
+                        }
+                    }
+                }
+            }
+            return;
+        }
+
+        // We are looking at a regular mailbox (e.g. INBOX)
+        // Gather all pending drafts from user's Drafts folder (up to 30 latest drafts)
+        $draftsByReplyUid = array();
+        $draftsByInReplyTo = array();
+        $draftsBySubject = array();
+
+        if ($imapConnection) {
+            $selectedDraftsBox = '';
+            foreach ($draft_candidates as $df) {
+                if (!$df) continue;
+                $mbx_info = sqimap_mailbox_select($imapConnection, $df, false);
+                if (!empty($mbx_info) && isset($mbx_info['EXISTS']) && $mbx_info['EXISTS'] > 0) {
+                    $selectedDraftsBox = $df;
+                    break;
+                }
+            }
+
+            if (!empty($selectedDraftsBox)) {
+                $draftUids = cv_run_uid_search($imapConnection, 'ALL');
+                if (!empty($draftUids) && is_array($draftUids)) {
+                    if (count($draftUids) > 30) {
+                        $draftUids = array_slice($draftUids, -30);
+                    }
+                    $draftHeaders = sqimap_get_small_header_list(
+                        $imapConnection,
+                        $draftUids,
+                        array('Date', 'To', 'From', 'Subject', 'Message-ID', 'In-Reply-To', 'References', 'X-SM-Flag-Reply'),
+                        array('INTERNALDATE')
+                    );
+                    if (!empty($draftHeaders) && is_array($draftHeaders)) {
+                        foreach ($draftHeaders as $duid => $dhdr) {
+                            $dInfo = array(
+                                'uid'     => (int)$duid,
+                                'mailbox' => $selectedDraftsBox,
+                                'subject' => !empty($dhdr['subject']) ? decodeHeader($dhdr['subject'], false, false, true) : '',
+                            );
+                            if (!empty($dhdr['x-sm-flag-reply'])) {
+                                $parts = explode('::', $dhdr['x-sm-flag-reply'], 3);
+                                if (isset($parts[1]) && is_numeric($parts[1])) {
+                                    $draftsByReplyUid[(int)$parts[1]] = $dInfo;
+                                }
+                            }
+                            if (!empty($dhdr['in-reply-to'])) {
+                                $ids = cv_extract_ids($dhdr['in-reply-to']);
+                                foreach ($ids as $cleanMid) {
+                                    $draftsByInReplyTo[$cleanMid] = $dInfo;
+                                }
+                            }
+                            if (!empty($dhdr['subject'])) {
+                                $cSubj = cv_clean_subject($dhdr['subject']);
+                                if (mb_strlen($cSubj, 'UTF-8') >= 3 && !isset($draftsBySubject[$cSubj])) {
+                                    $draftsBySubject[$cSubj] = $dInfo;
+                                }
+                            }
+                        }
+                    }
+                }
+                // Restore current mailbox selection immediately
+                @sqimap_mailbox_select($imapConnection, $currentMailbox, false);
+            }
+        }
+
+        // 2. Iterate through messages in the current mailbox view and annotate
+        foreach ($aMessages as $uid => &$msg) {
+            if (!isset($msg['columns'][SQM_COL_SUBJ]['value'])) {
+                continue;
+            }
+
+            $badges = '';
+
+            // Check if there is a pending draft for this message
+            $matchedDraft = null;
+            if (isset($draftsByReplyUid[(int)$uid])) {
+                $matchedDraft = $draftsByReplyUid[(int)$uid];
+            } elseif (!empty($msg['rfc822_header']->message_id)) {
+                $cleanMid = trim($msg['rfc822_header']->message_id, "<> \t\n\r");
+                if (isset($draftsByInReplyTo[$cleanMid])) {
+                    $matchedDraft = $draftsByInReplyTo[$cleanMid];
+                }
+            }
+            if (!$matchedDraft && !empty($msg['columns'][SQM_COL_SUBJ]['value'])) {
+                $rawSubj = $msg['columns'][SQM_COL_SUBJ]['value'];
+                $cleanSubj = cv_clean_subject(strip_tags($rawSubj));
+                if (mb_strlen($cleanSubj, 'UTF-8') >= 3 && isset($draftsBySubject[$cleanSubj])) {
+                    $matchedDraft = $draftsBySubject[$cleanSubj];
+                }
+            }
+
+            if ($matchedDraft) {
+                $resumeUrl = $baseUri . 'src/compose.php?smaction_draft=1&passed_id=' . $matchedDraft['uid'] . '&mailbox=' . urlencode($matchedDraft['mailbox']);
+                $badges .= '<a href="' . htmlspecialchars($resumeUrl, ENT_QUOTES, 'UTF-8') . '" class="cv-mb-badge cv-mb-badge-draft" onclick="event.stopPropagation();" title="' . _("Resume pending draft response") . '">'
+                        . '📝 ' . _("Draft") . '</a>';
+            }
+
+            // Check if replied / answered
+            $isAnswered = false;
+            if (isset($msg['columns'][SQM_COL_FLAGS]['value']['answered']) && $msg['columns'][SQM_COL_FLAGS]['value']['answered']) {
+                $isAnswered = true;
+            } elseif (isset($msg['flags']['\\answered']) && $msg['flags']['\\answered']) {
+                $isAnswered = true;
+            } elseif (isset($msg['flags']['answered']) && $msg['flags']['answered']) {
+                $isAnswered = true;
+            }
+
+            if ($isAnswered) {
+                $badges .= '<span class="cv-mb-badge cv-mb-badge-sent" title="' . _("You replied to this message") . '">'
+                        . '📤 ' . _("Replied") . '</span>';
+            }
+
+            if (!empty($badges)) {
+                $msg['columns'][SQM_COL_SUBJ]['value'] = $badges . $msg['columns'][SQM_COL_SUBJ]['value'];
+            }
+        }
+        unset($msg);
+
+    } catch (\Throwable $e) {
+        error_log('cv_mailbox_annotate_messages error: ' . $e->getMessage());
+    } finally {
+        if ($imapConnection && !empty($currentMailbox)) {
+            @sqimap_mailbox_select($imapConnection, $currentMailbox, false);
+        }
     }
 }

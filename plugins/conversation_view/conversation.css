@@ -459,3 +459,84 @@
         justify-content: space-between;
     }
 }
+
+/* Mailbox View Conversation & Draft Badges */
+.cv-mb-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 11px;
+    line-height: 1.25;
+    padding: 1px 7px;
+    border-radius: 4px;
+    font-weight: 600;
+    margin-right: 6px;
+    vertical-align: middle;
+    text-decoration: none !important;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+    cursor: pointer;
+    transition: transform 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.cv-mb-badge:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.cv-mb-badge-draft {
+    background: #fef3c7;
+    color: #92400e !important;
+    border: 1px solid rgba(217, 119, 6, 0.4);
+}
+
+.cv-mb-badge-draft:hover {
+    background: #fde68a;
+    color: #78350f !important;
+}
+
+[data-theme="dark"] .cv-mb-badge-draft {
+    background: rgba(245, 158, 11, 0.2);
+    color: #fcd34d !important;
+    border-color: rgba(245, 158, 11, 0.45);
+}
+
+[data-theme="dark"] .cv-mb-badge-draft:hover {
+    background: rgba(245, 158, 11, 0.3);
+    color: #fef08a !important;
+}
+
+.cv-mb-badge-sent {
+    background: #ecfdf5;
+    color: #065f46 !important;
+    border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+[data-theme="dark"] .cv-mb-badge-sent {
+    background: rgba(16, 185, 129, 0.15);
+    color: #6ee7b7 !important;
+    border-color: rgba(16, 185, 129, 0.4);
+}
+
+.cv-mb-badge-count {
+    background: #eff6ff;
+    color: #1e40af !important;
+    border: 1px solid rgba(59, 130, 246, 0.35);
+}
+
+[data-theme="dark"] .cv-mb-badge-count {
+    background: rgba(59, 130, 246, 0.18);
+    color: #93c5fd !important;
+    border-color: rgba(59, 130, 246, 0.4);
+}
+
+.cv-mb-badge-reply-to {
+    background: #f3e8ff;
+    color: #6b21a8 !important;
+    border: 1px solid rgba(168, 85, 247, 0.35);
+}
+
+[data-theme="dark"] .cv-mb-badge-reply-to {
+    background: rgba(168, 85, 247, 0.18);
+    color: #d8b4fe !important;
+    border-color: rgba(168, 85, 247, 0.4);
+}

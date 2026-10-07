@@ -104,6 +104,9 @@ sqgetGlobalVar('draft',$draft, SQ_POST);
 sqgetGlobalVar('draft_id',$draft_id, $SQ_GLOBAL);
 sqgetGlobalVar('ent_num',$ent_num, $SQ_GLOBAL);
 sqgetGlobalVar('saved_draft',$saved_draft, SQ_FORM);
+sqgetGlobalVar('x_sm_flag_reply', $x_sm_flag_reply, $SQ_GLOBAL);
+sqgetGlobalVar('in_reply_to', $in_reply_to, $SQ_GLOBAL);
+sqgetGlobalVar('references', $references, $SQ_GLOBAL);
 
 if ( sqgetGlobalVar('delete_draft',$delete_draft) ) {
     $delete_draft = (int)$delete_draft;
@@ -1249,12 +1252,22 @@ function newMail ($mailbox='', $passed_id='', $passed_ent_id='', $action='', $se
                 }
 
                 $composeMessage->reply_rfc822_header = $orig_header;
+                if (!empty($orig_header->message_id)) {
+                    $composeMessage->rfc822_header->in_reply_to = $orig_header->message_id;
+                    $composeMessage->rfc822_header->more_headers['In-Reply-To'] = $orig_header->message_id;
+                    $refs = !empty($orig_header->references) ? trim($orig_header->references) . ' ' : '';
+                    $refs .= $orig_header->message_id;
+                    $composeMessage->rfc822_header->references = trim($refs);
+                    $composeMessage->rfc822_header->more_headers['References'] = trim($refs);
+                }
+                $composeMessage->rfc822_header->more_headers['X-SM-Flag-Reply'] = $action . '::' . $passed_id . '::' . $mailbox;
+                $compose_messages[$session] = $composeMessage;
+                sqsession_register($compose_messages, 'compose_messages');
 
                 break;
             default:
                 break;
         }
-//FIXME: we used to register $compose_messages in the session here, but not any more - so do we still need the session_write_close() and sqimap_logout() here?  We probably need the IMAP logout, but what about the session closure?
         session_write_close();
         sqimap_logout($imapConnection);
     }
@@ -1491,6 +1504,42 @@ function showInputForm ($session, $values=false) {
     if (isset($fwduid)) {
 //FIXME: DON'T ECHO HTML FROM CORE!
         echo addHidden('fwduid', $fwduid);
+    }
+
+    $form_flag_reply = '';
+    if (!empty($composeMessage->rfc822_header->x_sm_flag_reply)) {
+        $form_flag_reply = $composeMessage->rfc822_header->x_sm_flag_reply;
+    } elseif (!empty($composeMessage->rfc822_header->more_headers['X-SM-Flag-Reply'])) {
+        $form_flag_reply = $composeMessage->rfc822_header->more_headers['X-SM-Flag-Reply'];
+    } elseif (!empty($x_sm_flag_reply)) {
+        $form_flag_reply = $x_sm_flag_reply;
+    }
+    if (!empty($form_flag_reply)) {
+        echo addHidden('x_sm_flag_reply', $form_flag_reply);
+    }
+
+    $form_in_reply_to = '';
+    if (!empty($composeMessage->rfc822_header->in_reply_to)) {
+        $form_in_reply_to = $composeMessage->rfc822_header->in_reply_to;
+    } elseif (!empty($composeMessage->rfc822_header->more_headers['In-Reply-To'])) {
+        $form_in_reply_to = $composeMessage->rfc822_header->more_headers['In-Reply-To'];
+    } elseif (!empty($in_reply_to)) {
+        $form_in_reply_to = $in_reply_to;
+    }
+    if (!empty($form_in_reply_to)) {
+        echo addHidden('in_reply_to', $form_in_reply_to);
+    }
+
+    $form_refs = '';
+    if (!empty($composeMessage->rfc822_header->references)) {
+        $form_refs = $composeMessage->rfc822_header->references;
+    } elseif (!empty($composeMessage->rfc822_header->more_headers['References'])) {
+        $form_refs = $composeMessage->rfc822_header->more_headers['References'];
+    } elseif (!empty($references)) {
+        $form_refs = $references;
+    }
+    if (!empty($form_refs)) {
+        echo addHidden('references', $form_refs);
     }
 
     if ($saved_draft == 'yes') {
@@ -2006,6 +2055,39 @@ function deliverMessage(&$composeMessage, $draft=false) {
 
     $rfc822_header->content_type = $content_type;
     $composeMessage->rfc822_header = $rfc822_header;
+
+    global $in_reply_to, $references, $x_sm_flag_reply;
+    if (empty($composeMessage->rfc822_header->in_reply_to) && !empty($in_reply_to)) {
+        $composeMessage->rfc822_header->in_reply_to = $in_reply_to;
+        $composeMessage->rfc822_header->more_headers['In-Reply-To'] = $in_reply_to;
+    }
+    if (empty($composeMessage->rfc822_header->references) && !empty($references)) {
+        $composeMessage->rfc822_header->references = $references;
+        $composeMessage->rfc822_header->more_headers['References'] = $references;
+    }
+
+    $flag_reply_val = '';
+    if (!empty($composeMessage->rfc822_header->x_sm_flag_reply)) {
+        $flag_reply_val = $composeMessage->rfc822_header->x_sm_flag_reply;
+    } elseif (!empty($composeMessage->rfc822_header->more_headers['X-SM-Flag-Reply'])) {
+        $flag_reply_val = $composeMessage->rfc822_header->more_headers['X-SM-Flag-Reply'];
+    } elseif (!empty($x_sm_flag_reply)) {
+        $flag_reply_val = $x_sm_flag_reply;
+    }
+
+    if (!empty($flag_reply_val) && ($action == 'draft' || empty($action))) {
+        list($orig_action, $orig_passed_id, $orig_mailbox) = explode('::', $flag_reply_val, 3);
+        if (!$draft) {
+            $action = $orig_action;
+            $passed_id = $orig_passed_id;
+            $mailbox = $orig_mailbox;
+            unset($composeMessage->rfc822_header->x_sm_flag_reply);
+            unset($composeMessage->rfc822_header->more_headers['X-SM-Flag-Reply']);
+        } else {
+            $composeMessage->rfc822_header->more_headers['X-SM-Flag-Reply'] = $flag_reply_val;
+        }
+    }
+
     if ($action == 'reply' || $action == 'reply_all') {
         global $passed_id, $passed_ent_id;
         $reply_id = $passed_id;
@@ -2028,7 +2110,7 @@ function deliverMessage(&$composeMessage, $draft=false) {
     if (!empty($composeMessage->rfc822_header->x_sm_flag_reply) && !$draft) {
         global $passed_id, $mailbox;
         // tricks the code below that marks the reply
-        list($action, $passed_id, $mailbox) = explode('::', $rfc822_header->x_sm_flag_reply, 3);
+        list($action, $passed_id, $mailbox) = explode('::', $composeMessage->rfc822_header->x_sm_flag_reply, 3);
         unset($composeMessage->rfc822_header->x_sm_flag_reply);
         unset($composeMessage->rfc822_header->more_headers['X-SM-Flag-Reply']);
     }
@@ -2066,6 +2148,8 @@ function deliverMessage(&$composeMessage, $draft=false) {
             global $passed_id, $mailbox;
             if ($action == 'reply' || $action == 'reply_all' || $action == 'forward' || $action == 'forward_as_attachment') {
                 $composeMessage->rfc822_header->more_headers['X-SM-Flag-Reply'] = $action . '::' . $passed_id . '::' . $mailbox;
+            } elseif (!empty($flag_reply_val)) {
+                $composeMessage->rfc822_header->more_headers['X-SM-Flag-Reply'] = $flag_reply_val;
             }
 
             require_once(SM_PATH . 'class/deliver/Deliver_IMAP.class.php');

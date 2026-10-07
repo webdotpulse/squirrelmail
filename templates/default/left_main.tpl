@@ -209,8 +209,9 @@ function buildMailboxTree ($box, $settings, $icon_theme_path, $indent_factor=0) 
             if (!empty($unseen_str)) {
                 $end .= '&nbsp;<span class="sm-unread-badge-wrap">' . $unseen_str . '</span>';
             }
+            $purge_confirm = addslashes(_("Are you sure you want to empty and purge the Trash folder?"));
             $end .= "\n<small>" .
-                    '&nbsp;&nbsp;[<a href="' . sqm_baseuri() . 'src/empty_trash.php?smtoken=' . sm_generate_security_token() . '">'. _("Purge").'</a>]' .
+                    '&nbsp;&nbsp;[<a href="' . sqm_baseuri() . 'src/empty_trash.php?smtoken=' . sm_generate_security_token() . '" class="sm-purge-trash-link" onclick="return confirm(\'' . $purge_confirm . '\');">'. _("Purge").'</a>]' .
                     '</small>';
         }
     } else {

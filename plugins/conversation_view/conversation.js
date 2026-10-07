@@ -132,15 +132,34 @@
             });
     };
 
-    // Smooth scroll if anchor is in URL
+    // Smooth scroll if anchor is in URL or clicked
+    function cvScrollToThread() {
+        var el = document.getElementById('cv-conversation-thread');
+        if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
+
+    document.addEventListener('click', function(e) {
+        var anchor = e.target.closest('a[href*="#cv-conversation-thread"]');
+        if (anchor) {
+            var thread = document.getElementById('cv-conversation-thread');
+            if (thread) {
+                e.preventDefault();
+                cvScrollToThread();
+            }
+        }
+    });
+
+    window.addEventListener('hashchange', function() {
+        if (window.location.hash === '#cv-conversation-thread') {
+            setTimeout(cvScrollToThread, 150);
+        }
+    });
+
     document.addEventListener('DOMContentLoaded', function() {
         if (window.location.hash === '#cv-conversation-thread') {
-            var el = document.getElementById('cv-conversation-thread');
-            if (el) {
-                setTimeout(function() {
-                    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }, 200);
-            }
+            setTimeout(cvScrollToThread, 250);
         }
     });
 

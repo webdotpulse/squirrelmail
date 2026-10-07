@@ -76,6 +76,13 @@ sqimap_logout($imap_stream);
 // close session properly before redirecting
 session_write_close();
 
+// Return JSON response if requested via AJAX/fetch
+if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode(array('status' => 'success', 'message' => _("Trash emptied successfully.")));
+    exit;
+}
+
 $location = get_location();
-header ("Location: $location/left_main.php");
+header ("Location: $location/webmail.php");
 

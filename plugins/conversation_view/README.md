@@ -8,9 +8,10 @@ The **conversation_view** plugin integrates full conversation threading into the
 
 ## Features
 - **Cross-Folder Aggregation**: Scans `Sent`, `Drafts`, and the current folder via IMAP headers (`References`, `In-Reply-To`, and fallback subject matching).
+- **Mailbox View Badges**: Previews conversation context directly in folder message lists with interactive `📝 Draft` resume buttons, `📤 Replied` status indicators, and `↩️ Draft Reply` tags.
 - **Interactive Timeline**: Clean chronological timeline connecting each message with type-specific color indicators (emerald for sent replies, amber for drafts, blue for incoming).
 - **Inline Message Expansion**: Click any card header to asynchronously fetch and render the full message body without leaving the page.
 - **Direct Draft Resumption & Discard**: Resume editing drafts directly in the compose screen, or discard drafts asynchronously with instant DOM removal.
 - **Top Toolbar Indicator**: Adds a `💬 Thread (#)` badge in the message header toolbar for quick navigation.
-- **User Options**: Configure search depth, mailbox inclusions, and display placement (`bottom`, `top`, or `both`) via the SquirrelMail Options menu.
+- **User Options**: Configure search depth, mailbox inclusions, display placement (`bottom`, `top`, or `both`), and mailbox view badge toggles via the SquirrelMail Options menu.
 - **Modern Responsive Design**: Fully styled with CSS custom properties (`--sm-*`), seamless Light/Dark mode support, and mobile optimization.

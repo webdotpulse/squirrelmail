@@ -212,12 +212,24 @@ function sqimap_get_sort_order($imap_stream, $sSortField, $reverse, $search='ALL
 function parseUidList($aData,$sCommand) {
     $aUid = array();
     if (!empty($aData) && is_array($aData)) {
-        $iCnt = count($aData);
-        for ($i=0; $i<$iCnt; ++$i) {
-            if (!empty($aData[$i]) && is_array($aData[$i])) {
-                $jCnt = count($aData[$i]);
-                for ($j=0; $j<$jCnt; ++$j) {
-                    if (isset($aData[$i][$j]) && is_string($aData[$i][$j]) && preg_match("/^\* $sCommand (.+)$/", $aData[$i][$j], $aMatch)) {
+        foreach ($aData as $item) {
+            if (is_array($item)) {
+                foreach ($item as $line) {
+                    if (is_string($line) && preg_match("/^\* $sCommand(?: (.+))?$/i", $line, $aMatch)) {
+                        if (!empty($aMatch[1])) {
+                            $parts = explode(' ', trim($aMatch[1]));
+                            foreach ($parts as $p) {
+                                $p = trim($p);
+                                if ($p !== '') {
+                                    $aUid[] = $p;
+                                }
+                            }
+                        }
+                    }
+                }
+            } elseif (is_string($item)) {
+                if (preg_match("/^\* $sCommand(?: (.+))?$/i", $item, $aMatch)) {
+                    if (!empty($aMatch[1])) {
                         $parts = explode(' ', trim($aMatch[1]));
                         foreach ($parts as $p) {
                             $p = trim($p);
