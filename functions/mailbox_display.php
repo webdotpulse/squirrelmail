@@ -499,6 +499,7 @@ function prepareMessageList(&$aMailbox, $aProps) {
     $sort        =  $aMailbox['SORT'];
     $iPageOffset =  $aMailbox['PAGEOFFSET'];
     $sMailbox    =  $aMailbox['NAME'];
+    $mailbox     =  $sMailbox;
     $sSearch     =  (isset($aMailbox['SEARCH'][$aMailbox['SETINDEX']]) &&
                     $aMailbox['SEARCH'][$aMailbox['SETINDEX']] != 'ALL') ? $aMailbox['SEARCH'][$aMailbox['SETINDEX']] : false;
     $aSearch     =  ($sSearch) ? array('search.php',$aMailbox['SETINDEX']) : null;
@@ -661,7 +662,7 @@ function prepareMessageList(&$aMailbox, $aProps) {
                     break;
                 case SQM_COL_PRIO:
                     $rawPrio = ($value) ? (int) $value : 3;
-                    $value = sqm_get_effective_priority($mailbox, $iUid, $rawPrio);
+                    $value = sqm_get_effective_priority($sMailbox, $iUid, $rawPrio);
                     $aColumns[$k]['raw_prio'] = $value;
                     break;
                 case SQM_COL_ATTACHMENT:

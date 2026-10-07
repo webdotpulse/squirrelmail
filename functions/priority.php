@@ -23,10 +23,16 @@ if (!function_exists('getHashedFile') && defined('SM_PATH')) {
 function sqm_get_priority_file()
 {
     global $username, $data_dir;
+    if (empty($username) && function_exists('sqgetGlobalVar')) {
+        sqgetGlobalVar('username', $username, SQ_SESSION);
+    }
+    if (empty($data_dir) && isset($GLOBALS['data_dir'])) {
+        $data_dir = $GLOBALS['data_dir'];
+    }
     if (function_exists('getHashedFile')) {
         return getHashedFile($username, $data_dir, "$username.priority.json");
     }
-    return $data_dir . "$username.priority.json";
+    return rtrim($data_dir, '/\\') . '/' . "$username.priority.json";
 }
 
 /**
@@ -68,7 +74,10 @@ function sqm_load_priority_data($refresh = false)
 function sqm_save_priority_data($data)
 {
     $file = sqm_get_priority_file();
-    sqm_load_priority_data(true); // invalidate cache
+    $dir = dirname($file);
+    if (!is_dir($dir)) {
+        @mkdir($dir, 0770, true);
+    }
     $res = @file_put_contents($file, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
     sqm_load_priority_data(true); // reload
     return ($res !== false);
@@ -83,7 +92,11 @@ function sqm_save_priority_data($data)
  */
 function sqm_get_priority_key($mailbox, $uid)
 {
-    return rawurlencode($mailbox) . ':' . intval($uid);
+    if (empty($mailbox)) {
+        $mailbox = 'INBOX';
+    }
+    $mb = (strtolower($mailbox) === 'inbox') ? 'INBOX' : $mailbox;
+    return rawurlencode($mb) . ':' . intval($uid);
 }
 
 /**
@@ -100,6 +113,27 @@ function sqm_get_effective_priority($mailbox, $uid, $headerPriority = 3)
     $key = sqm_get_priority_key($mailbox, $uid);
     if (isset($data[$key])) {
         return (int)$data[$key];
+    }
+    // Also check fallbacks for INBOX or un-prefixed keys
+    if (empty($mailbox) || strtolower($mailbox) === 'inbox') {
+        if (isset($data['INBOX:' . intval($uid)])) {
+            return (int)$data['INBOX:' . intval($uid)];
+        }
+        if (isset($data['inbox:' . intval($uid)])) {
+            return (int)$data['inbox:' . intval($uid)];
+        }
+        if (isset($data[':' . intval($uid)])) {
+            return (int)$data[':' . intval($uid)];
+        }
+    } else {
+        $rawKey = rawurlencode($mailbox) . ':' . intval($uid);
+        if (isset($data[$rawKey])) {
+            return (int)$data[$rawKey];
+        }
+        $lowerKey = rawurlencode(strtolower($mailbox)) . ':' . intval($uid);
+        if (isset($data[$lowerKey])) {
+            return (int)$data[$lowerKey];
+        }
     }
     return ($headerPriority) ? (int)$headerPriority : 3;
 }
@@ -119,6 +153,14 @@ function sqm_set_message_priority($mailbox, $uid, $priority, $imapConnection = n
     $key = sqm_get_priority_key($mailbox, $uid);
     $priority = (int)$priority;
     $data[$key] = $priority;
+
+    // Normalize canonical INBOX key and cleanup legacy
+    if (empty($mailbox) || strtolower($mailbox) === 'inbox') {
+        unset($data[':' . intval($uid)]);
+        unset($data['inbox:' . intval($uid)]);
+        $data['INBOX:' . intval($uid)] = $priority;
+    }
+
     sqm_save_priority_data($data);
 
     if ($imapConnection && function_exists('sqimap_toggle_flag')) {
@@ -176,9 +218,16 @@ function sqm_batch_set_priority($mailbox, $uids, $priority, $imapConnection = nu
 
     $data = sqm_load_priority_data();
     $priority = (int)$priority;
+    $isInbox = (empty($mailbox) || strtolower($mailbox) === 'inbox');
+
     foreach ($uids as $uid) {
         $key = sqm_get_priority_key($mailbox, $uid);
         $data[$key] = $priority;
+        if ($isInbox) {
+            unset($data[':' . intval($uid)]);
+            unset($data['inbox:' . intval($uid)]);
+            $data['INBOX:' . intval($uid)] = $priority;
+        }
     }
     sqm_save_priority_data($data);
 

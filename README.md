@@ -1,4 +1,4 @@
-# SquirrelMail 1.5.33
+# SquirrelMail 1.5.35
 
 A modernized, responsive edition of SquirrelMail engineered for PHP 7.0 through 8.2+ with a Single-Page Application (SPA) interface, modern UI styling, and extensive feature enhancements.
 
@@ -47,6 +47,23 @@ This repository includes an [AGENTS.md](file:///home/koen/Git/squirrelmail/AGENT
 ---
 
 ## 📝 Changelog
+
+### Version 1.5.35
+- **Fix Mailbox View Message Priority Persistence & Display**:
+  - **Undefined Mailbox Variable in `prepareMessageList()`**: Resolved a bug in `functions/mailbox_display.php` where line 664 called `sqm_get_effective_priority($mailbox, $iUid, $rawPrio)` using an undefined `$mailbox` variable (which was `null`, while the active mailbox name was held in `$sMailbox`). This caused priority lookups to fail and constantly fall back to original header priority (Normal / 3) upon mailbox refresh.
+  - **Key Normalization & Fallbacks in Priority Engine**: Updated `sqm_get_priority_key()` and `sqm_get_effective_priority()` in `functions/priority.php` to normalize mailbox names (including case-insensitive `INBOX` handling), clean up legacy unprefixed keys, ensure directory creation before writes, and safely fallback to session/global username and data directory.
+  - **Explicit `target_priority` in AJAX Toggle**: Updated `assets/js/app.js` and `src/priority_ajax.php` to transmit explicit `target_priority` (1 for High, 3 for Normal) based on current row state, eliminating state desynchronization when toggling messages with original RFC822 priority headers.
+  - **Fallback Mailbox Resolution in Mailbox Template**: Enhanced `templates/default/message_list.tpl` to ensure `$curMbx` is always resolved with proper fallbacks before binding one-click toggle events.
+- **Version Bump**: Incremented version from `1.5.34` to `1.5.35`.
+
+### Version 1.5.34
+- **Fix HTTP 500 Fatal Error on Message Filters Rule Creation / Edit (`options.php?action=add`)**:
+  - **TypeError in `sqimap_mailbox_option_array()`**: Resolved a fatal `TypeError: in_array(): Argument #2 ($haystack) must be of type array, string given` triggered on line 774 of `functions/imap_mailbox.php`. In PHP 8+, string-to-integer comparison changed (`'INBOX' != 0` evaluates to true instead of false), causing `$folder_skip` passed as a string (`'INBOX'`) to enter `in_array($box, $folder_skip)`.
+  - **Array Normalization**: Updated `sqimap_mailbox_option_array()` in `functions/imap_mailbox.php` to normalize `$folder_skip` into a lowercase string array, perform case-insensitive skips (`in_array(strtolower($box), $folder_skip)`), and safely avoid querying mailboxes if `$imap_stream` is not an active stream resource.
+  - **TypeError in `sqimap_mailbox_option_list()`**: Normalized `$show_selected` to an array so scalar/string arguments (`$show_selected = 'Archive'`) never crash `foreach ($show_selected as $val)`.
+  - **Safe Delimiter Detection**: Updated `sqimap_get_delimiter()` in `functions/imap_general.php` to verify `$imap_stream` is a valid resource (`is_resource($imap_stream)`) before issuing IMAP namespace commands or socket writes, returning a safe `'/'` fallback instead of throwing fatal `TypeError` on `fputs()`.
+  - **Non-Fatal IMAP Login & Resource Lifecycle**: Hardened `plugins/filters/options.php` and `plugins/filters/spamoptions.php` to call `sqimap_login()` with `$hide = 2`, keep `$imapConnection` open during folder list generation, pass arrays for `$selectedBox` and `$folder_skip`, and gracefully close the IMAP stream after rendering.
+- **Version Bump**: Incremented version from `1.5.33` to `1.5.34`.
 
 ### Version 1.5.33
 - **Fix "Call to undefined function getTimeStamp()" on Calendar Appointment Import**:

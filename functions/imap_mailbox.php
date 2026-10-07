@@ -758,7 +758,20 @@ function sqimap_mailbox_option_array($imap_stream, $folder_skip = 0, $boxes = 0,
     }
 
     if (empty($boxes) || !is_array($boxes) || !isset($boxes[0]) || !is_array($boxes[0])) {
-        $boxes = sqimap_mailbox_list($imap_stream);
+        if ($imap_stream) {
+            $boxes = sqimap_mailbox_list($imap_stream);
+        } else {
+            $boxes = array();
+        }
+    }
+
+    if (!empty($folder_skip)) {
+        if (!is_array($folder_skip)) {
+            $folder_skip = array($folder_skip);
+        }
+        $folder_skip = array_map('strtolower', $folder_skip);
+    } else {
+        $folder_skip = array();
     }
 
     $a = array();
@@ -771,7 +784,7 @@ function sqimap_mailbox_option_array($imap_stream, $folder_skip = 0, $boxes = 0,
                           && !in_array($flag, $boxes_part['flags']))) {
                 $box = $boxes_part['unformatted'];
 
-            if ($folder_skip != 0 && in_array($box, $folder_skip) ) {
+            if (!empty($folder_skip) && in_array(strtolower($box), $folder_skip) ) {
                 continue;
             }
             $lowerbox = strtolower($box);
@@ -859,18 +872,21 @@ function sqimap_mailbox_option_list($imap_stream, $show_selected = 0, $folder_sk
 
     $boxes = sqimap_mailbox_option_array($imap_stream, $folder_skip, $boxes, $flag, $use_long_format);
     
+    if (!empty($show_selected)) {
+        if (!is_array($show_selected)) {
+            $show_selected = array($show_selected);
+        }
+        $show_selected_lower = array_map(function($val) {
+            return strtolower(sm_encode_html_special_chars($val));
+        }, $show_selected);
+    } else {
+        $show_selected_lower = array();
+    }
+
     $str = '';
     foreach ($boxes as $value=>$option) {
         $lowerbox = strtolower(sm_encode_html_special_chars($value));
-        $sel = false;
-        if ($show_selected != 0) {
-            foreach ($show_selected as $val) {
-                if (strtolower($value) == strtolower(sm_encode_html_special_chars($val))) {
-                    $sel = true;
-                    break;
-                }
-            }
-        }
+        $sel = (!empty($show_selected_lower) && in_array($lowerbox, $show_selected_lower));
         
         $str .= '<option value="'. $value .'"'. ($sel ? ' selected="selected"' : '').'>'. $option ."</option>\n";
     }

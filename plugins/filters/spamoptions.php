@@ -80,10 +80,13 @@ if ($SpamFilters_YourHop == ' ') {
 
 
 if (isset($action) && $action == 'spam') {
-    $imapConnection = sqimap_login($username, false, $imapServerAddress, $imapPort, 0, $imap_stream_options);
-    $boxes = sqimap_mailbox_list($imapConnection);
-    sqimap_logout($imapConnection);
-    $numboxes = count($boxes);
+    $imapConnection = sqimap_login($username, false, $imapServerAddress, $imapPort, 2, $imap_stream_options);
+    $boxes = array();
+    if ($imapConnection) {
+        $boxes = sqimap_mailbox_list($imapConnection);
+        sqimap_logout($imapConnection);
+    }
+    $numboxes = is_array($boxes) ? count($boxes) : 0;
 
     for ($i = 0; $i < $numboxes && $filters_spam_folder == ''; $i++) {
         if ((isset($boxes[$i]['flags'][0]) && $boxes[$i]['flags'][0] != 'noselect') &&

@@ -369,9 +369,11 @@ displayPageHeader($color, 'None');
     <!-- ADD / EDIT RULE FORM -->
     <?php if ($action === 'add' || $action === 'edit'):
         global $imapServerAddress, $imapPort, $imap_stream_options;
-        $imapConnection = sqimap_login($username, false, $imapServerAddress, $imapPort, 0, $imap_stream_options);
-        $boxes = sqimap_mailbox_list($imapConnection);
-        sqimap_logout($imapConnection);
+        $imapConnection = sqimap_login($username, false, $imapServerAddress, $imapPort, 2, $imap_stream_options);
+        $boxes = array();
+        if ($imapConnection) {
+            $boxes = sqimap_mailbox_list($imapConnection);
+        }
 
         $theid = isset($theid) ? (int)$theid : count($filters);
         $currWhere  = isset($filters[$theid]['where']) ? $filters[$theid]['where'] : 'From';
@@ -415,8 +417,11 @@ displayPageHeader($color, 'None');
                     <label for="filter_folder"><?php echo _("Move matching email to:"); ?></label>
                     <select name="filter_folder" id="filter_folder" class="sm-select" required>
                         <?php
-                        $selectedBox = !empty($currFolder) ? array(strtolower($currFolder)) : 0;
-                        echo sqimap_mailbox_option_list(0, $selectedBox, 'INBOX', $boxes);
+                        $selectedBox = !empty($currFolder) ? array(strtolower($currFolder)) : array();
+                        echo sqimap_mailbox_option_list($imapConnection ?: 0, $selectedBox, array('INBOX', 'inbox'), $boxes);
+                        if ($imapConnection) {
+                            sqimap_logout($imapConnection);
+                        }
                         ?>
                     </select>
                 </div>

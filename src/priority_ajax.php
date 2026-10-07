@@ -14,10 +14,13 @@ define('PAGE_NAME', 'priority_ajax');
 require('../include/init.php');
 require_once(SM_PATH . 'functions/priority.php');
 
+while (ob_get_level() > 0) {
+    ob_end_clean();
+}
 header('Content-Type: application/json; charset=utf-8');
 
 $action   = isset($_REQUEST['action']) ? trim($_REQUEST['action']) : '';
-$mailbox  = isset($_REQUEST['mailbox']) ? trim($_REQUEST['mailbox']) : 'INBOX';
+$mailbox  = isset($_REQUEST['mailbox']) && !empty($_REQUEST['mailbox']) ? trim($_REQUEST['mailbox']) : 'INBOX';
 $uid      = isset($_REQUEST['uid']) ? intval($_REQUEST['uid']) : 0;
 $priority = isset($_REQUEST['priority']) ? intval($_REQUEST['priority']) : 1;
 
@@ -26,8 +29,20 @@ if ($action === 'toggle') {
         echo json_encode(array('success' => false, 'error' => 'Missing message UID.'));
         exit;
     }
-    $headerPrio = isset($_REQUEST['header_priority']) ? intval($_REQUEST['header_priority']) : 3;
-    $res = sqm_toggle_message_priority($mailbox, $uid, $headerPrio);
+    if (isset($_REQUEST['target_priority'])) {
+        $targetPrio = intval($_REQUEST['target_priority']);
+        sqm_set_message_priority($mailbox, $uid, $targetPrio);
+        $res = array(
+            'success'  => true,
+            'mailbox'  => $mailbox,
+            'uid'      => $uid,
+            'priority' => $targetPrio,
+            'is_high'  => ($targetPrio === 1 || $targetPrio === 2)
+        );
+    } else {
+        $headerPrio = isset($_REQUEST['header_priority']) ? intval($_REQUEST['header_priority']) : 3;
+        $res = sqm_toggle_message_priority($mailbox, $uid, $headerPrio);
+    }
     echo json_encode($res);
     exit;
 }

@@ -138,8 +138,9 @@
 
         const formData = new FormData();
         formData.append('action', 'toggle');
-        formData.append('mailbox', mailbox);
+        formData.append('mailbox', mailbox || 'INBOX');
         formData.append('uid', uid);
+        formData.append('target_priority', currentlyHigh ? '3' : '1');
 
         fetch(ajaxUrl, {
             method: 'POST',
@@ -163,12 +164,13 @@
                 }
                 const readPrioBadge = document.getElementById('sm-read-priority-badge');
                 if (readPrioBadge) {
+                    const currentMb = mailbox || 'INBOX';
                     if (data.is_high) {
                         readPrioBadge.innerHTML = '<span style="display: inline-flex; align-items: center; gap: 4px; font-weight: 600; color: var(--sm-danger, #d93025);"><span>🔴</span><span>High</span></span>' +
-                            '<button type="button" class="sm-btn sm-btn-secondary sm-btn-xs" style="font-size: 11px; padding: 2px 8px; cursor: pointer; border-radius: 4px; margin-left: 8px;" onclick="sqmTogglePriority(\'' + mailbox + '\', ' + uid + ', this);">Remove High Priority</button>';
+                            '<button type="button" class="sm-btn sm-btn-secondary sm-btn-xs" style="font-size: 11px; padding: 2px 8px; cursor: pointer; border-radius: 4px; margin-left: 8px;" onclick="sqmTogglePriority(\'' + currentMb + '\', ' + uid + ', this);">Remove High Priority</button>';
                     } else {
                         readPrioBadge.innerHTML = '<span style="display: inline-flex; align-items: center; gap: 4px; color: var(--sm-text-muted);"><span>⚪</span><span>Normal</span></span>' +
-                            '<button type="button" class="sm-btn sm-btn-secondary sm-btn-xs" style="font-size: 11px; padding: 2px 8px; cursor: pointer; border-radius: 4px; margin-left: 8px;" onclick="sqmTogglePriority(\'' + mailbox + '\', ' + uid + ', this);">Mark as High Priority</button>';
+                            '<button type="button" class="sm-btn sm-btn-secondary sm-btn-xs" style="font-size: 11px; padding: 2px 8px; cursor: pointer; border-radius: 4px; margin-left: 8px;" onclick="sqmTogglePriority(\'' + currentMb + '\', ' + uid + ', this);">Mark as High Priority</button>';
                     }
                 }
             } else {
@@ -217,7 +219,7 @@
 
         const formData = new FormData();
         formData.append('action', 'batch_set');
-        formData.append('mailbox', mailbox);
+        formData.append('mailbox', mailbox || 'INBOX');
         formData.append('priority', priority);
         formData.append('uids', uids.join(','));
 

@@ -1351,6 +1351,9 @@ function sqimap_get_delimiter ($imap_stream = false) {
 
     /* Do some caching here */
     if (!$sqimap_delimiter) {
+        if (!$imap_stream || !is_resource($imap_stream)) {
+            return '/';
+        }
         if (sqimap_capability($imap_stream, 'NAMESPACE')
             /*
              * According to something that I can't find, this is supposed to work on all systems
