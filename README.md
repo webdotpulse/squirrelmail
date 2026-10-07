@@ -1,4 +1,4 @@
-# SquirrelMail 1.5.68
+# SquirrelMail 1.5.69
 
 A modernized, responsive edition of SquirrelMail engineered for PHP 7.0 through 8.2+ with a Single-Page Application (SPA) interface, modern UI styling, and extensive feature enhancements.
 
@@ -57,6 +57,16 @@ This repository includes an [AGENTS.md](file:///home/koen/Git/squirrelmail/AGENT
 ---
 
 ## 📝 Changelog
+
+### Version 1.5.69
+- **Conversation Thread Discovery & Timeline UX Overhaul (`plugins/conversation_view/functions.php`, `setup.php`, `conversation.css`, `functions/imap_mailbox.php`)**:
+  - **Resolved Single Message Empty Notice**: Fixed the issue where viewing an initial message or thread with no prior replies hid the message card and timeline, displaying only `"No sent replies or pending drafts found for this message thread yet."`. The timeline now always renders the message card with an active indicator (`● Currently Viewing`), chronological connecting lines, and provides a contextual action prompt (`Initial message in this conversation`) with a direct `[↩️ Send Reply]` action.
+  - **Autonomous Mailbox Classification (`cv_is_sent_mailbox`, `cv_is_draft_mailbox`)**: Created dedicated, resilient folder type detection functions that evaluate user preferences, delimiter-separated folder leaves, and standard multilingual names (Dutch `Verzonden`/`Concepten`, German `Gesendete Elemente`/`Entwürfe`, French `Envoyés`/`Brouillons`, Spanish `Enviados`/`Borradores`, Italian `Posta inviata`/`Bozze`). Fixed a bug where `src/read_body.php` lacked `$move_to_sent` / `$save_as_draft` globals, previously misclassifying sent messages and drafts as `'received'` and causing `$stats['sent_count']` and `$stats['draft_count']` to remain 0.
+  - **RFC 6154 Special-Use Flag & Candidate Inspection**: Upgraded `cv_resolve_all_special_folders()` to inspect `\Sent` and `\Drafts` special-use flags from `sqimap_mailbox_list()` and rigorously pruned `'none'` string values from folder candidate sets.
+  - **Guaranteed Recent Folder Message Inspection**: Made scanning of recent messages (up to 50) unconditional in `Sent` and `Drafts` (and in `INBOX` when viewing sent messages or drafts), eliminating the previous failure mode where server-side `HEADER References` / `HEADER In-Reply-To` search limitations (or partial `SUBJECT` matches) skipped checking recent sent replies.
+  - **Case-Insensitive Message-ID & Transitive Thread Linking**: Normalized all extracted `Message-ID`, `In-Reply-To`, and `References` headers to lowercase without surrounding angle brackets or whitespace, ensuring robust matching regardless of casing variations between mail clients. Expanded search IDs dynamically with newly discovered message headers for multi-reply transitive chain resolution.
+  - **Resilient Core Mailbox Detection (`functions/imap_mailbox.php`)**: Made `isSentMailbox()` and `isDraftMailbox()` resilient against uninitialized `$move_to_sent` / `$save_as_draft` variables across SquirrelMail.
+- **Version Bump**: Incremented version from `1.5.68` to `1.5.69`.
 
 ### Version 1.5.68
 - **Conversation Thread Draft & Reply Discovery Fix (`plugins/conversation_view/functions.php`, `setup.php`)**:

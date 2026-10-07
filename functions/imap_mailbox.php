@@ -319,10 +319,10 @@ function isTrashMailbox ($box,$include_subs=true) {
  */
 function isSentMailbox($box,$include_subs=true) {
     global $sent_folder, $move_to_sent;
-    if (!$move_to_sent) {
+    if (isset($move_to_sent) && !$move_to_sent) {
         return false;
     }
-    if (!empty($sent_folder) && ( $box == $sent_folder || ($include_subs && isBoxBelow($box, $sent_folder)) )) {
+    if (!empty($sent_folder) && $sent_folder !== 'none' && ( $box == $sent_folder || ($include_subs && isBoxBelow($box, $sent_folder)) )) {
         return true;
     }
     $clean = trim((string)$box);
@@ -361,10 +361,10 @@ function isSentMailbox($box,$include_subs=true) {
  */
 function isDraftMailbox($box,$include_subs=true) {
     global $draft_folder, $save_as_draft;
-    if (!$save_as_draft) {
+    if (isset($save_as_draft) && !$save_as_draft) {
         return false;
     }
-    if (!empty($draft_folder) && ( $box == $draft_folder || ($include_subs && isBoxBelow($box, $draft_folder)) )) {
+    if (!empty($draft_folder) && $draft_folder !== 'none' && ( $box == $draft_folder || ($include_subs && isBoxBelow($box, $draft_folder)) )) {
         return true;
     }
     $clean = trim((string)$box);

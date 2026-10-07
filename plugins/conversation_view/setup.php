@@ -92,14 +92,18 @@ function conversation_view_read_body_header_right(&$links)
         include_once(SM_PATH . 'plugins/conversation_view/functions.php');
         $summary = cv_get_thread_summary($imapConnection, $mailbox, $passed_id, $message);
 
-        if (!empty($summary['total_count']) && ($summary['total_count'] > 1 || !empty($summary['draft_count']) || !empty($summary['sent_count']))) {
-            $badgeText = _("Thread") . ' (' . $summary['total_count'] . ')';
-            $title = sprintf(
-                _("%d messages in conversation (%d sent, %d drafts)"),
-                $summary['total_count'],
-                $summary['sent_count'],
-                $summary['draft_count']
-            );
+        if (!empty($summary['total_count'])) {
+            $badgeText = ($summary['total_count'] > 1)
+                ? _("Thread") . ' (' . $summary['total_count'] . ')'
+                : _("Thread");
+            $title = ($summary['total_count'] > 1)
+                ? sprintf(
+                    _("%d messages in conversation (%d sent, %d drafts)"),
+                    $summary['total_count'],
+                    $summary['sent_count'],
+                    $summary['draft_count']
+                )
+                : _("View conversation thread & replies");
             $links[] = array(
                 'URL'   => '#cv-conversation-thread',
                 'Text'  => '💬 ' . htmlspecialchars($badgeText, ENT_QUOTES, 'UTF-8'),

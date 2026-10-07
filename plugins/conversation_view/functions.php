@@ -21,32 +21,112 @@ include_once(SM_PATH . 'functions/mime.php');
 include_once(SM_PATH . 'functions/date.php');
 
 /**
+ * Detects if a given mailbox is a Sent folder
+ *
+ * @param string $mailbox Mailbox name
+ * @return bool
+ */
+function cv_is_sent_mailbox($mailbox)
+{
+    if (empty($mailbox)) {
+        return false;
+    }
+    global $sent_folder, $data_dir, $username;
+    $user_sent = getPref($data_dir, $username, 'sent_folder');
+    if (!empty($user_sent) && $user_sent !== 'none' && strcasecmp($mailbox, $user_sent) === 0) {
+        return true;
+    }
+    if (!empty($sent_folder) && $sent_folder !== 'none' && strcasecmp($mailbox, $sent_folder) === 0) {
+        return true;
+    }
+    $clean = trim((string)$mailbox);
+    $parts = preg_split('/[\.\/]/', $clean);
+    $leaf = strtolower(end($parts));
+    $sentKeywords = array(
+        'sent', 'sent items', 'sent messages', 'sent-mail', 'sentmail',
+        'verzonden', 'verzonden items', 'gesendet', 'gesendete elemente',
+        'gesendete objekte', 'envoyés', 'elements envoyes', 'éléments envoyés',
+        'inviati', 'posta inviata', 'enviados', 'elementos enviados', 'outbox'
+    );
+    if (in_array($leaf, $sentKeywords, true)) {
+        return true;
+    }
+    $lower = strtolower($clean);
+    foreach ($sentKeywords as $kw) {
+        if ($lower === $kw || $lower === 'inbox.' . $kw || $lower === 'inbox/' . $kw) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * Detects if a given mailbox is a Drafts folder
+ *
+ * @param string $mailbox Mailbox name
+ * @return bool
+ */
+function cv_is_draft_mailbox($mailbox)
+{
+    if (empty($mailbox)) {
+        return false;
+    }
+    global $draft_folder, $data_dir, $username;
+    $user_draft = getPref($data_dir, $username, 'draft_folder');
+    if (!empty($user_draft) && $user_draft !== 'none' && strcasecmp($mailbox, $user_draft) === 0) {
+        return true;
+    }
+    if (!empty($draft_folder) && $draft_folder !== 'none' && strcasecmp($mailbox, $draft_folder) === 0) {
+        return true;
+    }
+    $clean = trim((string)$mailbox);
+    $parts = preg_split('/[\.\/]/', $clean);
+    $leaf = strtolower(end($parts));
+    $draftKeywords = array(
+        'draft', 'drafts', 'concepten', 'entwürfe', 'entwuerfe',
+        'brouillons', 'bozze', 'borradores', 'rascunhos'
+    );
+    if (in_array($leaf, $draftKeywords, true)) {
+        return true;
+    }
+    $lower = strtolower($clean);
+    foreach ($draftKeywords as $kw) {
+        if ($lower === $kw || $lower === 'inbox.' . $kw || $lower === 'inbox/' . $kw) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
  * Extract RFC-822 Message-IDs from header strings (e.g. References, In-Reply-To, Message-ID)
  *
  * @param string $string Raw header string
- * @return array Clean array of Message-ID strings (without angle brackets)
+ * @return array Clean array of normalized lowercase Message-ID strings (without angle brackets)
  */
 function cv_extract_ids($string)
 {
     if (empty($string)) {
         return array();
     }
+    $ids = array();
     preg_match_all('/<([^>]+)>/', $string, $matches);
     if (!empty($matches[1])) {
-        $ids = array();
         foreach ($matches[1] as $id) {
-            $clean = trim($id);
+            $clean = strtolower(trim($id, "<> \t\n\r\0\x0B"));
             if (!empty($clean)) {
                 $ids[] = $clean;
             }
         }
-        return array_unique($ids);
     }
-    $trimmed = trim($string, "<> \t\n\r");
-    if (!empty($trimmed) && strpos($trimmed, '@') !== false) {
-        return array($trimmed);
+    $tokens = preg_split('/[\s,;]+/', $string);
+    foreach ($tokens as $tok) {
+        $tok = strtolower(trim($tok, "<> \t\n\r\0\x0B"));
+        if (!empty($tok) && strpos($tok, '@') !== false) {
+            $ids[] = $tok;
+        }
     }
-    return array();
+    return array_values(array_unique(array_filter($ids)));
 }
 
 /**
@@ -224,52 +304,89 @@ function cv_resolve_all_special_folders($imapConnection, $type)
         ? getPref($data_dir, $username, 'draft_folder')
         : getPref($data_dir, $username, 'sent_folder');
 
-    if (empty($prefFolder)) {
+    if (empty($prefFolder) || $prefFolder === 'none') {
         $prefFolder = ($type === 'draft') ? $draft_folder : $sent_folder;
     }
+    if ($prefFolder === 'none') {
+        $prefFolder = '';
+    }
 
-    $candidates = ($type === 'draft')
-        ? array($prefFolder, 'Drafts', 'INBOX.Drafts', 'Draft', 'INBOX/Drafts')
-        : array($prefFolder, 'Sent', 'INBOX.Sent', 'Sent Items', 'Sent Messages', 'INBOX/Sent', 'INBOX.Sent Items');
+    $commonCandidates = ($type === 'draft')
+        ? array('Drafts', 'INBOX.Drafts', 'Draft', 'INBOX/Drafts', 'INBOX.Draft', 'Concepten', 'INBOX.Concepten', 'Entwürfe', 'Brouillons', 'Bozze', 'Borradores', 'Rascunhos')
+        : array('Sent', 'INBOX.Sent', 'Sent Items', 'INBOX.Sent Items', 'Sent Messages', 'INBOX.Sent Messages', 'INBOX/Sent', 'INBOX/Sent Items', 'Verzonden', 'Verzonden items', 'INBOX.Verzonden', 'Gesendete Elemente', 'Gesendet', 'Envoyés', 'Éléments envoyés', 'Inviati', 'Posta inviata', 'Enviados', 'Elementos enviados', 'Sent-Mail', 'Outbox');
 
-    $candidates = array_values(array_unique(array_filter($candidates)));
+    $candidates = array_merge(array($prefFolder), $commonCandidates);
+    $candidates = array_values(array_unique(array_filter($candidates, function($c) {
+        return !empty($c) && $c !== 'none';
+    })));
+
     $existing = array();
 
     // 1. Check cached folder list if available
     $boxes = sqimap_mailbox_list($imapConnection);
-    $available = cv_flatten_mailboxes($boxes);
-
-    if (!empty($available)) {
-        foreach ($candidates as $cand) {
-            foreach ($available as $avail) {
-                if (strcasecmp($cand, $avail) === 0) {
-                    $existing[] = $avail;
+    if (!empty($boxes)) {
+        // Inspect each box, including RFC 6154 SPECIAL-USE flags and names
+        $flagTarget = ($type === 'draft') ? '\\drafts' : '\\sent';
+        foreach ($boxes as $b) {
+            $name = '';
+            $flags = array();
+            if (is_array($b)) {
+                $name = !empty($b['unformatted']) ? $b['unformatted'] : (!empty($b['mailboxname_full']) ? $b['mailboxname_full'] : '');
+                if (!empty($b['flags']) && is_array($b['flags'])) {
+                    $flags = array_map('strtolower', $b['flags']);
+                }
+            } elseif (is_object($b)) {
+                $name = !empty($b->mailboxname_full) ? $b->mailboxname_full : (!empty($b->unformatted) ? $b->unformatted : '');
+            }
+            if (!empty($name) && $name !== 'none') {
+                if (in_array($flagTarget, $flags, true)) {
+                    $existing[] = $name;
                 }
             }
         }
 
-        $targetWord = ($type === 'draft') ? 'draft' : 'sent';
-        foreach ($available as $avail) {
-            $parts = preg_split('/[\.\/]/', $avail);
-            $last = strtolower(end($parts));
-            if ($last === $targetWord || strpos($last, $targetWord) === 0) {
-                $existing[] = $avail;
+        $available = cv_flatten_mailboxes($boxes);
+        if (!empty($available)) {
+            foreach ($candidates as $cand) {
+                foreach ($available as $avail) {
+                    if (strcasecmp($cand, $avail) === 0) {
+                        $existing[] = $avail;
+                    }
+                }
+            }
+
+            $targetWords = ($type === 'draft')
+                ? array('draft', 'concept', 'entw', 'brouill', 'bozz', 'borrad', 'rascunh')
+                : array('sent', 'verzond', 'gesend', 'envoy', 'inviat', 'enviad', 'outbox');
+
+            foreach ($available as $avail) {
+                if ($avail === 'none') continue;
+                $parts = preg_split('/[\.\/]/', $avail);
+                $last = strtolower(end($parts));
+                foreach ($targetWords as $tw) {
+                    if (strpos($last, $tw) !== false) {
+                        $existing[] = $avail;
+                        break;
+                    }
+                }
             }
         }
     }
 
     // 2. Direct IMAP test for candidates not found in cached list
     foreach ($candidates as $cand) {
-        if (in_array($cand, $existing, true)) {
+        if ($cand === 'none' || in_array($cand, $existing, true)) {
             continue;
         }
-        // Test if mailbox exists via LIST without passing $boxes
         if (sqimap_mailbox_exists($imapConnection, $cand)) {
             $existing[] = $cand;
         }
     }
 
-    $existing = array_values(array_unique($existing));
+    $existing = array_values(array_unique(array_filter($existing, function($c) {
+        return !empty($c) && $c !== 'none';
+    })));
+
     if (empty($existing)) {
         $existing[] = ($type === 'draft' ? 'Drafts' : 'Sent');
     }
@@ -381,8 +498,8 @@ function cv_get_conversation_thread($imapConnection, $currentMailbox, $currentUi
             ? trim($rfcHeader->more_headers['X-SM-Flag-Reply'])
             : ((isset($rfcHeader->x_sm_flag_reply)) ? trim($rfcHeader->x_sm_flag_reply) : '');
 
-        // Resilient fallback: fetch headers directly via IMAP if current message header lacks IDs
-        if ((empty($curr_id) || empty($raw_subject)) && !empty($currentUid) && !empty($currentMailbox)) {
+        // Resilient fallback: fetch headers directly via IMAP if current message header lacks IDs or reply flag
+        if ((empty($curr_id) || empty($raw_subject) || (empty($in_reply_to) && empty($references) && empty($flag_reply))) && !empty($currentUid) && !empty($currentMailbox)) {
             $hdr_cur = sqimap_get_small_header_list($imapConnection, array($currentUid), array('Subject', 'Message-ID', 'In-Reply-To', 'References', 'X-SM-Flag-Reply'));
             if (!empty($hdr_cur) && is_array($hdr_cur)) {
                 $c_hdr = reset($hdr_cur);
@@ -424,9 +541,9 @@ function cv_get_conversation_thread($imapConnection, $currentMailbox, $currentUi
         $folders_to_check = array();
         if ($search_current && !empty($currentMailbox)) {
             $cType = 'received';
-            if (isDraftMailbox($currentMailbox)) {
+            if (cv_is_draft_mailbox($currentMailbox)) {
                 $cType = 'draft';
-            } elseif (isSentMailbox($currentMailbox)) {
+            } elseif (cv_is_sent_mailbox($currentMailbox)) {
                 $cType = 'sent';
             }
             $folders_to_check[$currentMailbox] = array('type' => $cType);
@@ -463,9 +580,9 @@ function cv_get_conversation_thread($imapConnection, $currentMailbox, $currentUi
         $baseUri = sqm_baseuri();
         $acctParam = isset($GLOBALS['iAccount']) ? (int)$GLOBALS['iAccount'] : 0;
         $curType = 'received';
-        if (isDraftMailbox($currentMailbox)) {
+        if (cv_is_draft_mailbox($currentMailbox)) {
             $curType = 'draft';
-        } elseif (isSentMailbox($currentMailbox)) {
+        } elseif (cv_is_sent_mailbox($currentMailbox)) {
             $curType = 'sent';
         }
 
@@ -575,7 +692,7 @@ function cv_get_conversation_thread($imapConnection, $currentMailbox, $currentUi
                 }
             }
 
-            // 3d. In Drafts, inspect all recent drafts (up to 50) to guarantee custom flag detection
+            // 3d. Always inspect recent drafts (up to 50) to guarantee custom flag detection
             if ($defaultType === 'draft') {
                 $resAllDrafts = cv_run_uid_search($imapConnection, 'ALL');
                 if (!empty($resAllDrafts) && is_array($resAllDrafts)) {
@@ -588,14 +705,27 @@ function cv_get_conversation_thread($imapConnection, $currentMailbox, $currentUi
                 }
             }
 
-            // 3e. In Sent, if zero messages found yet by search, inspect recent sent messages (up to 30)
-            if ($defaultType === 'sent' && empty($found_uids)) {
+            // 3e. Always inspect recent sent messages (up to 50) so sent replies are never missed even if IMAP header search is unsupported
+            if ($defaultType === 'sent') {
                 $resAllSent = cv_run_uid_search($imapConnection, 'ALL');
                 if (!empty($resAllSent) && is_array($resAllSent)) {
-                    if (count($resAllSent) > 30) {
-                        $resAllSent = array_slice($resAllSent, -30);
+                    if (count($resAllSent) > 50) {
+                        $resAllSent = array_slice($resAllSent, -50);
                     }
                     foreach ($resAllSent as $u) {
+                        if (is_numeric($u)) $found_uids[] = (int)$u;
+                    }
+                }
+            }
+
+            // 3f. In INBOX, if current viewed message is a sent reply or draft, inspect recent incoming messages (up to 50)
+            if ($defaultType === 'received' && $curType !== 'received' && strcasecmp($folderName, 'INBOX') === 0) {
+                $resAllInbox = cv_run_uid_search($imapConnection, 'ALL');
+                if (!empty($resAllInbox) && is_array($resAllInbox)) {
+                    if (count($resAllInbox) > 50) {
+                        $resAllInbox = array_slice($resAllInbox, -50);
+                    }
+                    foreach ($resAllInbox as $u) {
                         if (is_numeric($u)) $found_uids[] = (int)$u;
                     }
                 }
@@ -606,9 +736,9 @@ function cv_get_conversation_thread($imapConnection, $currentMailbox, $currentUi
                 continue;
             }
 
-            // Limit to most recent 40 messages per folder
-            if (count($found_uids) > 40) {
-                $found_uids = array_slice($found_uids, -40);
+            // Limit to most recent 50 messages per folder
+            if (count($found_uids) > 50) {
+                $found_uids = array_slice($found_uids, -50);
             }
 
             // Fetch headers including X-SM-Flag-Reply
@@ -637,9 +767,9 @@ function cv_get_conversation_thread($imapConnection, $currentMailbox, $currentUi
 
                 // Determine message type
                 $type = $defaultType;
-                if ($defaultType === 'draft' || stripos($folderName, 'draft') !== false) {
+                if ($defaultType === 'draft' || cv_is_draft_mailbox($folderName)) {
                     $type = 'draft';
-                } elseif ($defaultType === 'sent' || stripos($folderName, 'sent') !== false) {
+                } elseif ($defaultType === 'sent' || cv_is_sent_mailbox($folderName)) {
                     $type = 'sent';
                 }
 
@@ -662,13 +792,17 @@ function cv_get_conversation_thread($imapConnection, $currentMailbox, $currentUi
                 }
 
                 // Check Message-IDs (References, In-Reply-To, Message-ID)
-                if (!$has_link && !empty($search_ids)) {
+                $all_hdr_ids = array();
+                if (!empty($hdr['in-reply-to']) || !empty($hdr['references']) || !empty($hdr['message-id'])) {
                     $hdr_in_reply = !empty($hdr['in-reply-to']) ? cv_extract_ids($hdr['in-reply-to']) : array();
                     $hdr_refs = !empty($hdr['references']) ? cv_extract_ids($hdr['references']) : array();
                     $hdr_mid = !empty($hdr['message-id']) ? cv_extract_ids($hdr['message-id']) : array();
                     $all_hdr_ids = array_merge($hdr_in_reply, $hdr_refs, $hdr_mid);
-                    if (!empty(array_intersect($search_ids, $all_hdr_ids))) {
-                        $has_link = true;
+                    if (!$has_link && !empty($search_ids)) {
+                        $common_ids = array_intersect($search_ids, $all_hdr_ids);
+                        if (!empty($common_ids)) {
+                            $has_link = true;
+                        }
                     }
                 }
 
@@ -680,14 +814,26 @@ function cv_get_conversation_thread($imapConnection, $currentMailbox, $currentUi
                 // Check Subject match
                 if (!$has_link && !empty($clean_subject)) {
                     $hdr_clean_subj = cv_clean_subject(!empty($hdr['subject']) ? $hdr['subject'] : '');
-                    if (mb_strlen($hdr_clean_subj, 'UTF-8') >= 3 && 
-                        mb_strtolower($hdr_clean_subj, 'UTF-8') === mb_strtolower($clean_subject, 'UTF-8')) {
-                        $has_link = true;
+                    $s1 = mb_strtolower($hdr_clean_subj, 'UTF-8');
+                    $s2 = mb_strtolower($clean_subject, 'UTF-8');
+                    if ($s1 !== '' && $s2 !== '') {
+                        if ($s1 === $s2) {
+                            $has_link = true;
+                        } elseif (mb_strlen($s1, 'UTF-8') >= 8 && mb_strlen($s2, 'UTF-8') >= 8) {
+                            if (strpos($s1, $s2) === 0 || strpos($s2, $s1) === 0) {
+                                $has_link = true;
+                            }
+                        }
                     }
                 }
 
                 if (!$has_link) {
                     continue;
+                }
+
+                // Expand search_ids with newly found linked message's IDs for transitive thread expansion
+                if (!empty($all_hdr_ids)) {
+                    $search_ids = array_values(array_unique(array_merge($search_ids, $all_hdr_ids)));
                 }
 
                 // Extract date and timestamp
@@ -862,6 +1008,10 @@ function cv_render_thread_view($imapConnection, $currentMailbox, $currentUid, $c
                 <?php if ($stats['draft_count'] > 0): ?>
                     <span class="cv-badge cv-badge-draft">📝 <?php echo $stats['draft_count']; ?> <?php echo $stats['draft_count'] === 1 ? _("pending draft") : _("pending drafts"); ?></span>
                 <?php endif; ?>
+
+                <?php if ($stats['received_count'] > 0 && ($stats['sent_count'] > 0 || $stats['draft_count'] > 0)): ?>
+                    <span class="cv-badge cv-badge-total">📥 <?php echo $stats['received_count']; ?> <?php echo _("received"); ?></span>
+                <?php endif; ?>
             </div>
 
             <div class="cv-header-actions">
@@ -874,101 +1024,118 @@ function cv_render_thread_view($imapConnection, $currentMailbox, $currentUid, $c
             </div>
         </div>
 
-        <?php if (count($messages) <= 1 && empty($stats['sent_count']) && empty($stats['draft_count'])): ?>
-            <!-- Single message notice -->
-            <div class="cv-thread-empty">
-                <span class="cv-empty-icon">ℹ️</span>
-                <span><?php echo _("No sent replies or pending drafts found for this message thread yet."); ?></span>
-            </div>
-        <?php else: ?>
-            <!-- Timeline List -->
-            <div class="cv-timeline">
-                <?php foreach ($messages as $idx => $m):
-                    $cardClass = 'cv-card cv-card-' . $m['type'];
-                    if ($m['is_current']) {
-                        $cardClass .= ' cv-card-current';
-                    }
-                    $cardId = 'cv-card-' . preg_replace('/[^a-zA-Z0-9_-]/', '', $m['mailbox']) . '-' . $m['uid'];
-                ?>
-                <div id="<?php echo $cardId; ?>" class="<?php echo $cardClass; ?>" data-mailbox="<?php echo htmlspecialchars($m['mailbox'], ENT_QUOTES, 'UTF-8'); ?>" data-uid="<?php echo $m['uid']; ?>">
-                    <div class="cv-card-timeline-indicator">
-                        <div class="cv-indicator-dot"></div>
-                        <?php if ($idx < count($messages) - 1): ?>
-                            <div class="cv-indicator-line"></div>
-                        <?php endif; ?>
+        <!-- Timeline List -->
+        <div class="cv-timeline">
+            <?php foreach ($messages as $idx => $m):
+                $cardClass = 'cv-card cv-card-' . $m['type'];
+                if ($m['is_current']) {
+                    $cardClass .= ' cv-card-current';
+                }
+                $cardId = 'cv-card-' . preg_replace('/[^a-zA-Z0-9_-]/', '', $m['mailbox']) . '-' . $m['uid'];
+            ?>
+            <div id="<?php echo $cardId; ?>" class="<?php echo $cardClass; ?>" data-mailbox="<?php echo htmlspecialchars($m['mailbox'], ENT_QUOTES, 'UTF-8'); ?>" data-uid="<?php echo $m['uid']; ?>">
+                <div class="cv-card-timeline-indicator">
+                    <div class="cv-indicator-dot"></div>
+                    <?php if ($idx < count($messages) - 1): ?>
+                        <div class="cv-indicator-line"></div>
+                    <?php endif; ?>
+                </div>
+
+                <div class="cv-card-inner">
+                    <!-- Card Header Summary -->
+                    <div class="cv-card-header" onclick="cvToggleCard('<?php echo $cardId; ?>')">
+                        <div class="cv-card-type-pill">
+                            <?php if ($m['type'] === 'sent'): ?>
+                                <span class="cv-pill-tag cv-pill-sent">📤 <?php echo _("Sent Reply"); ?></span>
+                            <?php elseif ($m['type'] === 'draft'): ?>
+                                <span class="cv-pill-tag cv-pill-draft">📝 <?php echo _("Draft Reply"); ?></span>
+                            <?php else: ?>
+                                <span class="cv-pill-tag cv-pill-received">📥 <?php echo htmlspecialchars($m['mailbox'], ENT_QUOTES, 'UTF-8'); ?></span>
+                            <?php endif; ?>
+
+                            <?php if ($m['is_current']): ?>
+                                <span class="cv-pill-tag cv-pill-current">● <?php echo _("Currently Viewing"); ?></span>
+                            <?php endif; ?>
+                        </div>
+
+                        <div class="cv-card-meta">
+                            <span class="cv-card-author">
+                                <?php if ($m['type'] === 'sent' || $m['type'] === 'draft'): ?>
+                                    <span class="cv-meta-label"><?php echo _("To:"); ?></span> <strong><?php echo htmlspecialchars($m['to_name'], ENT_QUOTES, 'UTF-8'); ?></strong>
+                                <?php else: ?>
+                                    <span class="cv-meta-label"><?php echo _("From:"); ?></span> <strong><?php echo htmlspecialchars($m['from_name'], ENT_QUOTES, 'UTF-8'); ?></strong>
+                                <?php endif; ?>
+                            </span>
+                            <span class="cv-card-date"><?php echo htmlspecialchars($m['date_str'], ENT_QUOTES, 'UTF-8'); ?></span>
+                            <span class="cv-card-expand-icon">▼</span>
+                        </div>
                     </div>
 
-                    <div class="cv-card-inner">
-                        <!-- Card Header Summary -->
-                        <div class="cv-card-header" onclick="cvToggleCard('<?php echo $cardId; ?>')">
-                            <div class="cv-card-type-pill">
-                                <?php if ($m['type'] === 'sent'): ?>
-                                    <span class="cv-pill-tag cv-pill-sent">📤 <?php echo _("Sent Reply"); ?></span>
-                                <?php elseif ($m['type'] === 'draft'): ?>
-                                    <span class="cv-pill-tag cv-pill-draft">📝 <?php echo _("Draft Reply"); ?></span>
-                                <?php else: ?>
-                                    <span class="cv-pill-tag cv-pill-received">📥 <?php echo htmlspecialchars($m['mailbox'], ENT_QUOTES, 'UTF-8'); ?></span>
-                                <?php endif; ?>
-
-                                <?php if ($m['is_current']): ?>
-                                    <span class="cv-pill-tag cv-pill-current">● <?php echo _("Currently Viewing"); ?></span>
-                                <?php endif; ?>
-                            </div>
-
-                            <div class="cv-card-meta">
-                                <span class="cv-card-author">
-                                    <?php if ($m['type'] === 'sent' || $m['type'] === 'draft'): ?>
-                                        <span class="cv-meta-label"><?php echo _("To:"); ?></span> <strong><?php echo htmlspecialchars($m['to_name'], ENT_QUOTES, 'UTF-8'); ?></strong>
-                                    <?php else: ?>
-                                        <span class="cv-meta-label"><?php echo _("From:"); ?></span> <strong><?php echo htmlspecialchars($m['from_name'], ENT_QUOTES, 'UTF-8'); ?></strong>
-                                    <?php endif; ?>
-                                </span>
-                                <span class="cv-card-date"><?php echo htmlspecialchars($m['date_str'], ENT_QUOTES, 'UTF-8'); ?></span>
-                                <span class="cv-card-expand-icon">▼</span>
-                            </div>
+                    <!-- Card Preview Snippet -->
+                    <?php if (!empty($m['snippet'])): ?>
+                        <div class="cv-card-snippet">
+                            &ldquo;<?php echo htmlspecialchars($m['snippet'], ENT_QUOTES, 'UTF-8'); ?>&rdquo;
                         </div>
+                    <?php endif; ?>
 
-                        <!-- Card Preview Snippet -->
-                        <?php if (!empty($m['snippet'])): ?>
-                            <div class="cv-card-snippet">
-                                "<?php echo htmlspecialchars($m['snippet'], ENT_QUOTES, 'UTF-8'); ?>"
-                            </div>
-                        <?php endif; ?>
-
-                        <!-- Full Message Body (Expandable) -->
-                        <div class="cv-card-body" style="display: none;">
-                            <div class="cv-body-content">
-                                <div class="cv-loading-spinner"><?php echo _("Loading message body..."); ?></div>
-                            </div>
+                    <!-- Full Message Body (Expandable) -->
+                    <div class="cv-card-body" style="display: none;">
+                        <div class="cv-body-content">
+                            <div class="cv-loading-spinner"><?php echo _("Loading message body..."); ?></div>
                         </div>
+                    </div>
 
-                        <!-- Card Actions Bar -->
-                        <div class="cv-card-footer">
-                            <div class="cv-footer-actions">
-                                <?php if ($m['type'] === 'draft'): ?>
-                                    <a href="<?php echo htmlspecialchars($m['resume_url'], ENT_QUOTES, 'UTF-8'); ?>" class="cv-btn cv-btn-primary cv-btn-sm">
-                                        <span>✏️</span> <?php echo _("Resume Draft"); ?>
-                                    </a>
-                                    <button type="button" class="cv-btn cv-btn-danger cv-btn-sm" onclick="cvDiscardDraft(event, '<?php echo htmlspecialchars($m['mailbox'], ENT_QUOTES, 'UTF-8'); ?>', <?php echo $m['uid']; ?>, '<?php echo $cardId; ?>')">
-                                        <span>🗑️</span> <?php echo _("Discard Draft"); ?>
-                                    </button>
-                                <?php elseif (!$m['is_current']): ?>
-                                    <a href="<?php echo htmlspecialchars($m['view_url'], ENT_QUOTES, 'UTF-8'); ?>" class="cv-btn cv-btn-outline cv-btn-sm">
-                                        <span>👁️</span> <?php echo _("View Message"); ?>
-                                    </a>
-                                    <a href="<?php echo htmlspecialchars($m['reply_url'], ENT_QUOTES, 'UTF-8'); ?>" class="cv-btn cv-btn-outline cv-btn-sm">
-                                        <span>↩️</span> <?php echo _("Reply"); ?>
-                                    </a>
-                                <?php endif; ?>
-
-                                <button type="button" class="cv-btn cv-btn-ghost cv-btn-sm cv-toggle-btn" onclick="cvToggleCard('<?php echo $cardId; ?>')">
-                                    <span>🔍</span> <?php echo _("Toggle Body"); ?>
+                    <!-- Card Actions Bar -->
+                    <div class="cv-card-footer">
+                        <div class="cv-footer-actions">
+                            <?php if ($m['type'] === 'draft'): ?>
+                                <a href="<?php echo htmlspecialchars($m['resume_url'], ENT_QUOTES, 'UTF-8'); ?>" class="cv-btn cv-btn-primary cv-btn-sm">
+                                    <span>✏️</span> <?php echo _("Resume Draft"); ?>
+                                </a>
+                                <button type="button" class="cv-btn cv-btn-danger cv-btn-sm" onclick="cvDiscardDraft(event, '<?php echo htmlspecialchars($m['mailbox'], ENT_QUOTES, 'UTF-8'); ?>', <?php echo $m['uid']; ?>, '<?php echo $cardId; ?>')">
+                                    <span>🗑️</span> <?php echo _("Discard Draft"); ?>
                                 </button>
-                            </div>
+                            <?php elseif (!$m['is_current']): ?>
+                                <a href="<?php echo htmlspecialchars($m['view_url'], ENT_QUOTES, 'UTF-8'); ?>" class="cv-btn cv-btn-outline cv-btn-sm">
+                                    <span>👁️</span> <?php echo _("View Message"); ?>
+                                </a>
+                                <a href="<?php echo htmlspecialchars($m['reply_url'], ENT_QUOTES, 'UTF-8'); ?>" class="cv-btn cv-btn-outline cv-btn-sm">
+                                    <span>↩️</span> <?php echo _("Reply"); ?>
+                                </a>
+                            <?php else: ?>
+                                <a href="<?php echo htmlspecialchars($replyUrl, ENT_QUOTES, 'UTF-8'); ?>" class="cv-btn cv-btn-primary cv-btn-sm">
+                                    <span>↩️</span> <?php echo _("Reply"); ?>
+                                </a>
+                                <a href="<?php echo htmlspecialchars($replyAllUrl, ENT_QUOTES, 'UTF-8'); ?>" class="cv-btn cv-btn-secondary cv-btn-sm">
+                                    <span>👥</span> <?php echo _("Reply All"); ?>
+                                </a>
+                            <?php endif; ?>
+
+                            <button type="button" class="cv-btn cv-btn-ghost cv-btn-sm cv-toggle-btn" onclick="cvToggleCard('<?php echo $cardId; ?>')">
+                                <span>🔍</span> <?php echo _("Toggle Body"); ?>
+                            </button>
                         </div>
                     </div>
                 </div>
-                <?php endforeach; ?>
+            </div>
+            <?php endforeach; ?>
+        </div>
+
+        <?php if (count($messages) <= 1 && empty($stats['sent_count']) && empty($stats['draft_count'])): ?>
+            <!-- Initial message hint -->
+            <div class="cv-single-message-hint">
+                <div class="cv-hint-left">
+                    <div class="cv-hint-icon">💬</div>
+                    <div class="cv-hint-content">
+                        <div class="cv-hint-title"><?php echo _("Initial message in this conversation"); ?></div>
+                        <div class="cv-hint-desc"><?php echo _("No sent replies or pending drafts have been linked to this thread yet. When you reply or save a draft, it will automatically appear here."); ?></div>
+                    </div>
+                </div>
+                <div class="cv-hint-action">
+                    <a href="<?php echo htmlspecialchars($replyUrl, ENT_QUOTES, 'UTF-8'); ?>" class="cv-btn cv-btn-primary cv-btn-sm">
+                        <span>↩️</span> <?php echo _("Send Reply"); ?>
+                    </a>
+                </div>
             </div>
         <?php endif; ?>
     </div>
@@ -999,27 +1166,8 @@ function cv_mailbox_annotate_messages(&$aMessages, $currentMailbox, $imapConnect
         return;
     }
 
-    $user_draft = getPref($data_dir, $username, 'draft_folder');
-    if (empty($user_draft)) {
-        $user_draft = $draft_folder;
-    }
-
-    $draft_candidates = array_unique(array_filter(array(
-        $user_draft,
-        $draft_folder,
-        'INBOX.Drafts',
-        'Drafts',
-        'INBOX/Drafts',
-    )));
-
     $baseUri = sqm_baseuri();
-    $isDraftsMailbox = false;
-    foreach ($draft_candidates as $df) {
-        if ($df && strcasecmp($df, $currentMailbox) === 0) {
-            $isDraftsMailbox = true;
-            break;
-        }
-    }
+    $isDraftsMailbox = cv_is_draft_mailbox($currentMailbox);
 
     try {
         if ($isDraftsMailbox) {
