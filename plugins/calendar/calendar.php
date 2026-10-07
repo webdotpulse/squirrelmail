@@ -11,6 +11,7 @@
  */
 
 require('../../include/init.php');
+include_once(SM_PATH . 'functions/date.php');
 include_once(SM_PATH . 'functions/imap.php');
 include_once(SM_PATH . 'functions/imap_mailbox.php');
 include_once(SM_PATH . 'functions/mime.php');

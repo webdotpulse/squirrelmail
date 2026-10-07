@@ -1,4 +1,4 @@
-# SquirrelMail 1.5.32
+# SquirrelMail 1.5.33
 
 A modernized, responsive edition of SquirrelMail engineered for PHP 7.0 through 8.2+ with a Single-Page Application (SPA) interface, modern UI styling, and extensive feature enhancements.
 
@@ -47,6 +47,13 @@ This repository includes an [AGENTS.md](file:///home/koen/Git/squirrelmail/AGENT
 ---
 
 ## 📝 Changelog
+
+### Version 1.5.33
+- **Fix "Call to undefined function getTimeStamp()" on Calendar Appointment Import**:
+  - **Missing Date Helper Dependency**: Fixed fatal error on clicking "Add to Calendar" where `sqimap_get_message()` invokes `Rfc822Header->parseHeader()` to parse message headers including the `Date:` field, which calls `getTimeStamp()`. Because `functions/date.php` was not loaded in standalone endpoints, importing appointments failed with `Call to undefined function getTimeStamp()`.
+  - **Endpoint Includes**: Added explicit `include_once(SM_PATH . 'functions/date.php')` to `plugins/calendar/ajax.php`, `plugins/calendar/calendar.php`, and `plugins/calendar/calendar_data.php`.
+  - **IMAP Module & Header Parser Autoloading**: Included `functions/date.php` in `functions/imap.php` and added resilient on-demand loading guards in `class/mime/Rfc822Header.class.php` and `class/mime/Message.class.php`.
+- **Version Bump**: Incremented version from `1.5.32` to `1.5.33`.
 
 ### Version 1.5.32
 - **Fix HTTP 500 Fatal Error on Webmail Login**:

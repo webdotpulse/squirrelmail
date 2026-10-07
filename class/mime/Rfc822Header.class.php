@@ -246,7 +246,10 @@ class Rfc822Header {
                 $value = $this->stripComments($value);
                 $d = strtr($value, array('  ' => ' '));
                 $d = explode(' ', $d);
-                $this->date = getTimeStamp($d);
+                if (!function_exists('getTimeStamp') && defined('SM_PATH')) {
+                    include_once(SM_PATH . 'functions/date.php');
+                }
+                $this->date = function_exists('getTimeStamp') ? getTimeStamp($d) : -1;
                 $this->date_unparsed = strtr($value,'<>','  ');
                 break;
             case 'subject':

@@ -9,6 +9,7 @@
  */
 
 if (defined('SM_PATH')) {
+    include_once(SM_PATH . 'functions/date.php');
     include_once(SM_PATH . 'functions/prefs.php');
     include_once(SM_PATH . 'functions/imap.php');
     include_once(SM_PATH . 'functions/imap_mailbox.php');

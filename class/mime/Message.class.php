@@ -710,9 +710,10 @@ class Message {
         if (count($arg_a) > 9) {
             $d = strtr($arg_a[0], array('  ' => ' '));
             $d_parts = explode(' ', $d);
-            if (!$arg_a[1]) $arg_a[1] = _("(no subject)");
-
-            $hdr->date = getTimeStamp($d_parts); /* argument 1: date */
+            if (!function_exists('getTimeStamp') && defined('SM_PATH')) {
+                include_once(SM_PATH . 'functions/date.php');
+            }
+            $hdr->date = function_exists('getTimeStamp') ? getTimeStamp($d_parts) : -1; /* argument 1: date */
             $hdr->date_unparsed = strtr($d,'<>','  '); /* original date */
             $hdr->subject = $arg_a[1];     /* argument 2: subject */
             $hdr->from = is_array($arg_a[2]) ? $arg_a[2][0] : '';     /* argument 3: from        */
