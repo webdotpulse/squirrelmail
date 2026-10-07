@@ -114,8 +114,8 @@ if ($nav_on_top) {
     </label>
     <?php } ?>
     <?php if (function_exists('ai_agent_info') || !empty($GLOBALS['squirrelmail_plugin_hooks']['read_body_top']['ai_agent'])) { ?>
-    <button type="button" class="sm-btn sm-btn-secondary sm-btn-sm sm-btn-ai-summarize" onclick="if(window.aiAgentSummarize){window.aiAgentSummarize();}else{alert('<?php echo _("AI Summarizer is initializing..."); ?>');}" title="<?php echo _("Summarize message with AI"); ?>" style="display: inline-flex; align-items: center; gap: 4px; font-weight: 500;">
-      <span style="margin-right: 2px; pointer-events: none;">✨</span><?php echo _("AI Summarize"); ?>
+    <button type="button" class="sm-btn sm-btn-ai sm-btn-sm sm-btn-ai-summarize" onclick="if(window.aiAgentSummarize){window.aiAgentSummarize();}else{alert('<?php echo _("AI Summarizer is initializing..."); ?>');}" title="<?php echo _("Summarize message with AI"); ?>">
+      <span style="pointer-events: none;">✨</span> <span><?php echo _("AI Summarize"); ?></span>
     </button>
     <?php } ?>
    </form>
@@ -142,7 +142,7 @@ if ($nav_on_top) {
      <input type="hidden" name="smtoken" value="<?php echo sm_generate_security_token(); ?>" />
      <?php echo $move_form_extra; ?>
      <span style="font-size: 12px; color: var(--sm-text-secondary);"><?php echo _("Move To"); ?>:</span>
-     <select class="sm-select sm-select-sm" style="font-size: 12px; padding: 4px 8px;" <?php if ($accesskey_read_msg_move_to != 'NONE') echo 'accesskey="' . $accesskey_read_msg_move_to . '" '; ?>name="targetMailbox">
+     <select class="sm-select sm-select-sm" <?php if ($accesskey_read_msg_move_to != 'NONE') echo 'accesskey="' . $accesskey_read_msg_move_to . '" '; ?>name="targetMailbox">
      <?php
         foreach ($mailboxes as $value=>$option) {
             echo '<option value="'. $value .'"' . ($value==$last_move_target ? ' selected="selected"' : '').'>' . $option .'</option>'."\n";

@@ -42,10 +42,9 @@ function templates_version()
 
 function tpl_compose_buttons()
 {
-    $html = '<button type="button" class="btn btn-secondary tpl-trigger-btn" '
+    $html = '<button type="button" class="sm-btn sm-btn-secondary sm-btn-sm tpl-trigger-btn" '
           . 'onclick="if(window.tplOpenModal) window.tplOpenModal();" '
-          . 'title="' . _("Insert Reply or Email Template") . '" '
-          . 'style="margin-left: 6px; padding: 4px 10px; font-size: 12px; font-weight: 600; cursor: pointer; border-radius: 4px; border: 1px solid #dadce0; background: #ffffff; color: #1a73e8; display: inline-flex; align-items: center; gap: 4px;">'
+          . 'title="' . _("Insert Reply or Email Template") . '">'
           . '<span>📋</span> <span>' . _("Templates") . '</span>'
           . '</button>';
 
@@ -61,79 +60,6 @@ function tpl_compose_close()
 
     ob_start();
     ?>
-    <style>
-    .tpl-modal-backdrop {
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        background: rgba(32, 33, 36, 0.6);
-        z-index: 100000;
-        backdrop-filter: blur(2px);
-        align-items: center;
-        justify-content: center;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    }
-    .tpl-modal-box {
-        background: #ffffff;
-        width: 90%;
-        max-width: 680px;
-        border-radius: 12px;
-        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-        max-height: 85vh;
-        animation: tplModalFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    @keyframes tplModalFadeIn {
-        from { opacity: 0; transform: scale(0.96) translateY(-10px); }
-        to { opacity: 1; transform: scale(1) translateY(0); }
-    }
-    .tpl-modal-header {
-        padding: 14px 20px;
-        background: #fafbfc;
-        border-bottom: 1px solid #dadce0;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-    }
-    .tpl-modal-body {
-        padding: 16px 20px;
-        overflow-y: auto;
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-    }
-    .tpl-card-choice {
-        border: 1px solid #dadce0;
-        border-radius: 8px;
-        padding: 12px 16px;
-        cursor: pointer;
-        transition: all 0.15s;
-        background: #ffffff;
-    }
-    .tpl-card-choice:hover {
-        border-color: #1a73e8;
-        background: #f8fafd;
-    }
-    .tpl-att-tag {
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        padding: 2px 8px;
-        background: #e8f0fe;
-        color: #1a73e8;
-        border-radius: 4px;
-        font-size: 11px;
-        font-weight: 600;
-        margin-right: 4px;
-        margin-top: 4px;
-    }
-    </style>
-
     <div id="tpl-modal-backdrop" class="tpl-modal-backdrop" onclick="if(event.target===this) window.tplCloseModal();">
         <div class="tpl-modal-box">
             <div class="tpl-modal-header">
@@ -141,8 +67,8 @@ function tpl_compose_close()
                     <span>📋</span> <span><?php echo _("Select Email Template"); ?></span>
                 </h3>
                 <div style="display: flex; gap: 12px; align-items: center;">
-                    <a href="<?php echo $managerUrl; ?>" target="_blank" style="font-size: 12px; color: #1a73e8; text-decoration: none;">⚙️ <?php echo _("Manage Templates"); ?></a>
-                    <button type="button" onclick="window.tplCloseModal()" style="background: none; border: none; font-size: 20px; cursor: pointer; color: #5f6368;">&times;</button>
+                    <a href="<?php echo $managerUrl; ?>" target="_blank" style="font-size: 12px; color: var(--sm-primary); text-decoration: none;">⚙️ <?php echo _("Manage Templates"); ?></a>
+                    <button type="button" onclick="window.tplCloseModal()" style="background: none; border: none; font-size: 20px; cursor: pointer; color: var(--sm-text-muted);">&times;</button>
                 </div>
             </div>
 

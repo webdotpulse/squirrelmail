@@ -18,10 +18,9 @@ function ai_agent_compose_buttons_do()
     global $ai_enable_compose;
     if (!$ai_enable_compose) return array();
 
-    $html = '<button type="button" id="btn-ai-compose-open" class="btn btn-secondary ai-compose-trigger" '
+    $html = '<button type="button" id="btn-ai-compose-open" class="sm-btn sm-btn-ai sm-btn-sm ai-compose-trigger" '
           . 'onclick="if(window.aiAgentOpenModal) window.aiAgentOpenModal();" '
-          . 'title="' . _("Open Gemini 3.8 AI Email Assistant") . '" '
-          . 'style="margin-left: 6px; padding: 4px 10px; font-size: 12px; font-weight: 600; cursor: pointer; border-radius: 4px; border: 1px solid #c2e7ff; background: linear-gradient(135deg, #e8f0fe 0%, #f3e8fd 100%); color: #0b57d0; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">'
+          . 'title="' . _("Open Gemini 3.8 AI Email Assistant") . '">'
           . '<span>✨</span> <span>' . _("AI Assistant") . '</span>'
           . '</button>';
 
@@ -39,180 +38,6 @@ function ai_agent_compose_close_do()
     $is_reply = ($action === 'reply' || $action === 'reply_all');
     ob_start();
     ?>
-    <style>
-        .ai-modal-backdrop {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: rgba(32, 33, 36, 0.6);
-            z-index: 100000;
-            backdrop-filter: blur(2px);
-            align-items: center;
-            justify-content: center;
-        }
-        .ai-modal-box {
-            background: #ffffff;
-            width: 90%;
-            max-width: 640px;
-            border-radius: 12px;
-            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            max-height: 90vh;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            animation: aiModalFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        @keyframes aiModalFadeIn {
-            from { opacity: 0; transform: scale(0.96) translateY(-10px); }
-            to { opacity: 1; transform: scale(1) translateY(0); }
-        }
-        .ai-modal-header {
-            padding: 16px 20px;
-            background: linear-gradient(135deg, #1a73e8 0%, #681da8 100%);
-            color: #ffffff;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        .ai-modal-header h3 {
-            margin: 0;
-            font-size: 16px;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .ai-modal-close {
-            background: rgba(255, 255, 255, 0.2);
-            border: none;
-            color: #ffffff;
-            font-size: 18px;
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background 0.15s;
-        }
-        .ai-modal-close:hover {
-            background: rgba(255, 255, 255, 0.35);
-        }
-        .ai-modal-tabs {
-            display: flex;
-            background: #f1f3f4;
-            border-bottom: 1px solid #dadce0;
-        }
-        .ai-tab-btn {
-            flex: 1;
-            padding: 10px 12px;
-            border: none;
-            background: none;
-            font-size: 13px;
-            font-weight: 500;
-            color: #5f6368;
-            cursor: pointer;
-            text-align: center;
-            transition: all 0.15s;
-            border-bottom: 2px solid transparent;
-        }
-        .ai-tab-btn.active {
-            color: #1a73e8;
-            background: #ffffff;
-            border-bottom: 2px solid #1a73e8;
-            font-weight: 600;
-        }
-        .ai-modal-body {
-            padding: 20px;
-            overflow-y: auto;
-            flex: 1;
-        }
-        .ai-field-label {
-            display: block;
-            font-size: 13px;
-            font-weight: 600;
-            color: #3c4043;
-            margin-bottom: 6px;
-        }
-        .ai-textarea {
-            width: 100%;
-            box-sizing: border-box;
-            padding: 10px 12px;
-            border: 1px solid #dadce0;
-            border-radius: 6px;
-            font-size: 13px;
-            font-family: inherit;
-            resize: vertical;
-            min-height: 80px;
-            outline: none;
-        }
-        .ai-textarea:focus {
-            border-color: #1a73e8;
-            box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
-        }
-        .ai-chip-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            margin: 8px 0 14px 0;
-        }
-        .ai-chip {
-            background: #f1f3f4;
-            border: 1px solid #dadce0;
-            border-radius: 16px;
-            padding: 4px 10px;
-            font-size: 12px;
-            color: #3c4043;
-            cursor: pointer;
-            transition: all 0.15s;
-        }
-        .ai-chip:hover {
-            background: #e8f0fe;
-            color: #1a73e8;
-            border-color: #aecbfa;
-        }
-        .ai-output-box {
-            margin-top: 14px;
-            padding: 12px 14px;
-            background: #f8fafd;
-            border: 1px solid #dadce0;
-            border-radius: 6px;
-            font-size: 13px;
-            line-height: 1.5;
-            color: #1f1f1f;
-            max-height: 200px;
-            overflow-y: auto;
-            display: none;
-            white-space: pre-wrap;
-        }
-        .ai-spinner {
-            display: inline-block;
-            width: 14px;
-            height: 14px;
-            border: 2px solid #ffffff;
-            border-top-color: transparent;
-            border-radius: 50%;
-            animation: aiSpin 0.7s linear infinite;
-            margin-right: 6px;
-        }
-        @keyframes aiSpin {
-            to { transform: rotate(360deg); }
-        }
-        .ai-modal-footer {
-            padding: 12px 20px;
-            background: #f8fafd;
-            border-top: 1px solid #ebebeb;
-            display: flex;
-            justify-content: flex-end;
-            gap: 8px;
-        }
-    </style>
-
     <!-- AI Assistant Modal Dialog -->
     <div id="ai-agent-modal" class="ai-modal-backdrop">
         <div class="ai-modal-box">
@@ -236,7 +61,7 @@ function ai_agent_compose_close_do()
                     <div style="margin-top: 10px; display: flex; gap: 12px; align-items: center;">
                         <div>
                             <span class="ai-field-label" style="margin-bottom: 2px;">Tone:</span>
-                            <select id="ai-compose-tone" style="padding: 6px 10px; border: 1px solid #dadce0; border-radius: 4px; font-size: 12px;">
+                            <select id="ai-compose-tone" class="sm-select sm-select-sm">
                                 <option value="professional" selected>Professional &amp; Courteous</option>
                                 <option value="friendly">Warm &amp; Friendly</option>
                                 <option value="concise">Concise &amp; Direct</option>
@@ -288,13 +113,13 @@ function ai_agent_compose_close_do()
             </div>
 
             <div class="ai-modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="aiAgentCloseModal();" style="padding: 8px 14px; border: 1px solid #dadce0; border-radius: 4px; background: #fff; cursor: pointer;">Cancel</button>
-                <button type="button" id="btn-ai-generate" onclick="aiAgentExecute();" style="padding: 8px 16px; border: none; border-radius: 4px; background: #1a73e8; color: #fff; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center;">
+                <button type="button" class="sm-btn sm-btn-secondary" onclick="aiAgentCloseModal();"><?php echo _("Cancel"); ?></button>
+                <button type="button" id="btn-ai-generate" class="sm-btn sm-btn-primary" onclick="aiAgentExecute();">
                     <span id="ai-gen-spinner" class="ai-spinner" style="display: none;"></span>
-                    <span id="ai-gen-btn-label">✨ Generate</span>
+                    <span id="ai-gen-btn-label">✨ <?php echo _("Generate"); ?></span>
                 </button>
-                <button type="button" id="btn-ai-insert" onclick="aiAgentInsertOutput();" style="display: none; padding: 8px 16px; border: none; border-radius: 4px; background: #137333; color: #fff; font-weight: 600; cursor: pointer;">
-                    ✓ Insert into Email
+                <button type="button" id="btn-ai-insert" class="sm-btn sm-btn-success" onclick="aiAgentInsertOutput();" style="display: none;">
+                    ✓ <?php echo _("Insert into Email"); ?>
                 </button>
             </div>
         </div>

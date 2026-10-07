@@ -151,6 +151,17 @@
     color: #ffffff !important;
 }
 
+[data-theme="dark"] .cv-btn-danger {
+    background: #3b1219;
+    color: #fca5a5 !important;
+    border-color: #7f1d1d;
+}
+
+[data-theme="dark"] .cv-btn-danger:hover {
+    background: #ef4444;
+    color: #ffffff !important;
+}
+
 .cv-btn-ghost {
     background: transparent;
     color: var(--sm-text-secondary, #64748b) !important;

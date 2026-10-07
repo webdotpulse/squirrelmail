@@ -480,6 +480,72 @@ displayPageHeader($color, 'None');
     border-top: 1px solid var(--cal-border);
     background: #fafbfc;
 }
+
+[data-theme="dark"] {
+    --cal-primary: var(--sm-primary, #3b82f6);
+    --cal-primary-hover: var(--sm-primary-hover, #60a5fa);
+    --cal-bg: var(--sm-bg-surface, #111827);
+    --cal-border: var(--sm-border, #1f2937);
+    --cal-text: var(--sm-text-primary, #f8fafc);
+    --cal-text-muted: var(--sm-text-muted, #94a3b8);
+}
+[data-theme="dark"] .cal-topbar,
+[data-theme="dark"] .cal-month-grid,
+[data-theme="dark"] .cal-agenda-view,
+[data-theme="dark"] .cal-modal,
+[data-theme="dark"] .cal-day-cell {
+    background-color: var(--sm-bg-surface, #111827);
+    color: var(--sm-text-primary, #f8fafc);
+}
+[data-theme="dark"] .cal-weekdays,
+[data-theme="dark"] .cal-modal-header,
+[data-theme="dark"] .cal-modal-footer,
+[data-theme="dark"] .cal-day-cell.other-month {
+    background-color: var(--sm-bg-canvas, #090d16);
+    color: var(--sm-text-muted, #94a3b8);
+}
+[data-theme="dark"] .cal-day-cell {
+    border-color: var(--sm-border, #1f2937);
+}
+[data-theme="dark"] .cal-day-cell.today {
+    background-color: var(--sm-unread-bg, #13233c);
+}
+[data-theme="dark"] .cal-view-pills {
+    background-color: var(--sm-bg-canvas, #090d16);
+}
+[data-theme="dark"] .cal-view-pill.active {
+    background-color: var(--sm-bg-surface, #111827);
+    color: var(--sm-primary, #3b82f6);
+}
+[data-theme="dark"] .cal-btn {
+    background-color: var(--sm-bg-surface, #111827);
+    color: var(--sm-text-primary, #f8fafc);
+    border-color: var(--sm-border, #1f2937);
+}
+[data-theme="dark"] .cal-btn:hover {
+    background-color: var(--sm-hover-bg, #1e293b);
+    color: var(--sm-primary, #3b82f6);
+    border-color: var(--sm-border-hover, #374151);
+}
+[data-theme="dark"] .cal-btn-primary {
+    background-color: var(--sm-primary, #3b82f6);
+    color: #ffffff;
+    border-color: var(--sm-primary, #3b82f6);
+}
+[data-theme="dark"] .cal-input,
+[data-theme="dark"] .cal-select,
+[data-theme="dark"] .cal-textarea {
+    background-color: var(--sm-bg-surface, #111827);
+    color: var(--sm-text-primary, #f8fafc);
+    border-color: var(--sm-border, #1f2937);
+}
+[data-theme="dark"] .cal-agenda-item {
+    background-color: var(--sm-bg-canvas, #090d16);
+    color: var(--sm-text-primary, #f8fafc);
+}
+[data-theme="dark"] .cal-agenda-item:hover {
+    background-color: var(--sm-hover-bg, #1e293b);
+}
 </style>
 
 <div class="cal-app">
@@ -705,7 +771,7 @@ displayPageHeader($color, 'None');
             </div>
 
             <div class="cal-modal-footer">
-                <button type="button" id="btn-ev-delete" class="cal-btn" style="color:#d93025; border-color:#fad2cf; display:none;" onclick="deleteCalendarEvent()"><?php echo _("Delete"); ?></button>
+                <button type="button" id="btn-ev-delete" class="cal-btn sm-btn-danger" style="display:none;" onclick="deleteCalendarEvent()"><?php echo _("Delete"); ?></button>
                 <div style="display:flex; gap:8px; margin-left:auto;">
                     <button type="button" class="cal-btn" onclick="closeEventModal()"><?php echo _("Cancel"); ?></button>
                     <button type="submit" class="cal-btn cal-btn-primary"><?php echo _("Save Event"); ?></button>

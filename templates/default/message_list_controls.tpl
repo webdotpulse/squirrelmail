@@ -75,7 +75,7 @@ if (count($aFormElements)) {
     if (isset($aFormElements['moveButton']) || isset($aFormElements['copyButton'])) {
         echo '<div style="display: flex; align-items: center; gap: 6px;">';
 ?>
-        <select name="targetMailbox" class="sm-select sm-select-sm" style="font-size: 12px; padding: 4px 8px; border-radius: 4px; border: 1px solid var(--sm-border); background: var(--sm-bg-surface); color: var(--sm-text-primary);"<?php if ($aFormElements['targetMailbox']['accesskey'] != 'NONE') echo ' accesskey="' . $aFormElements['targetMailbox']['accesskey'] . '"'; ?>>
+        <select name="targetMailbox" class="sm-select sm-select-sm"<?php if ($aFormElements['targetMailbox']['accesskey'] != 'NONE') echo ' accesskey="' . $aFormElements['targetMailbox']['accesskey'] . '"'; ?>>
            <?php echo $aFormElements['targetMailbox']['options_list'];?>
         </select>
 <?php

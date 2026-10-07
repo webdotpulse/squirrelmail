@@ -1,7 +1,9 @@
 /**
  * Modern Midnight Dark Theme
  */
-:root[data-theme="dark"], [data-theme="dark"] {
+:root,
+:root[data-theme="dark"],
+[data-theme="dark"] {
   --sm-bg-canvas: #090d16;
   --sm-bg-surface: #111827;
   --sm-bg-sidebar: #0b1120;
@@ -11,13 +13,21 @@
   --sm-border-hover: #374151;
   --sm-text-primary: #f8fafc;
   --sm-text-secondary: #94a3b8;
-  --sm-text-muted: #64748b;
+  --sm-text-muted: #94a3b8;
   --sm-primary: #3b82f6;
   --sm-primary-hover: #60a5fa;
   --sm-primary-light: #1e293b;
   --sm-primary-border: #2563eb;
   --sm-accent: #60a5fa;
   --sm-hover-bg: #1e293b;
-  --sm-unread-bg: #1e293b;
+  --sm-bg-hover: #1e293b;
+  --sm-unread-bg: #13233c;
   --sm-selected-bg: #1e3a8a;
+  --sm-danger: #ef4444;
+  --sm-danger-hover: #f87171;
+  --sm-danger-light: #3b1219;
+  --sm-success: #10b981;
+  --sm-success-light: #062b1e;
+  --sm-warning: #f59e0b;
+  --sm-warning-light: #2d2305;
 }

@@ -65,13 +65,13 @@ function sb_read_menubar_buttons()
         <input type="hidden" name="passed_id" value="<?php echo $uid; ?>" />
         <?php if ($isJunkFolder): ?>
             <input type="hidden" name="type" value="ham" />
-            <button type="submit" class="sm-btn sm-btn-secondary sm-btn-sm sm-btn-ham" onclick="return confirm('<?php echo addslashes(_("Restore this email to Inbox and train AI that it is legitimate?")); ?>');" title="<?php echo sm_encode_html_special_chars(_("Mark as Not Spam and restore to Inbox")); ?>" style="cursor: pointer; font-weight: 500; display: inline-flex; align-items: center; gap: 4px;">
-                <span>✅</span> <span><?php echo _("Not Spam"); ?></span>
+            <button type="submit" class="sm-btn sm-btn-ham sm-btn-sm" onclick="return confirm('<?php echo addslashes(_("Restore this email to Inbox and train AI that it is legitimate?")); ?>');" title="<?php echo sm_encode_html_special_chars(_("Mark as Not Spam and restore to Inbox")); ?>">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:2px;"><polyline points="20 6 9 17 4 12"></polyline></svg><span><?php echo _("Not Spam"); ?></span>
             </button>
         <?php else: ?>
             <input type="hidden" name="type" value="spam" />
-            <button type="submit" class="sm-btn sm-btn-secondary sm-btn-sm sm-btn-spam" onclick="return confirm('<?php echo addslashes(_("Move this email to Junk and train AI spam model?")); ?>');" title="<?php echo sm_encode_html_special_chars(_("Report as Spam and move to Junk")); ?>" style="cursor: pointer; font-weight: 500; display: inline-flex; align-items: center; gap: 4px;">
-                <span>🚫</span> <span><?php echo _("Spam"); ?></span>
+            <button type="submit" class="sm-btn sm-btn-spam sm-btn-sm" onclick="return confirm('<?php echo addslashes(_("Move this email to Junk and train AI spam model?")); ?>');" title="<?php echo sm_encode_html_special_chars(_("Report as Spam and move to Junk")); ?>">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:2px;"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg><span><?php echo _("Spam"); ?></span>
             </button>
         <?php endif; ?>
     </form>
@@ -95,23 +95,21 @@ function sb_read_body_header_right(&$links)
     if ($isJunkFolder) {
         $confirmHam = sm_encode_html_special_chars(_("Restore this email to Inbox and train AI that it is legitimate?"));
         $url = sqm_baseuri() . 'plugins/spam_buttons/action.php?type=ham&mailbox=' . urlencode($mailbox) . '&passed_id=' . $uid . ($token ? '&smtoken=' . urlencode($token) : '');
-        $btn = '<a href="' . $url . '" class="sm-btn sm-btn-secondary sm-btn-sm sm-btn-ham" '
+        $btn = '<a href="' . $url . '" class="sm-btn sm-btn-ham sm-btn-sm" '
              . 'onclick="return confirm(\'' . addslashes($confirmHam) . '\')" '
-             . 'title="' . sm_encode_html_special_chars(_("Mark as Not Spam and train AI model")) . '" '
-             . 'style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; font-size: 12px; font-weight: 500; border-radius: 4px; text-decoration: none;">'
-             . '<span>✅</span> <span>' . _("Not Spam") . '</span>'
+             . 'title="' . sm_encode_html_special_chars(_("Mark as Not Spam and train AI model")) . '">'
+             . '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:2px;"><polyline points="20 6 9 17 4 12"></polyline></svg><span>' . _("Not Spam") . '</span>'
              . '</a>';
-        $text = '✅ ' . _("Not Spam");
+        $text = _("Not Spam");
     } else {
         $confirmSpam = sm_encode_html_special_chars(_("Move this email to Junk and train AI spam model?"));
         $url = sqm_baseuri() . 'plugins/spam_buttons/action.php?type=spam&mailbox=' . urlencode($mailbox) . '&passed_id=' . $uid . ($token ? '&smtoken=' . urlencode($token) : '');
-        $btn = '<a href="' . $url . '" class="sm-btn sm-btn-secondary sm-btn-sm sm-btn-spam" '
+        $btn = '<a href="' . $url . '" class="sm-btn sm-btn-spam sm-btn-sm" '
              . 'onclick="return confirm(\'' . addslashes($confirmSpam) . '\')" '
-             . 'title="' . sm_encode_html_special_chars(_("Report as Spam and train AI model")) . '" '
-             . 'style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; font-size: 12px; font-weight: 500; border-radius: 4px; text-decoration: none;">'
-             . '<span>🚫</span> <span>' . _("Report Spam") . '</span>'
+             . 'title="' . sm_encode_html_special_chars(_("Report as Spam and train AI model")) . '">'
+             . '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:2px;"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg><span>' . _("Report Spam") . '</span>'
              . '</a>';
-        $text = '🚫 ' . _("Report Spam");
+        $text = _("Report Spam");
     }
 
     if (is_array($links)) {
@@ -133,12 +131,12 @@ function sb_message_list_controls()
     ?>
     <span style="display: inline-flex; align-items: center; margin: 0 4px;">
         <?php if ($isJunkFolder): ?>
-            <button type="button" class="sm-btn sm-btn-secondary sm-btn-sm" onclick="sbBatchAction('ham')" title="<?php echo _("Mark selected as Not Spam and move to Inbox"); ?>" style="border-color: #ceead6; background: #e6f4ea; color: #137333; cursor: pointer; font-weight: 500; display: inline-flex; align-items: center; gap: 4px;">
-                <span>✅</span> <span><?php echo _("Not Spam"); ?></span>
+            <button type="button" class="sm-btn sm-btn-ham sm-btn-sm" onclick="sbBatchAction('ham')" title="<?php echo _("Mark selected as Not Spam and move to Inbox"); ?>">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:2px;"><polyline points="20 6 9 17 4 12"></polyline></svg><span><?php echo _("Not Spam"); ?></span>
             </button>
         <?php else: ?>
-            <button type="button" class="sm-btn sm-btn-secondary sm-btn-sm" onclick="sbBatchAction('spam')" title="<?php echo _("Report selected as Spam and move to Junk"); ?>" style="border-color: #fad2cf; background: #fce8e6; color: #c5221f; cursor: pointer; font-weight: 500; display: inline-flex; align-items: center; gap: 4px;">
-                <span>🚫</span> <span><?php echo _("Spam"); ?></span>
+            <button type="button" class="sm-btn sm-btn-spam sm-btn-sm" onclick="sbBatchAction('spam')" title="<?php echo _("Report selected as Spam and move to Junk"); ?>">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:2px;"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg><span><?php echo _("Spam"); ?></span>
             </button>
         <?php endif; ?>
     </span>

@@ -182,10 +182,8 @@
             const customTheme = document.getElementById('sm-custom-theme-css');
             if (customTheme) {
                 const href = (customTheme.getAttribute('href') || '').toLowerCase();
-                if (theme === 'light') {
-                    if (href.includes('dark') || href.includes('night') || href.includes('ocean')) {
-                        customTheme.disabled = true;
-                    }
+                if (theme === 'light' && (href.includes('dark.css') || href.includes('night.css'))) {
+                    customTheme.disabled = true;
                 } else {
                     customTheme.disabled = false;
                 }

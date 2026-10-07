@@ -1,4 +1,4 @@
-# SquirrelMail 1.5.52
+# SquirrelMail 1.5.53
 
 A modernized, responsive edition of SquirrelMail engineered for PHP 7.0 through 8.2+ with a Single-Page Application (SPA) interface, modern UI styling, and extensive feature enhancements.
 
@@ -57,6 +57,32 @@ This repository includes an [AGENTS.md](file:///home/koen/Git/squirrelmail/AGENT
 ---
 
 ## 📝 Changelog
+
+### Version 1.5.53
+- **Modern Themes & WCAG AA Contrast Overhaul**:
+  - Comprehensive contrast and readability audit across all 9 modern themes (`default.css`, `dark.css`, `amber.css`, `emerald.css`, `high_contrast.css`, `ocean.css`, `purple.css`, `solarized_dark.css`, `solarized_light.css`).
+  - Resolved all WCAG AA contrast failures for muted text, links, accents, and borders across Light and Dark modes.
+  - Implemented dual-mode (`:root` light and `[data-theme="dark"]` dark) tokens across all CSS themes, ensuring custom themes adapt seamlessly when toggling dark mode without broken backgrounds or illegible text.
+  - Fixed dark-mode hover flash by establishing `--sm-bg-hover: #1e293b` in Dark mode and `--sm-bg-hover: #f1f5f9` in Light mode.
+  - Upgraded High Contrast theme with crisp black-on-white Light mode and accessible yellow/white-on-black Dark mode.
+- **Uniform Form Controls & Dropdowns**:
+  - Universal dropdown styling: Standardized all `<select>` and `.sm-select` controls with 34px uniform height, 6px border-radius, theme-adaptive custom SVG chevron arrow, and smooth focus states.
+  - Added dedicated `select[multiple]` support with automatic height, scrolling, and removed background chevron.
+  - Unified search mailbox selects, options selects, and mailbox management controls.
+  - Preserved right padding for custom dropdown chevrons in legacy dialog boxes and table views.
+- **Universal Button Design System Across Core Views & Plugins**:
+  - Base styling applied to all bare buttons (`button`, `input[type="button"]`, `input[type="submit"]`, `input[type="reset"]`), guaranteeing uniform 34px height, padding, font size, border-radius, and smooth hover/active transitions.
+  - Standardized compact sizes (`.sm-btn-sm` at 28px height, `.sm-btn-xs` at 24px height).
+  - Standardized semantic button variants: `.sm-btn-primary`, `.sm-btn-secondary`, `.sm-btn-success` / `.sm-btn-ham`, `.sm-btn-danger` / `.sm-btn-spam`, and `.sm-btn-ai`.
+  - **AI Agent plugin (`plugins/ai_agent/ai_agent.php`)**: Harmonized compose AI assistant trigger button (`.sm-btn-ai`), tone select dropdown (`.sm-select-sm`), and modal action buttons (`.sm-btn-primary`, `.sm-btn-secondary`, `.sm-btn-success`). Modernized AI modal with responsive layout and theme variables.
+  - **Message Reader AI Summarize button (`templates/default/read_menubar_buttons.tpl`)**: Unified into `.sm-btn-ai.sm-btn-sm.sm-btn-ai-summarize`.
+  - **HTML Mail plugin (`plugins/html_mail/html_mail.php`)**: Styled HTML/Plain toggle button with `.sm-btn-secondary.sm-btn-sm` and harmonized WYSIWYG editor container and toolbar using theme variables.
+  - **Templates plugin (`plugins/templates/setup.php`)**: Harmonized template trigger button (`.sm-btn-secondary.sm-btn-sm`) and styled modal dialog with theme variables.
+  - **Spam Buttons plugin (`plugins/spam_buttons/setup.php`)**: Replaced platform-dependent emojis and inline styling with uniform `.sm-btn-ham` and `.sm-btn-spam` classes using theme-adaptive inline SVG icons.
+  - **Calendar plugin (`plugins/calendar/calendar.php`)**: Added comprehensive `[data-theme="dark"]` support for calendar month grid, topbar, weekdays, cells, agenda, and event modal. Harmonized event modal delete button with `.sm-btn-danger`.
+  - **Conversation View (`plugins/conversation_view/conversation.css`)**: Added dark mode styling for `.cv-btn-danger`.
+  - Modernized legacy table headers and dialog boxes: Replaced hardcoded `#dcdcdc` / `#ababab` table styling with modern card containers and theme borders.
+- **Version Bump**: Incremented version from `1.5.52` to `1.5.53 [SVN]`.
 
 ### Version 1.5.52
 - **Config & Options Modernization**:

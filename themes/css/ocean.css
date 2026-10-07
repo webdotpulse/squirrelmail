@@ -1,6 +1,28 @@
 /**
  * Modern Deep Ocean Theme
  */
+:root {
+  --sm-bg-canvas: #f0f9ff;
+  --sm-bg-surface: #ffffff;
+  --sm-bg-sidebar: #f0f9ff;
+  --sm-bg-card: #ffffff;
+  --sm-border: #bae6fd;
+  --sm-border-light: #e0f2fe;
+  --sm-border-hover: #7dd3fc;
+  --sm-text-primary: #082f49;
+  --sm-text-secondary: #0369a1;
+  --sm-text-muted: #0284c7;
+  --sm-primary: #0284c7;
+  --sm-primary-hover: #0369a1;
+  --sm-primary-light: #e0f2fe;
+  --sm-primary-border: #7dd3fc;
+  --sm-accent: #0ea5e9;
+  --sm-hover-bg: #e0f2fe;
+  --sm-bg-hover: #e0f2fe;
+  --sm-unread-bg: #e0f2fe;
+  --sm-selected-bg: #bae6fd;
+}
+
 :root[data-theme="dark"], [data-theme="dark"] {
   --sm-bg-canvas: #0c1b2a;
   --sm-bg-surface: #102436;
@@ -18,6 +40,7 @@
   --sm-primary-border: #0369a1;
   --sm-accent: #0ea5e9;
   --sm-hover-bg: #0f2d48;
+  --sm-bg-hover: #0f2d48;
   --sm-unread-bg: #0c3355;
   --sm-selected-bg: #0369a1;
 }

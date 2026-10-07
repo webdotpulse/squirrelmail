@@ -16,10 +16,9 @@ function html_mail_compose_buttons_do()
     global $data_dir, $username;
     $default_mode = function_exists('getPref') ? getPref($data_dir, $username, 'html_mail_default', '1') : '1';
 
-    $html = '<button type="button" id="html-mail-toggle-btn" class="btn btn-secondary html-mail-mode-btn" '
+    $html = '<button type="button" id="html-mail-toggle-btn" class="sm-btn sm-btn-secondary sm-btn-sm html-mail-mode-btn" '
           . 'onclick="if(window.htmlMailToggleMode) window.htmlMailToggleMode();" '
-          . 'title="' . _("Toggle between Rich HTML and Plain Text compose mode") . '" '
-          . 'style="margin-left: 6px; padding: 4px 10px; font-size: 12px; font-weight: 500; cursor: pointer; border-radius: 4px; border: 1px solid #c4c7c5; background: #f0f4f9; color: #1f1f1f; display: inline-flex; align-items: center; gap: 4px;">'
+          . 'title="' . _("Toggle between Rich HTML and Plain Text compose mode") . '">'
           . '<span id="html-mail-btn-icon">' . ($default_mode === '1' ? '🎨' : '📝') . '</span> '
           . '<span id="html-mail-btn-text">' . ($default_mode === '1' ? _("Mode: Rich HTML") : _("Mode: Plain Text")) . '</span>'
           . '</button>';
@@ -70,8 +69,8 @@ function html_mail_compose_close_do()
             align-items: center;
             gap: 3px;
             padding: 6px 10px;
-            background: #f8fafd;
-            border: 1px solid #dadce0;
+            background: var(--sm-bg-canvas, #f8fafd);
+            border: 1px solid var(--sm-border, #dadce0);
             border-bottom: none;
             border-top-left-radius: 6px;
             border-top-right-radius: 6px;
@@ -81,7 +80,7 @@ function html_mail_compose_close_do()
             display: inline-flex;
             align-items: center;
             gap: 2px;
-            border-right: 1px solid #e0e2e5;
+            border-right: 1px solid var(--sm-border, #e0e2e5);
             padding-right: 5px;
             margin-right: 3px;
         }
@@ -91,14 +90,14 @@ function html_mail_compose_close_do()
             padding-right: 0;
         }
         .html-mail-toolbar button, .html-mail-toolbar select {
-            background: #ffffff;
-            border: 1px solid #dadce0;
+            background: var(--sm-bg-surface, #ffffff);
+            border: 1px solid var(--sm-border, #dadce0);
             border-radius: 4px;
             padding: 0 6px;
             font-size: 12px;
             font-family: inherit;
             cursor: pointer;
-            color: #3c4043;
+            color: var(--sm-text-primary, #3c4043);
             transition: all 0.15s ease;
             height: 28px;
             min-width: 28px;
@@ -109,14 +108,14 @@ function html_mail_compose_close_do()
             line-height: 1;
         }
         .html-mail-toolbar button:hover, .html-mail-toolbar select:hover {
-            background: #e8f0fe;
-            color: #1a73e8;
-            border-color: #aecbfa;
+            background: var(--sm-hover-bg, #e8f0fe);
+            color: var(--sm-primary, #1a73e8);
+            border-color: var(--sm-primary-border, #aecbfa);
         }
         .html-mail-toolbar button.active {
-            background: #c2e7ff;
-            color: #001d35;
-            border-color: #7fcfff;
+            background: var(--sm-primary-light, #c2e7ff);
+            color: var(--sm-primary, #001d35);
+            border-color: var(--sm-primary, #7fcfff);
         }
         .html-mail-color-wrap {
             position: relative;
@@ -134,10 +133,10 @@ function html_mail_compose_close_do()
         }
         .html-mail-editor-container {
             position: relative;
-            border: 1px solid #dadce0;
+            border: 1px solid var(--sm-border, #dadce0);
             border-bottom-left-radius: 6px;
             border-bottom-right-radius: 6px;
-            background: #ffffff;
+            background: var(--sm-bg-surface, #ffffff);
             overflow: hidden;
             box-shadow: 0 1px 3px rgba(0,0,0,0.05);
             box-sizing: border-box;
@@ -148,14 +147,14 @@ function html_mail_compose_close_do()
             padding: 14px 16px;
             outline: none;
             overflow-y: auto;
-            color: #1f1f1f;
+            color: var(--sm-text-primary, #1f1f1f);
             line-height: 1.6;
             font-size: <?php echo htmlspecialchars($default_size); ?>;
             text-align: left;
             box-sizing: border-box;
         }
         #html-mail-wysiwyg:focus {
-            box-shadow: inset 0 0 0 1px #1a73e8;
+            box-shadow: inset 0 0 0 1px var(--sm-primary, #1a73e8);
         }
         #html-mail-source {
             width: 100%;
@@ -177,9 +176,9 @@ function html_mail_compose_close_do()
             justify-content: space-between;
             padding: 4px 12px;
             font-size: 11px;
-            color: #70757a;
-            background: #f8fafd;
-            border-top: 1px solid #f1f3f4;
+            color: var(--sm-text-muted, #70757a);
+            background: var(--sm-bg-canvas, #f8fafd);
+            border-top: 1px solid var(--sm-border, #f1f3f4);
             box-sizing: border-box;
         }
     </style>
