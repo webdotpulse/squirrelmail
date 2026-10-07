@@ -97,8 +97,7 @@ if (function_exists('session_regenerate_id')) {
 * their own cookie. SquirrelMail sets another cookie which overwites the
 * php cookies. The sqsetcookie function sets the cookie by using the header
 * function which gives us full control how the cookie is set. We do that
-* to add the HttpOnly cookie attribute which blocks javascript access on
-* IE6 SP1.
+* to add the HttpOnly cookie attribute which blocks javascript access.
 */
 sqsetcookie(session_name(),session_id(),false,$base_uri);
 sqsetcookie('key', $key, false, $base_uri);

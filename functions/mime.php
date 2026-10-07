@@ -2966,19 +2966,8 @@ function magicHTML($body, $id, $message, $mailbox = 'INBOX', $take_mailto_links 
  */
 function SendDownloadHeaders($type0, $type1, $filename, $force, $filesize=0) {
     global $languages, $squirrelmail_language;
-    $isIE = $isIE6plus = false;
 
     sqgetGlobalVar('HTTP_USER_AGENT', $HTTP_USER_AGENT, SQ_SERVER);
-
-    if (strstr($HTTP_USER_AGENT, 'compatible; MSIE ') !== false &&
-            strstr($HTTP_USER_AGENT, 'Opera') === false) {
-        $isIE = true;
-    }
-
-    if (preg_match('/compatible; MSIE ([0-9]+)/', $HTTP_USER_AGENT, $match) &&
-        ((int)$match[1]) >= 6 && strstr($HTTP_USER_AGENT, 'Opera') === false) {
-        $isIE6plus = true;
-    }
 
     if (isset($languages[$squirrelmail_language]['XTRA_CODE']) &&
             function_exists($languages[$squirrelmail_language]['XTRA_CODE'] . '_downloadfilename')) {
@@ -2988,76 +2977,25 @@ function SendDownloadHeaders($type0, $type1, $filename, $force, $filesize=0) {
         $filename = preg_replace('/[\\\\\/:*?"<>|;]/', '_', str_replace('&nbsp;', ' ', $filename));
     }
 
-    // A Pox on Microsoft and it's Internet Explorer!
-    //
-    // IE has lots of bugs with file downloads.
-    // It also has problems with SSL.  Both of these cause problems
-    // for us in this function.
-    //
-    // See this article on Cache Control headers and SSL
-    // http://support.microsoft.com/default.aspx?scid=kb;en-us;323308
-    //
-    // The best thing you can do for IE is to upgrade to the latest
-    // version
-    //set all the Cache Control Headers for IE
-    if ($isIE) {
-        $filename=rawurlencode($filename);
-        header ("Pragma: public");
-        header ("Cache-Control: no-store, max-age=0, no-cache, must-revalidate"); // HTTP/1.1
-        // does nothing - see: https://blogs.msdn.microsoft.com/ieinternals/2009/07/20/internet-explorers-cache-control-extensions/
-        // header ("Cache-Control: post-check=0, pre-check=0", false);
-        header ("Cache-Control: private");
+    $clean_filename = basename($filename);
+    $encoded_filename = rawurlencode($clean_filename);
 
-        //set the inline header for IE, we'll add the attachment header later if we need it
-        header ("Content-Disposition: inline; filename=$filename");
-    }
+    header("Pragma: public");
+    header("Cache-Control: private, must-revalidate, post-check=0, pre-check=0");
 
-    if (!$force) {
-        // Try to show in browser window
-        header ("Content-Disposition: inline; filename=\"$filename\"");
-        header ("Content-Type: $type0/$type1; name=\"$filename\"");
+    $disposition = $force ? 'attachment' : 'inline';
+    // RFC 6266 compliant Content-Disposition with UTF-8 filename* support
+    header("Content-Disposition: {$disposition}; filename=\"" . addcslashes($clean_filename, '"\\') . "\"; filename*=UTF-8''{$encoded_filename}");
+
+    if (!$force && !empty($type0) && !empty($type1)) {
+        header("Content-Type: {$type0}/{$type1}; name=\"" . addcslashes($clean_filename, '"\\') . "\"");
     } else {
-        // Try to pop up the "save as" box
-
-        // IE makes this hard.  It pops up 2 save boxes, or none.
-        // http://support.microsoft.com/support/kb/articles/Q238/5/88.ASP
-        // http://support.microsoft.com/default.aspx?scid=kb;EN-US;260519
-        // But, according to Microsoft, it is "RFC compliant but doesn't
-        // take into account some deviations that allowed within the
-        // specification."  Doesn't that mean RFC non-compliant?
-        // http://support.microsoft.com/support/kb/articles/Q258/4/52.ASP
-
-        // all browsers need the application/octet-stream header for this
-        header ("Content-Type: application/octet-stream; name=\"$filename\"");
-
-        // http://support.microsoft.com/support/kb/articles/Q182/3/15.asp
-        // Do not have quotes around filename, but that applied to
-        // "attachment"... does it apply to inline too?
-        header ("Content-Disposition: attachment; filename=\"$filename\"");
-
-        if ($isIE && !$isIE6plus) {
-            // This combination seems to work mostly.  IE 5.5 SP 1 has
-            // known issues (see the Microsoft Knowledge Base)
-
-            // This works for most types, but doesn't work with Word files
-            header ("Content-Type: application/download; name=\"$filename\"");
-            header ("Content-Type: application/force-download; name=\"$filename\"");
-            // These are spares, just in case.  :-)
-            //header("Content-Type: $type0/$type1; name=\"$filename\"");
-            //header("Content-Type: application/x-msdownload; name=\"$filename\"");
-            //header("Content-Type: application/octet-stream; name=\"$filename\"");
-        } else if ($isIE) {
-             // This is to prevent IE for MIME sniffing and auto open a file in IE
-             header ("Content-Type: application/force-download; name=\"$filename\"");
-        } else {
-            // another application/octet-stream forces download for Netscape
-            header ("Content-Type: application/octet-stream; name=\"$filename\"");
-        }
+        header("Content-Type: application/octet-stream; name=\"" . addcslashes($clean_filename, '"\\') . "\"");
     }
 
-    //send the content-length header if the calling function provides it
+    // Send the content-length header if provided
     if ($filesize > 0) {
-        header("Content-Length: $filesize");
+        header("Content-Length: " . (int)$filesize);
     }
-
 }  // end fn SendDownloadHeaders
+

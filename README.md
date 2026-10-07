@@ -1,4 +1,4 @@
-# SquirrelMail 1.5.51
+# SquirrelMail 1.5.52
 
 A modernized, responsive edition of SquirrelMail engineered for PHP 7.0 through 8.2+ with a Single-Page Application (SPA) interface, modern UI styling, and extensive feature enhancements.
 
@@ -57,6 +57,24 @@ This repository includes an [AGENTS.md](file:///home/koen/Git/squirrelmail/AGENT
 ---
 
 ## 📝 Changelog
+
+### Version 1.5.52
+- **Config & Options Modernization**:
+  - Removed obsolete frameset layout options `location_of_bar` (folder list position) and `left_size` (folder list pixel width) from Folder Options (`include/options/folder.php`).
+  - Removed obsolete popup pixel dimensions `compose_width` and `compose_height` from Compose Options (`include/options/compose.php`).
+  - Removed unused `$use_iframe` global declarations from Display Options (`include/options/display.php`).
+  - Set default `$org_logo_width` and `$org_logo_height` to `'0'` in `config/config.php` and `config/config_default.php` to enable responsive CSS logo scaling instead of hardcoded 308x111 px.
+  - Deprecated legacy frameset and iframe settings (`$frame_top`, `$default_left_size`, `$use_iframe`) with notes highlighting the modern SPA shell and Shadow DOM sandboxing architecture.
+- **Internet Explorer 6 Support Removal & Modernization**:
+  - Removed IE6 conditional comment and CSS expression hack (`<!--[if IE 6]>`) in `functions/page_header.php`.
+  - Modernized `SendDownloadHeaders()` in `functions/mime.php` to RFC 6266 compliance with UTF-8 `filename*` encoding, completely removing legacy IE5/IE6 browser-sniffing, `application/force-download`, and Netscape download workarounds.
+  - Removed legacy MSIE browser detection and `-ie` stylesheet branching in `functions/template/general_util.php`.
+  - Cleaned up obsolete "(IE6 only)" comments regarding HttpOnly cookies in `functions/global.php` and `src/redirect.php`.
+- **PHP 8.4 Compliance**:
+  - Added `#[\AllowDynamicProperties]` attributes across all remaining classes (`Smarty_Template`, `FileReader`, and `gettext_reader`), achieving 100% attribute coverage across all repository classes.
+  - Replaced deprecated `strftime('%Z')` with `date('T')` in `Deliver.class.php`.
+  - Verified zero implicit nullable parameter deprecations across all functions and methods.
+- **Version Bump**: Incremented version from `1.5.51` to `1.5.52`.
 
 ### Version 1.5.51
 - **Modern SVG Vector & Font Icon for Junk / Spam Folder**:

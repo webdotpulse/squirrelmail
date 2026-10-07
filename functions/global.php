@@ -543,7 +543,7 @@ function sqsession_is_active() {
 /**
  * Function to start the session and store the cookie with the session_id as
  * HttpOnly cookie which means that the cookie isn't accessible by javascript
- * (IE6 only)
+ * (RFC 6265 standard).
  * Note that as sqsession_is_active() no longer discriminates as to when 
  * it calls this function, session_start() has to have E_NOTICE suppression
  * (thus the @ sign).
@@ -581,7 +581,7 @@ function sqsession_start() {
  * @param string  $sDomain   The domain that the cookie is available.
  * @param boolean $bSecure   Indicates that the cookie should only be 
  *                           transmitted over a secure HTTPS connection.
- * @param boolean $bHttpOnly Disallow JS to access the cookie (IE6 only)
+ * @param boolean $bHttpOnly Disallow JS to access the cookie
  * @param boolean $bReplace  Replace previous cookies with same name?
  * @param string  $sSameSite Optional override of the default SameSite
  *                           cookie policy detemined from the global

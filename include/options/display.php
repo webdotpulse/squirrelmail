@@ -17,9 +17,6 @@ define('SMOPT_GRP_MAILBOX', 1);
 define('SMOPT_GRP_MESSAGE', 2);
 define('SMOPT_GRP_ABOOK', 3);
 
-global $use_iframe;
-if (! isset($use_iframe)) $use_iframe=false;
-
 /**
  * This function builds an array with all the information about
  * the options available to the user, and returns it. The options
@@ -36,7 +33,7 @@ if (! isset($use_iframe)) $use_iframe=false;
 function load_optpage_data_display() {
     global $theme, $fontsets, $language, $languages,$aTemplateSet,
     $default_use_mdn, $squirrelmail_language, $allow_thread_sort,
-    $show_alternative_names, $use_iframe, $use_icons, 
+    $show_alternative_names, $use_icons, 
     $sTemplateID, $oTemplate,
     $user_themes, $chosen_theme;
 

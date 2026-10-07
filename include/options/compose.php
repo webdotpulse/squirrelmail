@@ -97,21 +97,6 @@ function load_optpage_data_compose() {
         'refresh' => SMOPT_REFRESH_ALL
     );
 
-    $optvals[SMOPT_GRP_COMPOSE][] = array(
-        'name'    => 'compose_width',
-        'caption' => _("Width of Compose Window"),
-        'type'    => SMOPT_TYPE_INTEGER,
-        'refresh' => SMOPT_REFRESH_ALL,
-        'size'    => SMOPT_SIZE_TINY
-    );
-
-    $optvals[SMOPT_GRP_COMPOSE][] = array(
-        'name'    => 'compose_height',
-        'caption' => _("Height of Compose Window"),
-        'type'    => SMOPT_TYPE_INTEGER,
-        'refresh' => SMOPT_REFRESH_ALL,
-        'size'    => SMOPT_SIZE_TINY
-    );
 
 
     /*** Load the General Options into the array ***/

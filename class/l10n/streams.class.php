@@ -32,6 +32,7 @@
  * @package squirrelmail
  * @subpackage i18n
  */
+#[\AllowDynamicProperties]
 class FileReader {
     /**
      * Current position in file

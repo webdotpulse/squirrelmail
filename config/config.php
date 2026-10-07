@@ -40,16 +40,16 @@ $org_name = "SquirrelMail";
 $org_logo = SM_PATH . 'images/sm_logo.png';
 
 /**
- * The width of the logo (0 for default)
+ * The width of the logo (0 for default responsive CSS scaling)
  * @global string $org_logo_width
  */
-$org_logo_width = '308';
+$org_logo_width = '0';
 
 /**
- * The height of the logo (0 for default)
+ * The height of the logo (0 for default responsive CSS scaling)
  * @global string $org_logo_height
  */
-$org_logo_height = '111';
+$org_logo_height = '0';
 
 /**
  * Webmail Title
@@ -72,11 +72,10 @@ $org_title = "SquirrelMail";
 $signout_page = '';
 
 /**
- * Top frame
+ * Top frame / target window
  *
- * By default SquirrelMail takes up the whole browser window,
- * this allows you to embed it within sites using frames. Set
- * this to the frame you want it to stay in.
+ * Historically used for frameset targeting. In modern SquirrelMail SPA,
+ * layout is rendered within a unified application shell without frames.
  * @global string $frame_top
  */
 $frame_top = '_top';
@@ -563,13 +562,14 @@ $attachment_dir = SM_PATH . 'attach/';
 $dir_hash_level = 0;
 
 /**
- * Default Size of Folder List
+ * Default Size of Folder List (Deprecated)
  *
- * This is the default size of the folder list. Default
- * is 150, but you can set it to whatever you wish.
+ * Historically set the pixel width of the left navigation frame.
+ * Modern SquirrelMail uses a responsive CSS sidebar.
+ * Set to '0' for responsive CSS default.
  * @global string $default_left_size
  */
-$default_left_size = '150';
+$default_left_size = '0';
 
 /**
  * Username Case Control
@@ -1205,10 +1205,10 @@ $config_location_base = '';
 
 /*** Tweaks ***/
 /**
- * Iframe sandbox code control
+ * HTML Email Rendering Sandbox Control (Deprecated)
  *
- * Use iframe to render html emails
- * (temp option used during debuging of new code)
+ * Modern SquirrelMail uses Shadow DOM container sandboxing (zero iframes)
+ * to safely isolate and render rich HTML emails without legacy <iframe> elements.
  * @global bool $use_iframe
  * @since 1.5.1
  */

@@ -1209,7 +1209,7 @@ class Deliver {
         // given by %z (depends on operating system)"
         //
         if ($show_timezone_name) {
-            $zonename = '('.strftime('%Z').')';
+            $zonename = '('.date('T').')';
             $result = sprintf ("%s%02d%02d %s", $sign, $diff_hour, $diff_minute, $zonename);
         } else {
             $result = sprintf ("%s%02d%02d", $sign, $diff_hour, $diff_minute);

@@ -31,6 +31,7 @@
  * @package squirrelmail
  * @subpackage i18n
  */
+#[\AllowDynamicProperties]
 class gettext_reader {
     /**
      * holds error code (0 if no error)

@@ -33,27 +33,6 @@ function create_css_link($uri, $name='', $alt=TRUE, $mtype='screen') {
         return '';
     }
 
-    sqGetGlobalVar('HTTP_USER_AGENT', $browser_user_agent, SQ_SERVER);
-    $is_IE = false;
-
-    if (!empty($browser_user_agent)) {
-        if (stristr($browser_user_agent, "msie 4")) {
-            $browser = 'msie4';
-            $dom_browser = false;
-            $is_IE = true;
-        } elseif (stristr($browser_user_agent, "msie") 
-               && stristr($browser_user_agent, 'opera') === FALSE) {
-            $browser = 'msie';
-            $dom_browser = true;
-            $is_IE = true;
-        }
-    }
-
-    if ((strpos($uri, '-ie')!== false) and !$is_IE) {
-        //not IE, so don't render this sheet
-        return;
-    }
-
     if ( strpos($uri, 'print') !== false )
         $mtype = 'print';
 

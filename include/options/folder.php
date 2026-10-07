@@ -123,26 +123,6 @@ function load_optpage_data_folder() {
     $optgrps[SMOPT_GRP_FOLDERLIST] = _("Folder List Options");
     $optvals[SMOPT_GRP_FOLDERLIST] = array();
 
-    $optvals[SMOPT_GRP_FOLDERLIST][] = array(
-        'name'    => 'location_of_bar',
-        'caption' => _("Location of Folder List"),
-        'type'    => SMOPT_TYPE_STRLIST,
-        'refresh' => SMOPT_REFRESH_ALL,
-        'posvals' => array(SMPREF_LOC_LEFT  => _("Left"),
-                           SMPREF_LOC_RIGHT => _("Right"))
-    );
-
-    $left_size_values = array();
-    for ($lsv = 100; $lsv <= 300; $lsv += 10) {
-        $left_size_values[$lsv] = "$lsv " . _("pixels");
-    }
-    $optvals[SMOPT_GRP_FOLDERLIST][] = array(
-        'name'    => 'left_size',
-        'caption' => _("Width of Folder List"),
-        'type'    => SMOPT_TYPE_STRLIST,
-        'refresh' => SMOPT_REFRESH_ALL,
-        'posvals' => $left_size_values
-    );
 
     $left_refresh_values = array(SMPREF_NONE => _("Never"));
     foreach (array(30,60,120,180,300,600,1200) as $lr_val) {

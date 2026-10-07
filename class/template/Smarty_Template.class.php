@@ -24,6 +24,7 @@
   * @package squirrelmail
   *
   */
+#[\AllowDynamicProperties]
 class Smarty_Template extends Template
 {
 

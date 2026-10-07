@@ -251,19 +251,6 @@ function displayHtmlHeader( $title = 'SquirrelMail', $xtra = '', $do_hook = TRUE
     $header_tags .= $xtra;
     $oTemplate->assign('page_title', $title);
 
-    /* work around IE6's scrollbar bug */
-    $header_tags .= <<<EOS
-<!--[if IE 6]>
-<style type="text/css">
-/* avoid stupid IE6 bug with frames and scrollbars */
-body {
-    width: expression(document.documentElement.clientWidth - 30);
-}
-</style>
-<![endif]-->
-
-EOS;
-
     $pageheader_sent = TRUE;
     if (isset($oErrorHandler)) {
         $oErrorHandler->HeaderSent();
