@@ -1,4 +1,4 @@
-# SquirrelMail 1.5.8
+# SquirrelMail 1.5.10
 
 A modernized, responsive edition of SquirrelMail engineered for PHP 7.0 through 8.2+ with a Single-Page Application (SPA) interface, modern UI styling, and extensive feature enhancements.
 
@@ -43,6 +43,25 @@ This repository includes an [AGENTS.md](file:///home/koen/Git/squirrelmail/AGENT
 ---
 
 ## 📝 Changelog
+
+### Version 1.5.10
+- **AI Agent "Test IMAP Connection" Bad Request: Missing '"' Fix**:
+  - Fixed an authentication failure where `ai_agent_test_imap_login()` passed a raw plaintext password to `sqimap_login()`, causing `OneTimePadDecrypt()` to treat it as OTP cookie ciphertext, corrupting the password with null bytes and invalid characters that triggered `BAD: Missing '"'` on the IMAP server.
+  - Re-implemented `ai_agent_test_imap_login()` in `plugins/ai_agent/credentials.php` to perform a direct, non-terminating socket IMAP test with RFC 3501 escaped credentials, SSL/TLS negotiation, and clean status messages displayed in the UI without crashing the options page.
+  - Updated `sqimap_login()` in `functions/imap_general.php` with an `$is_plaintext_password` parameter, allowing background processes (like `cron.php`) to authenticate with explicit plaintext passwords without unintended OTP decryption.
+  - Updated `plugins/ai_agent/cron.php` to pass `$hide = 3` and `$is_plaintext_password = true` to `sqimap_login()`, preventing script aborts and logging detailed error strings on failed logins.
+- **Version Bump**: Incremented version from `1.5.9` to `1.5.10`.
+
+### Version 1.5.9
+- **Spam Buttons Move & AI Training 500 Internal Server Error Fix**:
+  - Fixed fatal `Error: Call to undefined function sqimap_login()` and `decodeHeader()` in `plugins/spam_buttons/action.php` by properly requiring `functions/imap_general.php` and `functions/mime.php`.
+  - Added robust `try-catch (\Throwable $e)` exception handling and output buffer clearing (`ob_clean()`) in `plugins/spam_buttons/action.php` to prevent unhandled 500 errors and ensure clean, valid JSON responses.
+  - Enhanced IMAP login handling with `$hide = 3` to return structured JSON error messages instead of terminating execution with HTML error boxes on AJAX requests.
+  - Improved mailbox target resolution with case-insensitive junk/spam folder matching and fallback to the user-configured trash folder.
+  - Integrated `SquirrelMailGeminiClient` with deduplicated per-request trigger prevention in `plugins/spam_buttons/spam_learn.php` to keep batch reporting fast and reliable.
+  - Added robust fetch response status checks (`r.ok`), error text parsing, and toast notification fallback in `plugins/spam_buttons/setup.php`.
+  - Added CSRF security token validation to the reset training action in `plugins/spam_buttons/options.php`.
+- **Version Bump**: Incremented version from `1.5.8` to `1.5.9`.
 
 ### Version 1.5.8
 - **AI Agent Background Cron IMAP Credentials Resolution**:

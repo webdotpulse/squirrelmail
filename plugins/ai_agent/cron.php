@@ -239,9 +239,10 @@ foreach ($accounts_to_process as $acc) {
 
     // Connect to IMAP
     global $imap_stream_options;
-    $imap_stream = @sqimap_login($user, $pass, $host, $port, 0, $imap_stream_options);
-    if (!$imap_stream) {
-        cron_log("[ERROR] Failed to connect/authenticate to IMAP server for $user at $host:$port.");
+    $imap_stream = @sqimap_login($user, $pass, $host, $port, 3, $imap_stream_options, true);
+    if (!is_resource($imap_stream) && !is_object($imap_stream)) {
+        $err = is_string($imap_stream) ? $imap_stream : "Connection or authentication failed";
+        cron_log("[ERROR] Failed to connect/authenticate to IMAP server for $user at $host:$port: $err");
         continue;
     }
 

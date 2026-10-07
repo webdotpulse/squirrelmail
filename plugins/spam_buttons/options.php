@@ -16,8 +16,13 @@ $msg = null;
 
 // Handle Reset Training Data
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'reset_training') {
-    @unlink(sb_get_learning_file());
-    $msg = _("AI spam training data and learning memory have been reset.");
+    $token = isset($_POST['smtoken']) ? $_POST['smtoken'] : '';
+    if (!empty($token) && function_exists('sm_validate_security_token') && !sm_validate_security_token($token, -1, false)) {
+        $msg = _("Invalid security token.");
+    } else {
+        @unlink(sb_get_learning_file());
+        $msg = _("AI spam training data and learning memory have been reset.");
+    }
 }
 
 $data = sb_load_training_data();
@@ -211,8 +216,9 @@ displayPageHeader($color, 'None');
 
     <!-- RESET TRAINING -->
     <div style="margin-top: 24px; text-align: right;">
-        <form method="post" onsubmit="return confirm('Reset all learned spam and ham AI models?');">
+        <form method="post" onsubmit="return confirm('<?php echo sm_encode_html_special_chars(addslashes(_("Reset all learned spam and ham AI models?"))); ?>');">
             <input type="hidden" name="action" value="reset_training">
+            <input type="hidden" name="smtoken" value="<?php echo function_exists('sm_generate_security_token') ? sm_generate_security_token() : ''; ?>">
             <button type="submit" style="padding: 8px 16px; background: #ffffff; border: 1px solid #fad2cf; color: #d93025; border-radius: 6px; font-size: 13px; cursor: pointer;">
                 🗑️ <?php echo _("Reset AI Training Memory"); ?>
             </button>

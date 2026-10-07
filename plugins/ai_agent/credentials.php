@@ -266,29 +266,88 @@ function ai_agent_capture_login_credentials()
  */
 function ai_agent_test_imap_login($username, $password, $host = null, $port = null)
 {
-    global $imapServerAddress, $imapPort, $imap_stream_options;
+    global $imapServerAddress, $imapPort, $imap_stream_options, $use_imap_tls;
 
-    $host = !empty($host) ? $host : (!empty($imapServerAddress) ? $imapServerAddress : 'localhost');
+    $host = !empty($host) ? trim($host) : (!empty($imapServerAddress) ? $imapServerAddress : 'localhost');
     $port = !empty($port) ? intval($port) : (!empty($imapPort) ? intval($imapPort) : 993);
 
-    if (!function_exists('sqimap_login')) {
-        include_once(SM_PATH . 'functions/imap_general.php');
-    }
+    // Determine TLS / SSL: port 993 is IMAPS (ssl://), or when use_imap_tls is enabled
+    $isSsl = ($port === 993 || (!empty($use_imap_tls) && $use_imap_tls == 1));
+    $prefix = $isSsl ? 'ssl://' : '';
+    $timeout = 10;
 
-    $stream = @sqimap_login($username, $password, $host, $port, 0, $imap_stream_options);
-    if (!$stream) {
+    $contextOptions = !empty($imap_stream_options) && is_array($imap_stream_options) ? $imap_stream_options : [];
+    if (!isset($contextOptions['ssl'])) {
+        $contextOptions['ssl'] = [
+            'verify_peer'       => false,
+            'verify_peer_name'  => false,
+            'allow_self_signed' => true
+        ];
+    }
+    $context = stream_context_create($contextOptions);
+
+    $errno = 0;
+    $errstr = '';
+    $fp = @stream_socket_client("{$prefix}{$host}:{$port}", $errno, $errstr, $timeout, STREAM_CLIENT_CONNECT, $context);
+    if (!$fp) {
         return [
             'success' => false,
-            'message' => sprintf(_("Failed to connect or authenticate to IMAP server at %s:%d for user '%s'."), $host, $port, $username)
+            'message' => sprintf(_("Network error connecting to IMAP server at %s:%d: %s (%d)"), $host, $port, $errstr, $errno)
         ];
     }
 
-    if (function_exists('sqimap_logout')) {
-        sqimap_logout($stream);
+    stream_set_timeout($fp, $timeout);
+    $banner = @fgets($fp, 1024);
+
+    // Handle STARTTLS on port 143 if configured
+    if (!$isSsl && isset($use_imap_tls) && $use_imap_tls == 2 && function_exists('stream_socket_enable_crypto')) {
+        @fwrite($fp, "A000 STARTTLS\r\n");
+        $tlsResp = @fgets($fp, 1024);
+        if ($tlsResp && stripos($tlsResp, 'A000 OK') !== false) {
+            @stream_socket_enable_crypto($fp, true, STREAM_CRYPTO_METHOD_TLS_CLIENT);
+        }
     }
 
-    return [
-        'success' => true,
-        'message' => sprintf(_("IMAP connection successful! Successfully authenticated '%s' on %s:%d."), $username, $host, $port)
-    ];
+    // Send LOGIN command with RFC 3501 escaped characters
+    $cleanUser = addcslashes($username, '"\\');
+    $cleanPass = addcslashes($password, '"\\');
+    @fwrite($fp, "A001 LOGIN \"$cleanUser\" \"$cleanPass\"\r\n");
+
+    $status = 'UNKNOWN';
+    $respMsg = '';
+    while (!feof($fp)) {
+        $line = @fgets($fp, 1024);
+        if ($line === false) break;
+        $trimmed = trim($line);
+        if (preg_match('/^A001\s+(OK|NO|BAD)(?:\s+(.*))?$/i', $trimmed, $m)) {
+            $status = strtoupper($m[1]);
+            $respMsg = isset($m[2]) ? trim($m[2]) : '';
+            break;
+        }
+    }
+
+    @fwrite($fp, "A002 LOGOUT\r\n");
+    @fclose($fp);
+
+    if ($status === 'OK') {
+        return [
+            'success' => true,
+            'message' => sprintf(_("IMAP connection successful! Successfully authenticated user '%s' on %s:%d."), $username, $host, $port)
+        ];
+    } elseif ($status === 'NO') {
+        return [
+            'success' => false,
+            'message' => sprintf(_("Authentication failed on %s:%d for user '%s': %s"), $host, $port, $username, $respMsg ?: _("Invalid username or password."))
+        ];
+    } elseif ($status === 'BAD') {
+        return [
+            'success' => false,
+            'message' => sprintf(_("IMAP server returned syntax error on %s:%d: %s"), $host, $port, $respMsg ?: _("Bad request."))
+        ];
+    } else {
+        return [
+            'success' => false,
+            'message' => sprintf(_("Unexpected response from IMAP server at %s:%d: %s"), $host, $port, $respMsg ?: _("No response received from server."))
+        ];
+    }
 }

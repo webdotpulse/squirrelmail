@@ -834,7 +834,8 @@ function sqimap_create_stream($server,$port,$tls=0,$stream_options=array()) {
  *               is set to 3.
  */
 function sqimap_login ($username, $password, $imap_server_address,
-                       $imap_port, $hide, $stream_options=array()) {
+                       $imap_port, $hide, $stream_options=array(),
+                       $is_plaintext_password=false) {
     global $color, $squirrelmail_language, $onetimepad, $use_imap_tls,
            $imap_auth_mech, $sqimap_capabilities, $display_imap_login_error;
 
@@ -863,7 +864,9 @@ function sqimap_login ($username, $password, $imap_server_address,
     }
 
     /* get imap login password */
-    if ($password===false) {
+    if ($is_plaintext_password) {
+        /* Plaintext password explicitly passed (e.g. from background cron, API, or credentials tester) */
+    } elseif ($password===false) {
         /* standard functions */
         $password = sqauth_read_password();
     } else {
@@ -871,8 +874,13 @@ function sqimap_login ($username, $password, $imap_server_address,
         if (!isset($onetimepad) || empty($onetimepad)) {
             sqgetglobalvar('onetimepad' , $onetimepad , SQ_SESSION );
         }
-        /* Decrypt the password */
-        $password = OneTimePadDecrypt($password, $onetimepad);
+        /* Decrypt the password if session onetimepad is available */
+        if (!empty($onetimepad)) {
+            $decrypted = OneTimePadDecrypt($password, $onetimepad);
+            if ($decrypted !== false && $decrypted !== '') {
+                $password = $decrypted;
+            }
+        }
     }
 
     if (!isset($sqimap_capabilities)) {

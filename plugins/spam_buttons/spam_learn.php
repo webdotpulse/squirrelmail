@@ -168,28 +168,68 @@ function sb_learn_ham($sender, $subject, $body = '')
  */
 function sb_trigger_ai_learning($type, $sender, $subject, $body, &$data)
 {
-    $geminiClientFile = SM_PATH . 'plugins/ai_agent/gemini_client.php';
+    static $aiLearningTriggered = false;
+    if ($aiLearningTriggered) return;
+
+    $geminiClientFile = defined('SM_PATH') ? (SM_PATH . 'plugins/ai_agent/gemini_client.php') : (__DIR__ . '/../ai_agent/gemini_client.php');
     if (!file_exists($geminiClientFile)) return;
 
     include_once($geminiClientFile);
-    if (!function_exists('ai_gemini_is_configured') || !ai_gemini_is_configured()) return;
+    if (!class_exists('SquirrelMailGeminiClient')) return;
 
-    // Build pattern summary for AI model
-    if ($type === 'spam') {
-        $prompt = "A user just marked the following email as SPAM:\n"
-                . "From: $sender\n"
-                . "Subject: $subject\n"
-                . "Body: " . substr($body, 0, 500) . "\n\n"
-                . "Identify 1 to 3 specific rule indicators (e.g. sender pattern, suspicious urgency keyword, spoofing signal) for email filtering. "
-                . "Respond with a single concise sentence summarizing the learned heuristic.";
+    try {
+        $client = new SquirrelMailGeminiClient();
+        if (empty($client->getApiKey())) return;
 
-        $res = ai_gemini_generate_text($prompt);
-        if (!empty($res) && !empty($res['text'])) {
-            $rule = trim($res['text']);
-            if (!in_array($rule, $data['learned_rules'])) {
-                $data['learned_rules'][] = $rule;
-                $data['learned_rules'] = array_slice($data['learned_rules'], -20);
+        // Build pattern summary for AI model
+        if ($type === 'spam' && (!empty($sender) || !empty($subject))) {
+            $prompt = "A user just marked the following email as SPAM:\n"
+                    . "From: $sender\n"
+                    . "Subject: $subject\n"
+                    . "Body: " . substr((string)$body, 0, 500) . "\n\n"
+                    . "Identify 1 to 3 specific rule indicators (e.g. sender pattern, suspicious urgency keyword, spoofing signal) for email filtering. "
+                    . "Respond with a single concise sentence summarizing the learned heuristic.";
+
+            $res = $client->callGemini($prompt);
+            if (!empty($res) && !empty($res['success']) && !empty($res['text'])) {
+                $rule = trim($res['text']);
+                if (!in_array($rule, $data['learned_rules'])) {
+                    $data['learned_rules'][] = $rule;
+                    $data['learned_rules'] = array_slice($data['learned_rules'], -20);
+                }
             }
+            $aiLearningTriggered = true;
         }
+    } catch (\Throwable $e) {
+        // Silently continue if AI heuristic generation fails
+    }
+}
+
+if (!function_exists('ai_gemini_is_configured')) {
+    function ai_gemini_is_configured() {
+        if (!class_exists('SquirrelMailGeminiClient')) {
+            $f = (defined('SM_PATH') ? SM_PATH : '') . 'plugins/ai_agent/gemini_client.php';
+            if (file_exists($f)) include_once($f);
+        }
+        if (class_exists('SquirrelMailGeminiClient')) {
+            $c = new SquirrelMailGeminiClient();
+            $k = $c->getApiKey();
+            return !empty($k);
+        }
+        return false;
+    }
+}
+
+if (!function_exists('ai_gemini_generate_text')) {
+    function ai_gemini_generate_text($prompt) {
+        if (!class_exists('SquirrelMailGeminiClient')) {
+            $f = (defined('SM_PATH') ? SM_PATH : '') . 'plugins/ai_agent/gemini_client.php';
+            if (file_exists($f)) include_once($f);
+        }
+        if (class_exists('SquirrelMailGeminiClient')) {
+            $c = new SquirrelMailGeminiClient();
+            return $c->callGemini($prompt);
+        }
+        return array('success' => false, 'error' => 'Gemini client not available');
     }
 }
