@@ -14,6 +14,7 @@ include_once(SM_PATH . 'plugins/templates/templates_data.php');
 
 $msg = null;
 $editTpl = null;
+$mgrUrl = sqm_baseuri() . 'plugins/templates/templates_manager.php';
 
 // Handle delete template
 if (isset($_GET['action']) && $_GET['action'] === 'delete' && isset($_GET['id'])) {
@@ -50,10 +51,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_template'])) {
 }
 
 // Check if editing specific template
-if (isset($_GET['edit']) && !empty($_GET['edit'])) {
+$editId = $_GET['edit'] ?? (isset($_GET['action']) && $_GET['action'] === 'del_att' ? ($_GET['id'] ?? '') : '');
+if (!empty($editId)) {
     $all = tpl_load_templates();
-    if (isset($all[$_GET['edit']])) {
-        $editTpl = $all[$_GET['edit']];
+    if (isset($all[$editId])) {
+        $editTpl = $all[$editId];
     }
 }
 
@@ -233,10 +235,10 @@ displayPageHeader($color, 'None');
                 </div>
 
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px; padding-top: 12px; border-top: 1px solid #f1f3f4;">
-                    <a href="templates_manager.php?edit=<?php echo urlencode($tplId); ?>#template-form" style="font-size: 13px; color: #1a73e8; text-decoration: none; font-weight: 500;">
+                    <a href="<?php echo htmlspecialchars($mgrUrl . '?edit=' . urlencode($tplId) . '#template-form'); ?>" style="font-size: 13px; color: #1a73e8; text-decoration: none; font-weight: 500;">
                         ✏️ <?php echo _("Edit"); ?>
                     </a>
-                    <a href="templates_manager.php?action=delete&id=<?php echo urlencode($tplId); ?>" style="font-size: 13px; color: #d93025; text-decoration: none;" onclick="return confirm('Delete this template and its attachments?')">
+                    <a href="<?php echo htmlspecialchars($mgrUrl . '?action=delete&id=' . urlencode($tplId)); ?>" style="font-size: 13px; color: #d93025; text-decoration: none;" onclick="return confirm('Delete this template and its attachments?')">
                         ✕ <?php echo _("Delete"); ?>
                     </a>
                 </div>
@@ -252,7 +254,7 @@ displayPageHeader($color, 'None');
             <span><?php echo $editTpl ? _("Edit Template") : _("Create New Template with Attachments"); ?></span>
         </h3>
 
-        <form method="post" enctype="multipart/form-data">
+        <form method="post" action="<?php echo htmlspecialchars($mgrUrl); ?>" enctype="multipart/form-data">
             <input type="hidden" name="id" value="<?php echo htmlspecialchars($editTpl['id'] ?? ''); ?>">
 
             <div class="tm-row-2">
@@ -287,7 +289,7 @@ displayPageHeader($color, 'None');
                     <?php foreach ($editTpl['attachments'] as $idx => $att): ?>
                     <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: #f8f9fa; border-radius: 6px; border: 1px solid #dadce0;">
                         <span>📄 <strong><?php echo htmlspecialchars($att['filename']); ?></strong> <small style="color: #70757a;">(<?php echo round($att['size']/1024); ?> KB)</small></span>
-                        <a href="templates_manager.php?action=del_att&id=<?php echo urlencode($editTpl['id']); ?>&att_idx=<?php echo $idx; ?>" style="color: #d93025; font-size: 12px; text-decoration: none;" onclick="return confirm('Remove this file from the template?')">
+                        <a href="<?php echo htmlspecialchars($mgrUrl . '?action=del_att&id=' . urlencode($editTpl['id']) . '&att_idx=' . $idx . '#template-form'); ?>" style="color: #d93025; font-size: 12px; text-decoration: none;" onclick="return confirm('Remove this file from the template?')">
                             ✕ <?php echo _("Remove"); ?>
                         </a>
                     </div>
@@ -310,7 +312,7 @@ displayPageHeader($color, 'None');
                     💾 <?php echo _("Save Template"); ?>
                 </button>
                 <?php if ($editTpl): ?>
-                    <a href="templates_manager.php" style="margin-left: 12px; color: #5f6368; font-size: 13px; text-decoration: none;"><?php echo _("Cancel Edit"); ?></a>
+                    <a href="<?php echo htmlspecialchars($mgrUrl); ?>" style="margin-left: 12px; color: #5f6368; font-size: 13px; text-decoration: none;"><?php echo _("Cancel Edit"); ?></a>
                 <?php endif; ?>
             </div>
         </form>

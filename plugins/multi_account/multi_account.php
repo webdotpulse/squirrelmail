@@ -44,27 +44,38 @@ function multi_account_left_main_do()
             text-align: left;
         }
         .sqm-multi-unified-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
+            display: flex !important;
+            flex-direction: row !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            flex-wrap: nowrap !important;
+            white-space: nowrap !important;
+            gap: 6px;
             padding: 6px 8px;
             border-radius: var(--sm-radius-sm, 6px);
             background: var(--sm-primary-light, #e8f0fe);
             color: var(--sm-primary, #1a73e8);
-            text-decoration: none;
+            text-decoration: none !important;
             font-weight: 600;
             font-size: 12.5px;
             transition: all var(--sm-transition-fast, 0.15s ease);
+            box-sizing: border-box;
+            width: 100%;
         }
         .sqm-multi-unified-header:hover {
             background: var(--sm-selected-bg, #d2e3fc);
             color: var(--sm-primary-hover, #1d4ed8);
-            text-decoration: none;
+            text-decoration: none !important;
         }
         .sqm-unified-title {
-            display: flex;
-            align-items: center;
+            display: inline-flex !important;
+            align-items: center !important;
             gap: 6px;
+            white-space: nowrap !important;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            min-width: 0;
+            flex-shrink: 1;
         }
         .sqm-unread-badge {
             background: var(--sm-primary, #1a73e8);
@@ -75,9 +86,15 @@ function multi_account_left_main_do()
             border-radius: 10px;
             min-width: 14px;
             text-align: center;
+            flex-shrink: 0 !important;
+            white-space: nowrap !important;
+            display: inline-flex !important;
+            align-items: center;
+            justify-content: center;
+            line-height: 1.3;
         }
         .sqm-unread-badge.zero {
-            display: none;
+            display: none !important;
         }
         .sqm-accounts-tree {
             margin-top: 6px;

@@ -271,6 +271,7 @@
                 // Resolve relative URLs correctly even when current page is in plugins/ or deep subpath
                 let resolvedHref = href;
                 const base = this.getBaseUri();
+                const currentContextUrl = this.state.currentUrl || window.location.href;
                 if (!/^https?:\/\/|^\/\//i.test(href)) {
                     if (href.startsWith('/')) {
                         resolvedHref = window.location.origin + href;
@@ -278,6 +279,9 @@
                         resolvedHref = window.location.origin + base + href.replace(/^\.\.\//, '');
                     } else if (href.startsWith('src/') || href.startsWith('plugins/') || href.startsWith('templates/')) {
                         resolvedHref = window.location.origin + base + href;
+                    } else if (link.closest('#sm-workspace') && currentContextUrl.includes('/plugins/')) {
+                        // Current workspace view is inside a plugin page; resolve relative to that plugin URL
+                        resolvedHref = new URL(href, currentContextUrl).href;
                     } else {
                         // Standard SquirrelMail core script (e.g. right_main.php, webmail.php, compose.php, options.php)
                         resolvedHref = window.location.origin + base + 'src/' + href;
@@ -434,9 +438,23 @@
             // Enhance newly mounted workspace content
             this.enhanceWorkspace(container);
 
-            // Scroll workspace to top
+            // Scroll workspace to anchor or top
             const scrollContainer = document.getElementById('sm-workspace');
-            if (scrollContainer) scrollContainer.scrollTop = 0;
+            try {
+                const parsedFinal = new URL(finalUrl, window.location.origin);
+                if (parsedFinal.hash) {
+                    const targetEl = container.querySelector(parsedFinal.hash);
+                    if (targetEl) {
+                        targetEl.scrollIntoView({ behavior: 'smooth' });
+                    } else if (scrollContainer) {
+                        scrollContainer.scrollTop = 0;
+                    }
+                } else if (scrollContainer) {
+                    scrollContainer.scrollTop = 0;
+                }
+            } catch (e) {
+                if (scrollContainer) scrollContainer.scrollTop = 0;
+            }
         },
 
         // -------------------------------------------------------------------------
@@ -449,6 +467,7 @@
 
                 let action = (e.submitter && e.submitter.formAction) || form.getAttribute('action') || form.action || window.location.href;
                 // If relative action, resolve against base + 'src/'
+                const currentContextUrl = this.state.currentUrl || window.location.href;
                 if (action && !/^https?:\/\/|^\/\//i.test(action)) {
                     if (action.startsWith('/')) {
                         action = window.location.origin + action;
@@ -456,6 +475,8 @@
                         action = window.location.origin + this.getBaseUri() + action.replace(/^\.\.\//, '');
                     } else if (action.startsWith('src/') || action.startsWith('plugins/')) {
                         action = window.location.origin + this.getBaseUri() + action;
+                    } else if (form.closest('#sm-workspace') && currentContextUrl.includes('/plugins/')) {
+                        action = new URL(action, currentContextUrl).href;
                     } else {
                         action = window.location.origin + this.getBaseUri() + 'src/' + action;
                     }
