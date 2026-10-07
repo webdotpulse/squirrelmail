@@ -1,0 +1,575 @@
+<?php
+/**
+ * functions.php - Conversation View Core Functions
+ *
+ * Implements cross-folder discovery of related conversation messages
+ * (incoming messages, sent replies, and pending drafts), parses headers,
+ * extracts clean body previews, and renders the responsive conversation thread.
+ *
+ * @copyright 2026 The SquirrelMail Project Team
+ * @license http://opensource.org/licenses/gpl-license.php GNU Public License
+ * @package plugins
+ * @subpackage conversation_view
+ */
+
+if (!defined('SM_PATH')) {
+    define('SM_PATH', '../../');
+}
+
+include_once(SM_PATH . 'functions/imap_messages.php');
+include_once(SM_PATH . 'functions/mime.php');
+include_once(SM_PATH . 'functions/date.php');
+
+/**
+ * Extract RFC-822 Message-IDs from header strings (e.g. References, In-Reply-To, Message-ID)
+ *
+ * @param string $string Raw header string
+ * @return array Clean array of Message-ID strings (without angle brackets)
+ */
+function cv_extract_ids($string)
+{
+    if (empty($string)) {
+        return array();
+    }
+    preg_match_all('/<([^>]+)>/', $string, $matches);
+    if (!empty($matches[1])) {
+        $ids = array();
+        foreach ($matches[1] as $id) {
+            $clean = trim($id);
+            if (!empty($clean)) {
+                $ids[] = $clean;
+            }
+        }
+        return array_unique($ids);
+    }
+    $trimmed = trim($string, "<> \t\n\r");
+    if (!empty($trimmed) && strpos($trimmed, '@') !== false) {
+        return array($trimmed);
+    }
+    return array();
+}
+
+/**
+ * Clean and normalize a subject line by stripping Re:/Fwd: prefixes
+ *
+ * @param string $subject Original subject line
+ * @return string Normalized base subject
+ */
+function cv_clean_subject($subject)
+{
+    if (empty($subject)) {
+        return '';
+    }
+    $clean = decodeHeader($subject, false, false, true);
+    // Recursively strip [Tag], Re:, Fwd:, Fw:, Aw:, Antw:, Rif:, Sv:
+    $clean = preg_replace('/^\s*(?:\[[^\]]+\]\s*)?(?:(?:re|fwd|fw|aw|antw|rif|sv)\s*:\s*)+/i', '', $clean);
+    return trim($clean);
+}
+
+/**
+ * Extract a clean, unquoted body snippet for a message
+ *
+ * @param string $rawText Raw text body of the message
+ * @param int $maxLength Maximum character length
+ * @return string Clean preview snippet
+ */
+function cv_clean_body_snippet($rawText, $maxLength = 160)
+{
+    if (empty($rawText)) {
+        return '';
+    }
+    // Strip HTML tags if HTML
+    $text = strip_tags($rawText);
+    $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    
+    // Split lines and discard quoted lines (lines starting with '>')
+    $lines = explode("\n", $text);
+    $clean_lines = array();
+    foreach ($lines as $line) {
+        $trimmed = trim($line);
+        if (empty($trimmed)) {
+            continue;
+        }
+        if (strpos($trimmed, '>') === 0) {
+            continue; // Skip quoted reply
+        }
+        if (preg_match('/^(?:On .+ wrote:|Am .+ schrieb:|Le .+ a écrit:)/i', $trimmed)) {
+            continue;
+        }
+        $clean_lines[] = $trimmed;
+    }
+
+    $snippet = implode(' ', $clean_lines);
+    $snippet = preg_replace('/\s+/', ' ', $snippet);
+    if (mb_strlen($snippet, 'UTF-8') > $maxLength) {
+        $snippet = mb_substr($snippet, 0, $maxLength - 3, 'UTF-8') . '...';
+    }
+    return trim($snippet);
+}
+
+/**
+ * Parse an email address string into display name and email address
+ *
+ * @param string $addrStr RFC 822 address string
+ * @return array Array with 'name' and 'email'
+ */
+function cv_format_address($addrStr)
+{
+    if (empty($addrStr)) {
+        return array('name' => _("Unknown"), 'email' => '');
+    }
+    $addrStr = decodeHeader(trim($addrStr), false, false, true);
+    if (preg_match('/^(.*?)\s*<([^>]+)>$/', $addrStr, $m)) {
+        $name = trim($m[1], " \t\n\r\0\x0B\"'");
+        $email = trim($m[2]);
+        if (empty($name)) {
+            $name = $email;
+        }
+        return array('name' => $name, 'email' => $email);
+    }
+    return array('name' => $addrStr, 'email' => $addrStr);
+}
+
+/**
+ * Return summary statistics for the current conversation thread
+ *
+ * @param resource $imapConnection Active IMAP socket stream
+ * @param string $currentMailbox Currently selected mailbox name
+ * @param int $currentUid UID of the currently viewed message
+ * @param object $currentMessage Message object
+ * @return array Array containing total_count, sent_count, draft_count, received_count
+ */
+function cv_get_thread_summary($imapConnection, $currentMailbox, $currentUid, $currentMessage)
+{
+    $threadData = cv_get_conversation_thread($imapConnection, $currentMailbox, $currentUid, $currentMessage);
+    return $threadData['stats'];
+}
+
+/**
+ * Core engine: Discovers and aggregates conversation messages across mailboxes
+ *
+ * @param resource $imapConnection Active IMAP stream
+ * @param string $currentMailbox Mailbox name of the viewed message
+ * @param int $currentUid UID of the viewed message
+ * @param object $currentMessage SquirrelMail Message object
+ * @return array Structured conversation data
+ */
+function cv_get_conversation_thread($imapConnection, $currentMailbox, $currentUid, $currentMessage)
+{
+    static $requestCache = array();
+    $cacheKey = $currentMailbox . '_' . $currentUid;
+    if (isset($requestCache[$cacheKey])) {
+        return $requestCache[$cacheKey];
+    }
+
+    global $sent_folder, $draft_folder, $data_dir, $username;
+
+    $user_sent = getPref($data_dir, $username, 'sent_folder');
+    if (empty($user_sent)) {
+        $user_sent = $sent_folder;
+    }
+
+    $user_draft = getPref($data_dir, $username, 'draft_folder');
+    if (empty($user_draft)) {
+        $user_draft = $draft_folder;
+    }
+
+    $search_sent = (bool) getPref($data_dir, $username, 'cv_search_sent', 1);
+    $search_drafts = (bool) getPref($data_dir, $username, 'cv_search_drafts', 1);
+    $search_current = (bool) getPref($data_dir, $username, 'cv_search_current', 1);
+
+    // 1. Gather Message-IDs and normalized Subject from current message
+    $rfcHeader = isset($currentMessage->rfc822_header) ? $currentMessage->rfc822_header : null;
+    $curr_id = ($rfcHeader && !empty($rfcHeader->message_id)) ? trim($rfcHeader->message_id) : '';
+    $in_reply_to = ($rfcHeader && !empty($rfcHeader->in_reply_to)) ? trim($rfcHeader->in_reply_to) : '';
+    $references = ($rfcHeader && !empty($rfcHeader->references)) ? trim($rfcHeader->references) : '';
+    $raw_subject = ($rfcHeader && !empty($rfcHeader->subject)) ? trim($rfcHeader->subject) : '';
+
+    $search_ids = array();
+    if (!empty($curr_id)) {
+        $search_ids = array_merge($search_ids, cv_extract_ids($curr_id));
+    }
+    if (!empty($in_reply_to)) {
+        $search_ids = array_merge($search_ids, cv_extract_ids($in_reply_to));
+    }
+    if (!empty($references)) {
+        $search_ids = array_merge($search_ids, cv_extract_ids($references));
+    }
+    $search_ids = array_unique(array_filter($search_ids));
+    $clean_subject = cv_clean_subject($raw_subject);
+
+    // 2. Determine target folders to inspect
+    $folders_to_check = array();
+    if ($search_current && !empty($currentMailbox)) {
+        $folders_to_check[$currentMailbox] = 'received';
+    }
+    if ($search_sent && !empty($user_sent)) {
+        $folders_to_check[$user_sent] = 'sent';
+    }
+    if ($search_drafts && !empty($user_draft)) {
+        $folders_to_check[$user_draft] = 'draft';
+    }
+
+    $all_messages = array();
+
+    // 3. Search and extract messages from each folder
+    foreach ($folders_to_check as $folderName => $defaultType) {
+        if (!sqimap_mailbox_exists($imapConnection, $folderName)) {
+            continue;
+        }
+
+        $mbx_info = sqimap_mailbox_select($imapConnection, $folderName, false);
+        if (empty($mbx_info) || !isset($mbx_info['EXISTS']) || $mbx_info['EXISTS'] == 0) {
+            continue;
+        }
+
+        $found_uids = array();
+
+        // 3a. Search by Message-IDs (References, In-Reply-To, Message-ID)
+        if (!empty($search_ids)) {
+            $top_ids = array_slice($search_ids, 0, 4);
+            foreach ($top_ids as $sid) {
+                $clean_sid = trim($sid, "<> \t\n\r");
+                if (strlen($clean_sid) < 3) {
+                    continue;
+                }
+
+                $qRef = 'HEADER References "' . addcslashes($clean_sid, '"\\') . '"';
+                $resRef = sqimap_run_search($imapConnection, $qRef, '');
+                if (!empty($resRef) && is_array($resRef)) {
+                    foreach ($resRef as $u) {
+                        if (is_numeric($u)) $found_uids[] = (int)$u;
+                    }
+                }
+
+                $qRep = 'HEADER In-Reply-To "' . addcslashes($clean_sid, '"\\') . '"';
+                $resRep = sqimap_run_search($imapConnection, $qRep, '');
+                if (!empty($resRep) && is_array($resRep)) {
+                    foreach ($resRep as $u) {
+                        if (is_numeric($u)) $found_uids[] = (int)$u;
+                    }
+                }
+
+                $qMid = 'HEADER Message-ID "' . addcslashes($clean_sid, '"\\') . '"';
+                $resMid = sqimap_run_search($imapConnection, $qMid, '');
+                if (!empty($resMid) && is_array($resMid)) {
+                    foreach ($resMid as $u) {
+                        if (is_numeric($u)) $found_uids[] = (int)$u;
+                    }
+                }
+            }
+        }
+
+        // 3b. Fallback: Search by clean subject if no ID results
+        if (empty($found_uids) && mb_strlen($clean_subject, 'UTF-8') >= 3) {
+            $qSubj = 'SUBJECT "' . addcslashes($clean_subject, '"\\') . '"';
+            $resSubj = sqimap_run_search($imapConnection, $qSubj, '');
+            if (!empty($resSubj) && is_array($resSubj)) {
+                foreach ($resSubj as $u) {
+                    if (is_numeric($u)) $found_uids[] = (int)$u;
+                }
+            }
+        }
+
+        // Always guarantee the currently viewed message is included when searching current mailbox
+        if ($folderName === $currentMailbox && !in_array((int)$currentUid, $found_uids)) {
+            $found_uids[] = (int)$currentUid;
+        }
+
+        $found_uids = array_unique(array_filter($found_uids));
+        if (empty($found_uids)) {
+            continue;
+        }
+
+        // Limit to most recent 12 messages per folder
+        if (count($found_uids) > 12) {
+            $found_uids = array_slice($found_uids, -12);
+        }
+
+        // Fetch headers
+        $hdr_list = sqimap_get_small_header_list(
+            $imapConnection,
+            $found_uids,
+            array('Date', 'To', 'Cc', 'From', 'Subject', 'Message-ID', 'In-Reply-To', 'References', 'Content-Type'),
+            array('FLAGS', 'RFC822.SIZE', 'INTERNALDATE')
+        );
+
+        if (empty($hdr_list)) {
+            continue;
+        }
+
+        foreach ($hdr_list as $uid => $hdr) {
+            $uid = (int) $uid;
+            $is_current = ($folderName === $currentMailbox && $uid === (int)$currentUid);
+
+            // Determine message type
+            $type = $defaultType;
+            if ($folderName === $user_draft) {
+                $type = 'draft';
+            } elseif ($folderName === $user_sent) {
+                $type = 'sent';
+            }
+
+            // Extract date and timestamp
+            $rawDate = !empty($hdr['date']) ? $hdr['date'] : (!empty($hdr['INTERNALDATE']) ? $hdr['INTERNALDATE'] : '');
+            $timestamp = !empty($rawDate) ? strtotime($rawDate) : 0;
+            if ($timestamp <= 0) {
+                $timestamp = time();
+            }
+            $dateStr = function_exists('getDateString') ? getDateString($timestamp, true) : date('Y-m-d H:i', $timestamp);
+
+            // Extract Addresses
+            $fromStr = !empty($hdr['from']) ? $hdr['from'] : '';
+            $toStr = !empty($hdr['to']) ? $hdr['to'] : '';
+            $fromParsed = cv_format_address($fromStr);
+            $toParsed = cv_format_address($toStr);
+
+            // Extract Subject
+            $subj = !empty($hdr['subject']) ? decodeHeader($hdr['subject'], false, false, true) : _("(no subject)");
+
+            // Fetch clean body snippet
+            $snippet = '';
+            if ($is_current && !empty($GLOBALS['messagebody'])) {
+                $snippet = cv_clean_body_snippet($GLOBALS['messagebody']);
+            } else {
+                // Lightweight text fetch from IMAP
+                $body_read = sqimap_run_command($imapConnection, "FETCH $uid (BODY.PEEK[TEXT]<0.400>)", false, $resp, $msg, true);
+                if (!empty($body_read) && is_array($body_read)) {
+                    $rawBody = implode('', $body_read);
+                    $snippet = cv_clean_body_snippet($rawBody);
+                }
+            }
+
+            // Attachment indicator
+            $hasAttachment = false;
+            if (!empty($hdr['content-type']) && strpos(strtolower($hdr['content-type']), 'multipart/mixed') !== false) {
+                $hasAttachment = true;
+            }
+
+            // URLs
+            $baseUri = sqm_baseuri();
+            $viewUrl = $baseUri . 'src/read_body.php?mailbox=' . urlencode($folderName) . '&passed_id=' . $uid . '&startMessage=1';
+            $resumeUrl = ($type === 'draft')
+                ? $baseUri . 'src/compose.php?smaction_draft=1&passed_id=' . $uid . '&mailbox=' . urlencode($folderName)
+                : '';
+            $replyUrl = $baseUri . 'src/compose.php?smaction_reply=1&passed_id=' . $uid . '&mailbox=' . urlencode($folderName);
+
+            $all_messages[] = array(
+                'uid'            => $uid,
+                'mailbox'        => $folderName,
+                'type'           => $type,
+                'is_current'     => $is_current,
+                'from_name'      => $fromParsed['name'],
+                'from_email'     => $fromParsed['email'],
+                'to_name'        => $toParsed['name'],
+                'to_email'       => $toParsed['email'],
+                'subject'        => $subj,
+                'date_str'       => $dateStr,
+                'timestamp'      => $timestamp,
+                'snippet'        => $snippet,
+                'has_attachment' => $hasAttachment,
+                'view_url'       => $viewUrl,
+                'resume_url'     => $resumeUrl,
+                'reply_url'      => $replyUrl,
+            );
+        }
+    }
+
+    // Restore original mailbox selection
+    if (!empty($currentMailbox)) {
+        sqimap_mailbox_select($imapConnection, $currentMailbox, false);
+    }
+
+    // Sort chronologically (oldest to newest)
+    usort($all_messages, function ($a, $b) {
+        if ($a['timestamp'] === $b['timestamp']) {
+            return ($a['uid'] <=> $b['uid']);
+        }
+        return ($a['timestamp'] <=> $b['timestamp']);
+    });
+
+    // Compute stats
+    $stats = array(
+        'total_count'    => count($all_messages),
+        'sent_count'     => 0,
+        'draft_count'    => 0,
+        'received_count' => 0,
+    );
+
+    foreach ($all_messages as $m) {
+        if ($m['type'] === 'sent') {
+            $stats['sent_count']++;
+        } elseif ($m['type'] === 'draft') {
+            $stats['draft_count']++;
+        } else {
+            $stats['received_count']++;
+        }
+    }
+
+    $result = array(
+        'messages' => $all_messages,
+        'stats'    => $stats,
+        'subject'  => $clean_subject,
+    );
+
+    $requestCache[$cacheKey] = $result;
+    return $result;
+}
+
+/**
+ * Render the interactive Conversation Thread timeline HTML card
+ *
+ * @param resource $imapConnection Active IMAP socket stream
+ * @param string $currentMailbox Mailbox name of the viewed message
+ * @param int $currentUid UID of the viewed message
+ * @param object $currentMessage Message object
+ * @param string $placement 'bottom' or 'top'
+ */
+function cv_render_thread_view($imapConnection, $currentMailbox, $currentUid, $currentMessage, $placement = 'bottom')
+{
+    $threadData = cv_get_conversation_thread($imapConnection, $currentMailbox, $currentUid, $currentMessage);
+    $messages = $threadData['messages'];
+    $stats = $threadData['stats'];
+    $cleanSubject = $threadData['subject'];
+
+    $baseUri = sqm_baseuri();
+    $cssUrl = $baseUri . 'plugins/conversation_view/conversation.css';
+    $jsUrl = $baseUri . 'plugins/conversation_view/conversation.js';
+    $ajaxUrl = $baseUri . 'plugins/conversation_view/ajax.php';
+    $token = function_exists('sm_generate_security_token') ? sm_generate_security_token() : '';
+
+    $replyAllUrl = $baseUri . 'src/compose.php?smaction_reply_all=1&passed_id=' . $currentUid . '&mailbox=' . urlencode($currentMailbox);
+    $replyUrl = $baseUri . 'src/compose.php?smaction_reply=1&passed_id=' . $currentUid . '&mailbox=' . urlencode($currentMailbox);
+
+    ?>
+    <!-- Conversation View Plugin CSS & JS -->
+    <link rel="stylesheet" type="text/css" href="<?php echo htmlspecialchars($cssUrl, ENT_QUOTES, 'UTF-8'); ?>">
+    <script type="text/javascript" src="<?php echo htmlspecialchars($jsUrl, ENT_QUOTES, 'UTF-8'); ?>"></script>
+
+    <div id="cv-conversation-thread" class="cv-thread-container" data-ajax-url="<?php echo htmlspecialchars($ajaxUrl, ENT_QUOTES, 'UTF-8'); ?>" data-token="<?php echo htmlspecialchars($token, ENT_QUOTES, 'UTF-8'); ?>">
+        <!-- Header -->
+        <div class="cv-thread-header">
+            <div class="cv-header-left">
+                <span class="cv-thread-icon">💬</span>
+                <span class="cv-thread-title"><?php echo _("Conversation Thread"); ?></span>
+                <span class="cv-badge cv-badge-total"><?php echo count($messages); ?> <?php echo count($messages) === 1 ? _("message") : _("messages"); ?></span>
+                
+                <?php if ($stats['sent_count'] > 0): ?>
+                    <span class="cv-badge cv-badge-sent">📤 <?php echo $stats['sent_count']; ?> <?php echo $stats['sent_count'] === 1 ? _("sent reply") : _("sent replies"); ?></span>
+                <?php endif; ?>
+
+                <?php if ($stats['draft_count'] > 0): ?>
+                    <span class="cv-badge cv-badge-draft">📝 <?php echo $stats['draft_count']; ?> <?php echo $stats['draft_count'] === 1 ? _("pending draft") : _("pending drafts"); ?></span>
+                <?php endif; ?>
+            </div>
+
+            <div class="cv-header-actions">
+                <a href="<?php echo htmlspecialchars($replyUrl, ENT_QUOTES, 'UTF-8'); ?>" class="cv-btn cv-btn-primary">
+                    <span>↩️</span> <?php echo _("Reply"); ?>
+                </a>
+                <a href="<?php echo htmlspecialchars($replyAllUrl, ENT_QUOTES, 'UTF-8'); ?>" class="cv-btn cv-btn-secondary">
+                    <span>👥</span> <?php echo _("Reply All"); ?>
+                </a>
+            </div>
+        </div>
+
+        <?php if (count($messages) <= 1 && empty($stats['sent_count']) && empty($stats['draft_count'])): ?>
+            <!-- Single message notice -->
+            <div class="cv-thread-empty">
+                <span class="cv-empty-icon">ℹ️</span>
+                <span><?php echo _("No sent replies or pending drafts found for this message thread yet."); ?></span>
+            </div>
+        <?php else: ?>
+            <!-- Timeline List -->
+            <div class="cv-timeline">
+                <?php foreach ($messages as $idx => $m):
+                    $cardClass = 'cv-card cv-card-' . $m['type'];
+                    if ($m['is_current']) {
+                        $cardClass .= ' cv-card-current';
+                    }
+                    $cardId = 'cv-card-' . preg_replace('/[^a-zA-Z0-9_-]/', '', $m['mailbox']) . '-' . $m['uid'];
+                ?>
+                <div id="<?php echo $cardId; ?>" class="<?php echo $cardClass; ?>" data-mailbox="<?php echo htmlspecialchars($m['mailbox'], ENT_QUOTES, 'UTF-8'); ?>" data-uid="<?php echo $m['uid']; ?>">
+                    <div class="cv-card-timeline-indicator">
+                        <div class="cv-indicator-dot"></div>
+                        <?php if ($idx < count($messages) - 1): ?>
+                            <div class="cv-indicator-line"></div>
+                        <?php endif; ?>
+                    </div>
+
+                    <div class="cv-card-inner">
+                        <!-- Card Header Summary -->
+                        <div class="cv-card-header" onclick="cvToggleCard('<?php echo $cardId; ?>')">
+                            <div class="cv-card-type-pill">
+                                <?php if ($m['type'] === 'sent'): ?>
+                                    <span class="cv-pill-tag cv-pill-sent">📤 <?php echo _("Sent Reply"); ?></span>
+                                <?php elseif ($m['type'] === 'draft'): ?>
+                                    <span class="cv-pill-tag cv-pill-draft">📝 <?php echo _("Draft Reply"); ?></span>
+                                <?php else: ?>
+                                    <span class="cv-pill-tag cv-pill-received">📥 <?php echo htmlspecialchars($m['mailbox'], ENT_QUOTES, 'UTF-8'); ?></span>
+                                <?php endif; ?>
+
+                                <?php if ($m['is_current']): ?>
+                                    <span class="cv-pill-tag cv-pill-current">● <?php echo _("Currently Viewing"); ?></span>
+                                <?php endif; ?>
+                            </div>
+
+                            <div class="cv-card-meta">
+                                <span class="cv-card-author">
+                                    <?php if ($m['type'] === 'sent' || $m['type'] === 'draft'): ?>
+                                        <span class="cv-meta-label"><?php echo _("To:"); ?></span> <strong><?php echo htmlspecialchars($m['to_name'], ENT_QUOTES, 'UTF-8'); ?></strong>
+                                    <?php else: ?>
+                                        <span class="cv-meta-label"><?php echo _("From:"); ?></span> <strong><?php echo htmlspecialchars($m['from_name'], ENT_QUOTES, 'UTF-8'); ?></strong>
+                                    <?php endif; ?>
+                                </span>
+                                <span class="cv-card-date"><?php echo htmlspecialchars($m['date_str'], ENT_QUOTES, 'UTF-8'); ?></span>
+                                <span class="cv-card-expand-icon">▼</span>
+                            </div>
+                        </div>
+
+                        <!-- Card Preview Snippet -->
+                        <?php if (!empty($m['snippet'])): ?>
+                            <div class="cv-card-snippet">
+                                "<?php echo htmlspecialchars($m['snippet'], ENT_QUOTES, 'UTF-8'); ?>"
+                            </div>
+                        <?php endif; ?>
+
+                        <!-- Full Message Body (Expandable) -->
+                        <div class="cv-card-body" style="display: none;">
+                            <div class="cv-body-content">
+                                <div class="cv-loading-spinner"><?php echo _("Loading message body..."); ?></div>
+                            </div>
+                        </div>
+
+                        <!-- Card Actions Bar -->
+                        <div class="cv-card-footer">
+                            <div class="cv-footer-actions">
+                                <?php if ($m['type'] === 'draft'): ?>
+                                    <a href="<?php echo htmlspecialchars($m['resume_url'], ENT_QUOTES, 'UTF-8'); ?>" class="cv-btn cv-btn-primary cv-btn-sm">
+                                        <span>✏️</span> <?php echo _("Resume Draft"); ?>
+                                    </a>
+                                    <button type="button" class="cv-btn cv-btn-danger cv-btn-sm" onclick="cvDiscardDraft(event, '<?php echo htmlspecialchars($m['mailbox'], ENT_QUOTES, 'UTF-8'); ?>', <?php echo $m['uid']; ?>, '<?php echo $cardId; ?>')">
+                                        <span>🗑️</span> <?php echo _("Discard Draft"); ?>
+                                    </button>
+                                <?php elseif (!$m['is_current']): ?>
+                                    <a href="<?php echo htmlspecialchars($m['view_url'], ENT_QUOTES, 'UTF-8'); ?>" class="cv-btn cv-btn-outline cv-btn-sm">
+                                        <span>👁️</span> <?php echo _("View Message"); ?>
+                                    </a>
+                                    <a href="<?php echo htmlspecialchars($m['reply_url'], ENT_QUOTES, 'UTF-8'); ?>" class="cv-btn cv-btn-outline cv-btn-sm">
+                                        <span>↩️</span> <?php echo _("Reply"); ?>
+                                    </a>
+                                <?php endif; ?>
+
+                                <button type="button" class="cv-btn cv-btn-ghost cv-btn-sm cv-toggle-btn" onclick="cvToggleCard('<?php echo $cardId; ?>')">
+                                    <span>🔍</span> <?php echo _("Toggle Body"); ?>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+    </div>
+    <?php
+}

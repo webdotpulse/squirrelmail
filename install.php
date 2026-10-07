@@ -13,7 +13,7 @@
  */
 
 define('SM_PATH', './');
-define('INSTALLER_VERSION', '1.5.44');
+define('INSTALLER_VERSION', '1.5.45');
 
 // Ensure core constants (such as SM_DEBUG_MODE_OFF) are loaded before config.php
 if (file_exists(SM_PATH . 'include/constants.php')) {
@@ -1645,6 +1645,13 @@ if (empty($existing_admins)) {
                             <div>
                                 <strong>signature_creator</strong>
                                 <div class="field-desc">Modern visual HTML email signature designer with 6 pre-designed responsive templates.</div>
+                            </div>
+                        </label>
+                        <label class="plugin-check">
+                            <input type="checkbox" name="plugins[]" value="conversation_view" checked>
+                            <div>
+                                <strong>conversation_view</strong>
+                                <div class="field-desc">Message-view conversation threading, showing sent replies and pending drafts with inline preview &amp; resume editing.</div>
                             </div>
                         </label>
                         <label class="plugin-check">

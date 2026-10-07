@@ -1002,6 +1002,7 @@ $plugins[] = 'message_details';
 $plugins[] = 'filters';
 $plugins[] = 'signature_creator';
 $plugins[] = 'administrator';
+$plugins[] = 'conversation_view';
 
 /**
  * To disable all plugins regardless of any that are installed 

@@ -1,4 +1,4 @@
-# SquirrelMail 1.5.44
+# SquirrelMail 1.5.45
 
 A modernized, responsive edition of SquirrelMail engineered for PHP 7.0 through 8.2+ with a Single-Page Application (SPA) interface, modern UI styling, and extensive feature enhancements.
 
@@ -11,6 +11,12 @@ A modernized, responsive edition of SquirrelMail engineered for PHP 7.0 through 
   - Curated modern design system in `assets/css/app.css` with CSS custom properties (`--sm-*`).
   - Native Light and Dark mode toggle with persistent preferences.
   - Crisp, modern SVG iconography throughout the application.
+- **Conversation View & Threading (Drafts & Replies)** (`plugins/conversation_view`):
+  - Cross-mailbox conversation discovery: dynamically inspects `Message-ID`, `In-Reply-To`, `References`, and normalized base subjects across `Sent`, `Drafts`, and active mailboxes.
+  - Displays sent replies and pending drafts directly in the message reader (`src/read_body.php`) in an interactive chronological timeline with clean, unquoted body previews.
+  - One-click actions: "Resume Draft" (`compose.php?smaction_draft=1`), async "Discard Draft", "View Sent Message", and quick "Reply" / "Reply All".
+  - Asynchronous inline message expansion (`ajax.php?action=get_body`) to read full replies without navigating away from the current email.
+  - Header toolbar indicator badge (`💬 Thread (#)`) with smooth-scrolling anchor navigation.
 - **Signature Creator & Templates Studio** (`plugins/signature_creator`):
   - Interactive visual designer with 6 ready-made professional HTML signature templates (Modern Clean, Corporate Two-Column, Minimalist Chic, Executive Classic, Tech & Developer, Creative Card).
   - Dynamic live real-time preview updating on keystroke.
@@ -51,6 +57,17 @@ This repository includes an [AGENTS.md](file:///home/koen/Git/squirrelmail/AGENT
 ---
 
 ## 📝 Changelog
+
+### Version 1.5.45
+- **Conversation View Plugin (`plugins/conversation_view`)**:
+  - **Cross-Mailbox Thread Discovery**: Implemented conversation discovery engine in `plugins/conversation_view/functions.php` (`cv_get_conversation_thread()`) that queries IMAP `HEADER References`, `HEADER In-Reply-To`, `HEADER Message-ID`, and base subject across `Sent`, `Drafts`, and active mailboxes.
+  - **Message Reader Conversation Timeline**: Embedded an interactive conversation timeline in `src/read_body.php` displaying incoming emails, sent replies, and draft responses in chronological order with sender/recipient metadata, timestamps, and clean unquoted body previews.
+  - **Inline Message Body Expansion**: Implemented asynchronous message loading (`plugins/conversation_view/ajax.php?action=get_body` and `conversation.js`) enabling users to click any card header to expand and read full replies inline without reloading the page.
+  - **Draft Resumption & Discard Actions**: Added direct "✏️ Resume Draft" links launching `src/compose.php?smaction_draft=1` with draft content and recipients, as well as an asynchronous "🗑️ Discard Draft" action with immediate DOM removal.
+  - **Top Toolbar Jump Badge**: Added a `💬 Thread (#)` badge to the `read_body_header_right` toolbar with smooth anchor scrolling to `#cv-conversation-thread`.
+  - **Dedicated User Options**: Created `plugins/conversation_view/options.php` allowing users to configure conversation view toggles, folder inclusion (Sent, Drafts, Current), and placement (`bottom`, `top`, or `both`).
+  - **Theme & Plugin Integration**: Styled using `--sm-*` custom properties with light & dark theme compatibility (`plugins/conversation_view/conversation.css`), activated plugin in `config/config.php` and `config/config_default.php`, registered hooks in `config/plugin_hooks.php`, and added to `install.php` wizard.
+- **Version Bump**: Incremented version from `1.5.44` to `1.5.45`.
 
 ### Version 1.5.44
 - **Removed Legacy Plugins (`bug_report`, `change_password`, `fortune`, `translate`)**:
