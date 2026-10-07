@@ -87,6 +87,7 @@ function getBoxStructure ($boxes) {
     $box['IsSent'] = isset($boxes->is_sent) && $boxes->is_sent;
     $box['IsTrash'] = isset($boxes->is_trash) && $boxes->is_trash;
     $box['IsDraft'] = isset($boxes->is_draft) && $boxes->is_draft;
+    $box['IsJunk'] = (isset($boxes->is_junk) && $boxes->is_junk) || (function_exists('isJunkMailbox') && isJunkMailbox($boxes->mailboxname_full));
     $box['IsNoInferiors'] = isset($boxes->is_noinferiors) && $boxes->is_noinferiors;
 
     $collapse = getPref($data_dir, $username, 'collapse_folder_' . $mailbox);

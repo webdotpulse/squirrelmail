@@ -142,6 +142,7 @@ function buildMailboxTree ($box, $settings, $icon_theme_path, $indent_factor=0) 
      */
     $folder_icon = '';
     if (!is_null($icon_theme_path)) {
+        $isJunkBox = !empty($box['IsJunk']) || (function_exists('isJunkMailbox') && isJunkMailbox($box['MailboxFullName'])) || preg_match('/^(junk|spam|bulk|junk\s*e-?mail|bulk\s*mail)$/i', trim($box['MailboxName']));
         switch (true) {
             case $box['IsInbox']:
                 $folder_icon = getIcon($icon_theme_path, 'inbox.svg', '', $box['MailboxName']);
@@ -155,6 +156,9 @@ function buildMailboxTree ($box, $settings, $icon_theme_path, $indent_factor=0) 
             case $box['IsDraft']:
                 $folder_icon = getIcon($icon_theme_path, 'draft.svg', '', $box['MailboxName']);
                 break; 
+            case $isJunkBox:
+                $folder_icon = getIcon($icon_theme_path, 'junk.svg', '', $box['MailboxName']);
+                break; 
             case $box['IsNoInferiors']:
                 $folder_icon = getIcon($icon_theme_path, 'folder_noinf.svg', '', $box['MailboxName']);
                 break;
@@ -163,7 +167,7 @@ function buildMailboxTree ($box, $settings, $icon_theme_path, $indent_factor=0) 
                 break;
         }
         if (!empty($folder_icon)) {
-            $folder_icon = '<span class="sm-folder-icon">' . $folder_icon . '</span>&nbsp;';
+            $folder_icon = '<span class="sm-folder-icon' . ($isJunkBox ? ' sm-folder-icon-junk' : '') . '">' . $folder_icon . '</span>&nbsp;';
         }
     }
     $pre .= $folder_icon;
@@ -181,10 +185,12 @@ function buildMailboxTree ($box, $settings, $icon_theme_path, $indent_factor=0) 
      * been enabled, i.e. when deleted is a message moved to the trash or
      * deleted forever?
      */
+    $isJunkBox = !empty($isJunkBox);
+    $folder_type_class = $box['IsInbox'] ? ' sm-folder-inbox' : ($box['IsSent'] ? ' sm-folder-sent' : ($box['IsTrash'] ? ' sm-folder-trash' : ($box['IsDraft'] ? ' sm-folder-draft' : ($isJunkBox ? ' sm-folder-junk' : ''))));
     $view_link = '<a href="'.$box['ViewLink']['URL'].'" ' .
                  ($accesskey == '' ? '' : 'accesskey="' . $accesskey . '" ') .
                  (!empty($box['ViewLink']['Target']) ? 'target="'.$box['ViewLink']['Target'].'" ' : '') .
-                 'class="sm-folder-link' . ($box['IsSpecial'] ? ' sm-folder-special' : '') . '" ' .
+                 'class="sm-folder-link' . ($box['IsSpecial'] ? ' sm-folder-special' : '') . $folder_type_class . '" ' .
                  'title="'.$box['MailboxName'].'" ' .
                  'style="text-decoration:none">';
 

@@ -35,7 +35,7 @@ require_once(SM_PATH . 'functions/imap_utf7_local.php');
 class mailboxes {
     var $mailboxname_full = '', $mailboxname_sub= '', $is_noselect = false, $is_noinferiors = false,
         $is_special = false, $is_root = false, $is_inbox = false, $is_sent = false,
-        $is_trash = false, $is_draft = false,  $mbxs = array(),
+        $is_trash = false, $is_draft = false, $is_junk = false, $mbxs = array(),
         $unseen = false, $total = false, $recent = false, $tag = false;
 
     function addMbx($mbx, $delimiter, $start, $specialfirst) {
@@ -241,7 +241,8 @@ function isSpecialMailbox($box,$include_subs=true) {
              (!$special_subs && strtolower($box) == 'inbox') ||
              isTrashMailbox($box,$include_subs) || 
              isSentMailbox($box,$include_subs) || 
-             isDraftMailbox($box,$include_subs) );
+             isDraftMailbox($box,$include_subs) ||
+             isJunkMailbox($box,$include_subs) );
 
     if ( !$ret ) {
         $ret = boolean_hook_function('special_mailbox', $box, 1);
@@ -309,6 +310,45 @@ function isDraftMailbox($box,$include_subs=true) {
    return $save_as_draft &&
           ( $box == $draft_folder || 
             ($include_subs && isBoxBelow($box, $draft_folder)) );
+}
+
+/**
+ * Detects if mailbox is a Junk/Spam folder or subfolder of Junk/Spam
+ * @param string $box mailbox name
+ * @param boolean $include_subs if true, subfolders of system folders are special
+ * @return bool whether this is a Junk/Spam folder
+ * @since 1.5.51
+ */
+function isJunkMailbox($box, $include_subs=true) {
+    global $junk_folder;
+    if (!empty($junk_folder) && ( $box == $junk_folder || ($include_subs && isBoxBelow($box, $junk_folder)) )) {
+        return true;
+    }
+    $clean = trim((string)$box);
+    if ($clean === '') {
+        return false;
+    }
+    $lower = strtolower($clean);
+    if ($lower === 'junk' || $lower === 'spam' || $lower === 'inbox.junk' || $lower === 'inbox.spam' || 
+        $lower === 'inbox/junk' || $lower === 'inbox/spam' || $lower === 'junk e-mail' || $lower === 'junk email' ||
+        $lower === 'inbox.junk e-mail' || $lower === 'inbox/junk e-mail' || $lower === 'inbox.junk email' || $lower === 'inbox/junk email' ||
+        $lower === 'bulk mail' || $lower === 'inbox.bulk mail' || $lower === 'inbox/bulk mail') {
+        return true;
+    }
+    $parts = preg_split('[/.]', $clean);
+    $leaf = strtolower(end($parts));
+    if ($leaf === 'junk' || $leaf === 'spam' || $leaf === 'junk e-mail' || $leaf === 'junk email' || $leaf === 'bulk mail') {
+        return true;
+    }
+    if ($include_subs && count($parts) > 1) {
+        for ($i = 0; $i < count($parts) - 1; $i++) {
+            $p = strtolower($parts[$i]);
+            if ($p === 'junk' || $p === 'spam') {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 /**
@@ -1311,6 +1351,7 @@ function sqimap_fill_mailbox_tree($mbx_ary, $mbxs=false,$imap_stream=null) {
             $mbx->is_special |= ($mbx->is_trash = isTrashMailbox($mailbox));
             $mbx->is_special |= ($mbx->is_sent = isSentMailbox($mailbox));
             $mbx->is_special |= ($mbx->is_draft = isDraftMailbox($mailbox));
+            $mbx->is_special |= ($mbx->is_junk = isJunkMailbox($mailbox));
 
             if (!$mbx->is_special)
                 $mbx->is_special = boolean_hook_function('special_mailbox', $mailbox, 1);

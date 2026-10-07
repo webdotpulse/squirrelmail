@@ -1,4 +1,4 @@
-# SquirrelMail 1.5.50
+# SquirrelMail 1.5.51
 
 A modernized, responsive edition of SquirrelMail engineered for PHP 7.0 through 8.2+ with a Single-Page Application (SPA) interface, modern UI styling, and extensive feature enhancements.
 
@@ -57,6 +57,14 @@ This repository includes an [AGENTS.md](file:///home/koen/Git/squirrelmail/AGENT
 ---
 
 ## 📝 Changelog
+
+### Version 1.5.51
+- **Modern SVG Vector & Font Icon for Junk / Spam Folder**:
+  - **Modern SVG Icons (`junk.svg` & `spam.svg`)**: Created crisp modern vector SVG icons in `images/themes/modern/` (and `assets/icons/`) featuring an alert octagon with exclamation mark matching the stroke, dimensions, and fill styling of existing modern theme folder icons (`inbox.svg`, `senti.svg`, `delitem.svg`, `draft.svg`).
+  - **Junk/Spam Mailbox Detection (`isJunkMailbox`)**: Added `isJunkMailbox()` in `functions/imap_mailbox.php` to identify Junk and Spam mailboxes (e.g., `Junk`, `Spam`, `INBOX.Junk`, `INBOX.Spam`, `Junk E-mail`, `Bulk Mail`). Integrated with `class mailboxes ($is_junk)`, `isSpecialMailbox()`, and `sqimap_get_status_mbx_tree()`.
+  - **Sidebar Folder List Integration**: Updated `templates/default/left_main.tpl` and `functions/template/folder_list_util.php` to display `junk.svg` alongside specialized `.sm-folder-junk` and `.sm-folder-icon-junk` classes for Junk/Spam mailboxes.
+  - **CSS SVG Font & Vector Utilities**: Added `.sm-folder-icon-junk`, `.sm-folder-link.sm-folder-junk`, and `.sm-svg-icon-junk` / `.sm-icon-junk` vector font-like background utility classes in `assets/css/app.css`.
+- **Version Bump**: Incremented version from `1.5.50` to `1.5.51`.
 
 ### Version 1.5.50
 - **Calendar Share Modal & Fragment Script Routing Fix**:
