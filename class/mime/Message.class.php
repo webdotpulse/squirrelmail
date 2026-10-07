@@ -331,7 +331,7 @@ class Message {
      * @since 1.4.0
      */
     function setEntIds(&$msg,$init=false,$i=0) {
-        $iCnt = count($msg->entities);
+        $iCnt = (!empty($msg->entities) && is_array($msg->entities)) ? count($msg->entities) : 0;
         if ($init !==false) {
             $iEntSub = $i+1;
             if ($msg->parent->type0 == 'message' &&
@@ -1037,7 +1037,7 @@ TODO: Is the order of the returned ID list any indication of preference?
             if ($this->type1 == 'alternative') {
                 $preferred_entities = $this->findAlternativeEntities($preferred_entity_types);
                 foreach ($preferred_entities as $entity) {
-                    if (count($entity->entities) == 0) {
+                    if (empty($entity->entities)) {
                         $entity_ids[] = $entity->entity_id;
                         $found = TRUE;
                         break;
@@ -1054,7 +1054,7 @@ TODO: Is the order of the returned ID list any indication of preference?
             } else if ($this->type1 == 'related') { /* RFC 2387 */
                 $entities = $this->findRelatedEntities($preferred_entity_types);
                 foreach ($entities as $entity) {
-                    if (count($entity->entities) == 0) {
+                    if (empty($entity->entities)) {
                         $entity_ids[] = $entity->entity_id;
                         $found = TRUE;
                     } else {
@@ -1095,7 +1095,7 @@ TODO: Is the order of the returned ID list any indication of preference?
 //        $preferred_entity_types[] = "message/rfc822";
             foreach ($preferred_entity_types as $alt) {
                 if( ($alt == $type) && isset($this->entity_id) ) {
-                    if ((count($this->entities) == 0) &&
+                    if ((empty($this->entities)) &&
                             (!isset($this->header->parameters['filename'])) &&
                             (!isset($this->header->parameters['name'])) &&
                             (empty($this->header->disposition) || (isset($this->header->disposition) && is_object($this->header->disposition) &&
@@ -1111,13 +1111,15 @@ TODO: Is the order of the returned ID list any indication of preference?
             // When nothing was found, search all message entities
             // *except* attached messages (message/rfc822 MIME type)
             // and inspect each for a part of the desired type
-            foreach ($this->entities as $ent) {
-                if(!(is_object($ent->header->disposition) && strtolower($ent->header->disposition->name) == 'attachment') &&
-                   (($ent->type0 != 'message') && ($ent->type1 != 'rfc822'))) {
-                    $new_entity_ids = $ent->findDisplayEntity(array(), $preferred_entity_types, $strict);
-                    if (!empty($new_entity_ids)) {
-                        $entity_ids = array_merge($entity_ids, $new_entity_ids);
-                        $found = TRUE;
+            if (!empty($this->entities) && is_array($this->entities)) {
+                foreach ($this->entities as $ent) {
+                    if(!(is_object($ent->header->disposition) && strtolower($ent->header->disposition->name) == 'attachment') &&
+                       (($ent->type0 != 'message') && ($ent->type1 != 'rfc822'))) {
+                        $new_entity_ids = $ent->findDisplayEntity(array(), $preferred_entity_types, $strict);
+                        if (!empty($new_entity_ids)) {
+                            $entity_ids = array_merge($entity_ids, $new_entity_ids);
+                            $found = TRUE;
+                        }
                     }
                 }
             }
@@ -1126,7 +1128,7 @@ TODO: Is the order of the returned ID list any indication of preference?
             if ($this->type0 == 'text'
              && in_array($this->type1, array('plain', 'html', 'message', 'calendar', 'x-vcalendar'))
              && isset($this->entity_id)
-             && count($this->entities) == 0
+             && empty($this->entities)
              && (!is_object($this->header->disposition)
               || strtolower($this->header->disposition->name) != 'attachment')) {
                 $entity_ids[] = $this->entity_id;
@@ -1275,7 +1277,7 @@ TODO: Is the order of the returned ID list any indication of preference?
             $this = $this->entities[0];
         }
 */
-        if (count($this->entities)) {
+        if (!empty($this->entities) && is_array($this->entities)) {
             foreach ($this->entities as $entity) {
                 $exclude = false;
                 foreach ($exclude_id as $excl) {
@@ -1359,8 +1361,10 @@ TODO: Is the order of the returned ID list any indication of preference?
             }
         }
         // recursively delete attachments from entities contained in this object
-        for ($i=0, $entCount=count($this->entities);$i< $entCount; ++$i) {
-            $this->entities[$i]->purgeAttachments();
+        if (!empty($this->entities) && is_array($this->entities)) {
+            for ($i=0, $entCount=count($this->entities);$i< $entCount; ++$i) {
+                $this->entities[$i]->purgeAttachments();
+            }
         }
     }
 }

@@ -1,4 +1,4 @@
-# SquirrelMail 1.5.53
+# SquirrelMail 1.5.54
 
 A modernized, responsive edition of SquirrelMail engineered for PHP 7.0 through 8.2+ with a Single-Page Application (SPA) interface, modern UI styling, and extensive feature enhancements.
 
@@ -57,6 +57,27 @@ This repository includes an [AGENTS.md](file:///home/koen/Git/squirrelmail/AGENT
 ---
 
 ## 📝 Changelog
+
+### Version 1.5.54
+- **Resolve HTTP 500 Internal Server Error on Reading Messages (`src/read_body.php`)**:
+  - **Fatal `TypeError: count()` in IMAP Fetch & UID Parsers (`functions/imap_messages.php`)**:
+    - Guarded `parseFetch()` against non-array `$aResponse` (`!is_array($aResponse) || empty($aResponse)`). When IMAP fetch operations return `false` on connection drop or empty server responses, PHP 8.0+ previously threw an unhandled `TypeError: count(): Argument #1 ($value) must be of type Countable|array, false given`, causing HTTP 500.
+    - Guarded each fetch chunk `$aResponse[$j]` and prevented `implode()` on non-array data, with safe string position checks on response headers.
+    - Corrected return value assignment for `array_reverse($aMessages)` in `sqimap_get_small_header_list()`.
+    - Hardened `parseUidList()` against non-array `$aData` and `$aData[$i]`, replacing buggy array union (`+=`) which dropped UIDs on numerical key collisions with clean element appending and unique value re-indexing.
+  - **Fatal `TypeError: count()` & `array_slice()` in Mailbox Display (`functions/mailbox_display.php`)**:
+    - Ensured `$aUid` is strictly normalized to an array (`if (!is_array($aUid)) { $aUid = array(); }`) before evaluating `count($aUid)` and calling `array_slice($aUid, ...)` in `fetchMessageHeaders()`.
+  - **Fatal `TypeError: count()` on `$entities` in Message MIME Class (`class/mime/Message.class.php`)**:
+    - Protected `setEntIds()`, `findDisplayEntity()`, `getAttachments()`, and `purgeAttachments()` against null/uninitialized `$entities`. Replaced `count($this->entities) == 0` with `empty($this->entities)` and added `!empty($this->entities) && is_array($this->entities)` checks before loops.
+  - **Safe String & Array Handling in IMAP General (`functions/imap_general.php`)**:
+    - Added array validation in `sqimap_run_pipelined_command()`.
+    - Protected `sqimap_get_capabilities()` from passing null to `explode()` in PHP 8.1+ (`$c = (!empty($read[0]) && is_string($read[0])) ? explode(' ', $read[0]) : array();`).
+  - **Resilient Background Threading in Conversation View (`plugins/conversation_view`)**:
+    - Implemented `cv_run_uid_search()` with `handle_errors = false` and `unique_id = true`, avoiding intrusive error dialog output on rejected searches.
+    - Sanitized Message-ID and Subject strings against control characters and newlines prior to issuing IMAP search queries.
+    - Wrapped `cv_get_conversation_thread()`, `cv_get_thread_summary()`, and `cv_render_thread_view()` in `try ... catch (\Throwable $e)` blocks with a `finally` block ensuring the active mailbox (`$currentMailbox`) is guaranteed to be restored.
+    - Wrapped `read_body_header_right`, `read_body_top`, and `read_body_bottom` hooks in `plugins/conversation_view/setup.php` in `try-catch` blocks to prevent third-party plugin lookup issues from failing message display.
+- **Version Bump**: Incremented version from `1.5.53 [SVN]` to `1.5.54 [SVN]`.
 
 ### Version 1.5.53
 - **Modern Themes & WCAG AA Contrast Overhaul**:

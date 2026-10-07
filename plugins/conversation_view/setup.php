@@ -79,22 +79,26 @@ function conversation_view_read_body_header_right(&$links)
         return;
     }
 
-    include_once(SM_PATH . 'plugins/conversation_view/functions.php');
-    $summary = cv_get_thread_summary($imapConnection, $mailbox, $passed_id, $message);
+    try {
+        include_once(SM_PATH . 'plugins/conversation_view/functions.php');
+        $summary = cv_get_thread_summary($imapConnection, $mailbox, $passed_id, $message);
 
-    if (!empty($summary['total_count']) && $summary['total_count'] > 1) {
-        $badgeText = _("Thread") . ' (' . $summary['total_count'] . ')';
-        $title = sprintf(
-            _("%d messages in conversation (%d sent, %d drafts)"),
-            $summary['total_count'],
-            $summary['sent_count'],
-            $summary['draft_count']
-        );
-        $links[] = array(
-            'URL'   => '#cv-conversation-thread',
-            'Text'  => '💬 ' . htmlspecialchars($badgeText, ENT_QUOTES, 'UTF-8'),
-            'Title' => htmlspecialchars($title, ENT_QUOTES, 'UTF-8')
-        );
+        if (!empty($summary['total_count']) && $summary['total_count'] > 1) {
+            $badgeText = _("Thread") . ' (' . $summary['total_count'] . ')';
+            $title = sprintf(
+                _("%d messages in conversation (%d sent, %d drafts)"),
+                $summary['total_count'],
+                $summary['sent_count'],
+                $summary['draft_count']
+            );
+            $links[] = array(
+                'URL'   => '#cv-conversation-thread',
+                'Text'  => '💬 ' . htmlspecialchars($badgeText, ENT_QUOTES, 'UTF-8'),
+                'Title' => htmlspecialchars($title, ENT_QUOTES, 'UTF-8')
+            );
+        }
+    } catch (\Throwable $e) {
+        error_log('conversation_view_read_body_header_right error: ' . $e->getMessage());
     }
 }
 
@@ -112,8 +116,12 @@ function conversation_view_read_body_top()
 
     $pos = getPref($data_dir, $username, 'conversation_view_position', 'bottom');
     if ($pos === 'top' || $pos === 'both') {
-        include_once(SM_PATH . 'plugins/conversation_view/functions.php');
-        cv_render_thread_view($imapConnection, $mailbox, $passed_id, $message, 'top');
+        try {
+            include_once(SM_PATH . 'plugins/conversation_view/functions.php');
+            cv_render_thread_view($imapConnection, $mailbox, $passed_id, $message, 'top');
+        } catch (\Throwable $e) {
+            error_log('conversation_view_read_body_top error: ' . $e->getMessage());
+        }
     }
 }
 
@@ -131,8 +139,12 @@ function conversation_view_read_body_bottom()
 
     $pos = getPref($data_dir, $username, 'conversation_view_position', 'bottom');
     if ($pos === 'bottom' || $pos === 'both') {
-        include_once(SM_PATH . 'plugins/conversation_view/functions.php');
-        cv_render_thread_view($imapConnection, $mailbox, $passed_id, $message, 'bottom');
+        try {
+            include_once(SM_PATH . 'plugins/conversation_view/functions.php');
+            cv_render_thread_view($imapConnection, $mailbox, $passed_id, $message, 'bottom');
+        } catch (\Throwable $e) {
+            error_log('conversation_view_read_body_bottom error: ' . $e->getMessage());
+        }
     }
 }
 

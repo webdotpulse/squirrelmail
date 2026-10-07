@@ -131,6 +131,28 @@ function cv_format_address($addrStr)
 }
 
 /**
+ * Run a quiet UID search on the IMAP connection without displaying error boxes
+ *
+ * @param resource $imapConnection IMAP stream
+ * @param string $searchString Search expression (e.g. HEADER References "...")
+ * @return array Array of matching message UIDs
+ */
+function cv_run_uid_search($imapConnection, $searchString)
+{
+    if (!$imapConnection || empty($searchString)) {
+        return array();
+    }
+    $query = 'SEARCH ' . $searchString;
+    $response = '';
+    $message = '';
+    $readin = sqimap_run_command_list($imapConnection, $query, false, $response, $message, true);
+    if (strtoupper((string)$response) !== 'OK' || empty($readin) || !is_array($readin)) {
+        return array();
+    }
+    return parseUidList($readin, 'SEARCH');
+}
+
+/**
  * Return summary statistics for the current conversation thread
  *
  * @param resource $imapConnection Active IMAP socket stream
@@ -141,8 +163,23 @@ function cv_format_address($addrStr)
  */
 function cv_get_thread_summary($imapConnection, $currentMailbox, $currentUid, $currentMessage)
 {
-    $threadData = cv_get_conversation_thread($imapConnection, $currentMailbox, $currentUid, $currentMessage);
-    return $threadData['stats'];
+    try {
+        $threadData = cv_get_conversation_thread($imapConnection, $currentMailbox, $currentUid, $currentMessage);
+        return !empty($threadData['stats']) ? $threadData['stats'] : array(
+            'total_count'    => 0,
+            'sent_count'     => 0,
+            'draft_count'    => 0,
+            'received_count' => 0,
+        );
+    } catch (\Throwable $e) {
+        error_log('conversation_view cv_get_thread_summary error: ' . $e->getMessage());
+        return array(
+            'total_count'    => 0,
+            'sent_count'     => 0,
+            'draft_count'    => 0,
+            'received_count' => 0,
+        );
+    }
 }
 
 /**
@@ -162,258 +199,284 @@ function cv_get_conversation_thread($imapConnection, $currentMailbox, $currentUi
         return $requestCache[$cacheKey];
     }
 
-    global $sent_folder, $draft_folder, $data_dir, $username;
+    $defaultResult = array(
+        'messages' => array(),
+        'stats'    => array(
+            'total_count'    => 0,
+            'sent_count'     => 0,
+            'draft_count'    => 0,
+            'received_count' => 0,
+        ),
+        'subject'  => '',
+    );
 
-    $user_sent = getPref($data_dir, $username, 'sent_folder');
-    if (empty($user_sent)) {
-        $user_sent = $sent_folder;
+    if (!$imapConnection) {
+        return $defaultResult;
     }
 
-    $user_draft = getPref($data_dir, $username, 'draft_folder');
-    if (empty($user_draft)) {
-        $user_draft = $draft_folder;
-    }
+    try {
+        global $sent_folder, $draft_folder, $data_dir, $username;
 
-    $search_sent = (bool) getPref($data_dir, $username, 'cv_search_sent', 1);
-    $search_drafts = (bool) getPref($data_dir, $username, 'cv_search_drafts', 1);
-    $search_current = (bool) getPref($data_dir, $username, 'cv_search_current', 1);
-
-    // 1. Gather Message-IDs and normalized Subject from current message
-    $rfcHeader = isset($currentMessage->rfc822_header) ? $currentMessage->rfc822_header : null;
-    $curr_id = ($rfcHeader && !empty($rfcHeader->message_id)) ? trim($rfcHeader->message_id) : '';
-    $in_reply_to = ($rfcHeader && !empty($rfcHeader->in_reply_to)) ? trim($rfcHeader->in_reply_to) : '';
-    $references = ($rfcHeader && !empty($rfcHeader->references)) ? trim($rfcHeader->references) : '';
-    $raw_subject = ($rfcHeader && !empty($rfcHeader->subject)) ? trim($rfcHeader->subject) : '';
-
-    $search_ids = array();
-    if (!empty($curr_id)) {
-        $search_ids = array_merge($search_ids, cv_extract_ids($curr_id));
-    }
-    if (!empty($in_reply_to)) {
-        $search_ids = array_merge($search_ids, cv_extract_ids($in_reply_to));
-    }
-    if (!empty($references)) {
-        $search_ids = array_merge($search_ids, cv_extract_ids($references));
-    }
-    $search_ids = array_unique(array_filter($search_ids));
-    $clean_subject = cv_clean_subject($raw_subject);
-
-    // 2. Determine target folders to inspect
-    $folders_to_check = array();
-    if ($search_current && !empty($currentMailbox)) {
-        $folders_to_check[$currentMailbox] = 'received';
-    }
-    if ($search_sent && !empty($user_sent)) {
-        $folders_to_check[$user_sent] = 'sent';
-    }
-    if ($search_drafts && !empty($user_draft)) {
-        $folders_to_check[$user_draft] = 'draft';
-    }
-
-    $all_messages = array();
-
-    // 3. Search and extract messages from each folder
-    foreach ($folders_to_check as $folderName => $defaultType) {
-        if (!sqimap_mailbox_exists($imapConnection, $folderName)) {
-            continue;
+        $user_sent = getPref($data_dir, $username, 'sent_folder');
+        if (empty($user_sent)) {
+            $user_sent = $sent_folder;
         }
 
-        $mbx_info = sqimap_mailbox_select($imapConnection, $folderName, false);
-        if (empty($mbx_info) || !isset($mbx_info['EXISTS']) || $mbx_info['EXISTS'] == 0) {
-            continue;
+        $user_draft = getPref($data_dir, $username, 'draft_folder');
+        if (empty($user_draft)) {
+            $user_draft = $draft_folder;
         }
 
-        $found_uids = array();
+        $search_sent = (bool) getPref($data_dir, $username, 'cv_search_sent', 1);
+        $search_drafts = (bool) getPref($data_dir, $username, 'cv_search_drafts', 1);
+        $search_current = (bool) getPref($data_dir, $username, 'cv_search_current', 1);
 
-        // 3a. Search by Message-IDs (References, In-Reply-To, Message-ID)
-        if (!empty($search_ids)) {
-            $top_ids = array_slice($search_ids, 0, 4);
-            foreach ($top_ids as $sid) {
-                $clean_sid = trim($sid, "<> \t\n\r");
-                if (strlen($clean_sid) < 3) {
-                    continue;
-                }
+        // 1. Gather Message-IDs and normalized Subject from current message
+        $rfcHeader = isset($currentMessage->rfc822_header) ? $currentMessage->rfc822_header : null;
+        $curr_id = ($rfcHeader && !empty($rfcHeader->message_id)) ? trim($rfcHeader->message_id) : '';
+        $in_reply_to = ($rfcHeader && !empty($rfcHeader->in_reply_to)) ? trim($rfcHeader->in_reply_to) : '';
+        $references = ($rfcHeader && !empty($rfcHeader->references)) ? trim($rfcHeader->references) : '';
+        $raw_subject = ($rfcHeader && !empty($rfcHeader->subject)) ? trim($rfcHeader->subject) : '';
 
-                $qRef = 'HEADER References "' . addcslashes($clean_sid, '"\\') . '"';
-                $resRef = sqimap_run_search($imapConnection, $qRef, '');
-                if (!empty($resRef) && is_array($resRef)) {
-                    foreach ($resRef as $u) {
-                        if (is_numeric($u)) $found_uids[] = (int)$u;
+        $search_ids = array();
+        if (!empty($curr_id)) {
+            $search_ids = array_merge($search_ids, cv_extract_ids($curr_id));
+        }
+        if (!empty($in_reply_to)) {
+            $search_ids = array_merge($search_ids, cv_extract_ids($in_reply_to));
+        }
+        if (!empty($references)) {
+            $search_ids = array_merge($search_ids, cv_extract_ids($references));
+        }
+        $search_ids = array_unique(array_filter($search_ids));
+        $clean_subject = cv_clean_subject($raw_subject);
+
+        // 2. Determine target folders to inspect
+        $folders_to_check = array();
+        if ($search_current && !empty($currentMailbox)) {
+            $folders_to_check[$currentMailbox] = 'received';
+        }
+        if ($search_sent && !empty($user_sent)) {
+            $folders_to_check[$user_sent] = 'sent';
+        }
+        if ($search_drafts && !empty($user_draft)) {
+            $folders_to_check[$user_draft] = 'draft';
+        }
+
+        $all_messages = array();
+
+        // 3. Search and extract messages from each folder
+        foreach ($folders_to_check as $folderName => $defaultType) {
+            if (!sqimap_mailbox_exists($imapConnection, $folderName)) {
+                continue;
+            }
+
+            $mbx_info = sqimap_mailbox_select($imapConnection, $folderName, false);
+            if (empty($mbx_info) || !isset($mbx_info['EXISTS']) || $mbx_info['EXISTS'] == 0) {
+                continue;
+            }
+
+            $found_uids = array();
+
+            // 3a. Search by Message-IDs (References, In-Reply-To, Message-ID)
+            if (!empty($search_ids)) {
+                $top_ids = array_slice($search_ids, 0, 4);
+                foreach ($top_ids as $sid) {
+                    $clean_sid = trim($sid, "<> \t\n\r");
+                    $clean_sid = trim(preg_replace('/[\r\n\x00-\x1F\x7F]+/', '', $clean_sid));
+                    if (strlen($clean_sid) < 3) {
+                        continue;
+                    }
+
+                    $qRef = 'HEADER References "' . addcslashes($clean_sid, '"\\') . '"';
+                    $resRef = cv_run_uid_search($imapConnection, $qRef);
+                    if (!empty($resRef) && is_array($resRef)) {
+                        foreach ($resRef as $u) {
+                            if (is_numeric($u)) $found_uids[] = (int)$u;
+                        }
+                    }
+
+                    $qRep = 'HEADER In-Reply-To "' . addcslashes($clean_sid, '"\\') . '"';
+                    $resRep = cv_run_uid_search($imapConnection, $qRep);
+                    if (!empty($resRep) && is_array($resRep)) {
+                        foreach ($resRep as $u) {
+                            if (is_numeric($u)) $found_uids[] = (int)$u;
+                        }
+                    }
+
+                    $qMid = 'HEADER Message-ID "' . addcslashes($clean_sid, '"\\') . '"';
+                    $resMid = cv_run_uid_search($imapConnection, $qMid);
+                    if (!empty($resMid) && is_array($resMid)) {
+                        foreach ($resMid as $u) {
+                            if (is_numeric($u)) $found_uids[] = (int)$u;
+                        }
                     }
                 }
+            }
 
-                $qRep = 'HEADER In-Reply-To "' . addcslashes($clean_sid, '"\\') . '"';
-                $resRep = sqimap_run_search($imapConnection, $qRep, '');
-                if (!empty($resRep) && is_array($resRep)) {
-                    foreach ($resRep as $u) {
-                        if (is_numeric($u)) $found_uids[] = (int)$u;
-                    }
-                }
-
-                $qMid = 'HEADER Message-ID "' . addcslashes($clean_sid, '"\\') . '"';
-                $resMid = sqimap_run_search($imapConnection, $qMid, '');
-                if (!empty($resMid) && is_array($resMid)) {
-                    foreach ($resMid as $u) {
+            // 3b. Fallback: Search by clean subject if no ID results
+            if (empty($found_uids) && mb_strlen($clean_subject, 'UTF-8') >= 3) {
+                $safe_subj = trim(preg_replace('/[\r\n\x00-\x1F\x7F]+/', '', $clean_subject));
+                $qSubj = 'SUBJECT "' . addcslashes($safe_subj, '"\\') . '"';
+                $resSubj = cv_run_uid_search($imapConnection, $qSubj);
+                if (!empty($resSubj) && is_array($resSubj)) {
+                    foreach ($resSubj as $u) {
                         if (is_numeric($u)) $found_uids[] = (int)$u;
                     }
                 }
             }
-        }
 
-        // 3b. Fallback: Search by clean subject if no ID results
-        if (empty($found_uids) && mb_strlen($clean_subject, 'UTF-8') >= 3) {
-            $qSubj = 'SUBJECT "' . addcslashes($clean_subject, '"\\') . '"';
-            $resSubj = sqimap_run_search($imapConnection, $qSubj, '');
-            if (!empty($resSubj) && is_array($resSubj)) {
-                foreach ($resSubj as $u) {
-                    if (is_numeric($u)) $found_uids[] = (int)$u;
+            // Always guarantee the currently viewed message is included when searching current mailbox
+            if ($folderName === $currentMailbox && !in_array((int)$currentUid, $found_uids)) {
+                $found_uids[] = (int)$currentUid;
+            }
+
+            $found_uids = array_unique(array_filter($found_uids));
+            if (empty($found_uids)) {
+                continue;
+            }
+
+            // Limit to most recent 12 messages per folder
+            if (count($found_uids) > 12) {
+                $found_uids = array_slice($found_uids, -12);
+            }
+
+            // Fetch headers
+            $hdr_list = sqimap_get_small_header_list(
+                $imapConnection,
+                $found_uids,
+                array('Date', 'To', 'Cc', 'From', 'Subject', 'Message-ID', 'In-Reply-To', 'References', 'Content-Type'),
+                array('FLAGS', 'RFC822.SIZE', 'INTERNALDATE')
+            );
+
+            if (empty($hdr_list) || !is_array($hdr_list)) {
+                continue;
+            }
+
+            foreach ($hdr_list as $uid => $hdr) {
+                $uid = (int) $uid;
+                $is_current = ($folderName === $currentMailbox && $uid === (int)$currentUid);
+
+                // Determine message type
+                $type = $defaultType;
+                if ($folderName === $user_draft) {
+                    $type = 'draft';
+                } elseif ($folderName === $user_sent) {
+                    $type = 'sent';
                 }
+
+                // Extract date and timestamp
+                $rawDate = !empty($hdr['date']) ? $hdr['date'] : (!empty($hdr['INTERNALDATE']) ? $hdr['INTERNALDATE'] : '');
+                $timestamp = !empty($rawDate) ? strtotime($rawDate) : 0;
+                if ($timestamp <= 0) {
+                    $timestamp = time();
+                }
+                $dateStr = function_exists('getDateString') ? getDateString($timestamp, true) : date('Y-m-d H:i', $timestamp);
+
+                // Extract Addresses
+                $fromStr = !empty($hdr['from']) ? $hdr['from'] : '';
+                $toStr = !empty($hdr['to']) ? $hdr['to'] : '';
+                $fromParsed = cv_format_address($fromStr);
+                $toParsed = cv_format_address($toStr);
+
+                // Extract Subject
+                $subj = !empty($hdr['subject']) ? decodeHeader($hdr['subject'], false, false, true) : _("(no subject)");
+
+                // Fetch clean body snippet
+                $snippet = '';
+                if ($is_current && !empty($GLOBALS['messagebody'])) {
+                    $snippet = cv_clean_body_snippet($GLOBALS['messagebody']);
+                } else {
+                    // Lightweight text fetch from IMAP
+                    $body_read = sqimap_run_command($imapConnection, "FETCH $uid (BODY.PEEK[TEXT]<0.400>)", false, $resp, $msg, true);
+                    if (!empty($body_read) && is_array($body_read)) {
+                        $rawBody = implode('', $body_read);
+                        $snippet = cv_clean_body_snippet($rawBody);
+                    }
+                }
+
+                // Attachment indicator
+                $hasAttachment = false;
+                if (!empty($hdr['content-type']) && strpos(strtolower($hdr['content-type']), 'multipart/mixed') !== false) {
+                    $hasAttachment = true;
+                }
+
+                // URLs
+                $baseUri = sqm_baseuri();
+                $viewUrl = $baseUri . 'src/read_body.php?mailbox=' . urlencode($folderName) . '&passed_id=' . $uid . '&startMessage=1';
+                $resumeUrl = ($type === 'draft')
+                    ? $baseUri . 'src/compose.php?smaction_draft=1&passed_id=' . $uid . '&mailbox=' . urlencode($folderName)
+                    : '';
+                $replyUrl = $baseUri . 'src/compose.php?smaction_reply=1&passed_id=' . $uid . '&mailbox=' . urlencode($folderName);
+
+                $all_messages[] = array(
+                    'uid'            => $uid,
+                    'mailbox'        => $folderName,
+                    'type'           => $type,
+                    'is_current'     => $is_current,
+                    'from_name'      => $fromParsed['name'],
+                    'from_email'     => $fromParsed['email'],
+                    'to_name'        => $toParsed['name'],
+                    'to_email'       => $toParsed['email'],
+                    'subject'        => $subj,
+                    'date_str'       => $dateStr,
+                    'timestamp'      => $timestamp,
+                    'snippet'        => $snippet,
+                    'has_attachment' => $hasAttachment,
+                    'view_url'       => $viewUrl,
+                    'resume_url'     => $resumeUrl,
+                    'reply_url'      => $replyUrl,
+                );
             }
         }
 
-        // Always guarantee the currently viewed message is included when searching current mailbox
-        if ($folderName === $currentMailbox && !in_array((int)$currentUid, $found_uids)) {
-            $found_uids[] = (int)$currentUid;
+        // Restore original mailbox selection
+        if (!empty($currentMailbox)) {
+            @sqimap_mailbox_select($imapConnection, $currentMailbox, false);
         }
 
-        $found_uids = array_unique(array_filter($found_uids));
-        if (empty($found_uids)) {
-            continue;
-        }
+        // Sort chronologically (oldest to newest)
+        usort($all_messages, function ($a, $b) {
+            if ($a['timestamp'] === $b['timestamp']) {
+                return ($a['uid'] <=> $b['uid']);
+            }
+            return ($a['timestamp'] <=> $b['timestamp']);
+        });
 
-        // Limit to most recent 12 messages per folder
-        if (count($found_uids) > 12) {
-            $found_uids = array_slice($found_uids, -12);
-        }
-
-        // Fetch headers
-        $hdr_list = sqimap_get_small_header_list(
-            $imapConnection,
-            $found_uids,
-            array('Date', 'To', 'Cc', 'From', 'Subject', 'Message-ID', 'In-Reply-To', 'References', 'Content-Type'),
-            array('FLAGS', 'RFC822.SIZE', 'INTERNALDATE')
+        // Compute stats
+        $stats = array(
+            'total_count'    => count($all_messages),
+            'sent_count'     => 0,
+            'draft_count'    => 0,
+            'received_count' => 0,
         );
 
-        if (empty($hdr_list)) {
-            continue;
-        }
-
-        foreach ($hdr_list as $uid => $hdr) {
-            $uid = (int) $uid;
-            $is_current = ($folderName === $currentMailbox && $uid === (int)$currentUid);
-
-            // Determine message type
-            $type = $defaultType;
-            if ($folderName === $user_draft) {
-                $type = 'draft';
-            } elseif ($folderName === $user_sent) {
-                $type = 'sent';
-            }
-
-            // Extract date and timestamp
-            $rawDate = !empty($hdr['date']) ? $hdr['date'] : (!empty($hdr['INTERNALDATE']) ? $hdr['INTERNALDATE'] : '');
-            $timestamp = !empty($rawDate) ? strtotime($rawDate) : 0;
-            if ($timestamp <= 0) {
-                $timestamp = time();
-            }
-            $dateStr = function_exists('getDateString') ? getDateString($timestamp, true) : date('Y-m-d H:i', $timestamp);
-
-            // Extract Addresses
-            $fromStr = !empty($hdr['from']) ? $hdr['from'] : '';
-            $toStr = !empty($hdr['to']) ? $hdr['to'] : '';
-            $fromParsed = cv_format_address($fromStr);
-            $toParsed = cv_format_address($toStr);
-
-            // Extract Subject
-            $subj = !empty($hdr['subject']) ? decodeHeader($hdr['subject'], false, false, true) : _("(no subject)");
-
-            // Fetch clean body snippet
-            $snippet = '';
-            if ($is_current && !empty($GLOBALS['messagebody'])) {
-                $snippet = cv_clean_body_snippet($GLOBALS['messagebody']);
+        foreach ($all_messages as $m) {
+            if ($m['type'] === 'sent') {
+                $stats['sent_count']++;
+            } elseif ($m['type'] === 'draft') {
+                $stats['draft_count']++;
             } else {
-                // Lightweight text fetch from IMAP
-                $body_read = sqimap_run_command($imapConnection, "FETCH $uid (BODY.PEEK[TEXT]<0.400>)", false, $resp, $msg, true);
-                if (!empty($body_read) && is_array($body_read)) {
-                    $rawBody = implode('', $body_read);
-                    $snippet = cv_clean_body_snippet($rawBody);
-                }
+                $stats['received_count']++;
             }
+        }
 
-            // Attachment indicator
-            $hasAttachment = false;
-            if (!empty($hdr['content-type']) && strpos(strtolower($hdr['content-type']), 'multipart/mixed') !== false) {
-                $hasAttachment = true;
-            }
+        $result = array(
+            'messages' => $all_messages,
+            'stats'    => $stats,
+            'subject'  => $clean_subject,
+        );
 
-            // URLs
-            $baseUri = sqm_baseuri();
-            $viewUrl = $baseUri . 'src/read_body.php?mailbox=' . urlencode($folderName) . '&passed_id=' . $uid . '&startMessage=1';
-            $resumeUrl = ($type === 'draft')
-                ? $baseUri . 'src/compose.php?smaction_draft=1&passed_id=' . $uid . '&mailbox=' . urlencode($folderName)
-                : '';
-            $replyUrl = $baseUri . 'src/compose.php?smaction_reply=1&passed_id=' . $uid . '&mailbox=' . urlencode($folderName);
-
-            $all_messages[] = array(
-                'uid'            => $uid,
-                'mailbox'        => $folderName,
-                'type'           => $type,
-                'is_current'     => $is_current,
-                'from_name'      => $fromParsed['name'],
-                'from_email'     => $fromParsed['email'],
-                'to_name'        => $toParsed['name'],
-                'to_email'       => $toParsed['email'],
-                'subject'        => $subj,
-                'date_str'       => $dateStr,
-                'timestamp'      => $timestamp,
-                'snippet'        => $snippet,
-                'has_attachment' => $hasAttachment,
-                'view_url'       => $viewUrl,
-                'resume_url'     => $resumeUrl,
-                'reply_url'      => $replyUrl,
-            );
+        $requestCache[$cacheKey] = $result;
+        return $result;
+    } catch (\Throwable $e) {
+        error_log('cv_get_conversation_thread error: ' . $e->getMessage());
+        return $defaultResult;
+    } finally {
+        if (!empty($currentMailbox) && $imapConnection) {
+            @sqimap_mailbox_select($imapConnection, $currentMailbox, false);
         }
     }
-
-    // Restore original mailbox selection
-    if (!empty($currentMailbox)) {
-        sqimap_mailbox_select($imapConnection, $currentMailbox, false);
-    }
-
-    // Sort chronologically (oldest to newest)
-    usort($all_messages, function ($a, $b) {
-        if ($a['timestamp'] === $b['timestamp']) {
-            return ($a['uid'] <=> $b['uid']);
-        }
-        return ($a['timestamp'] <=> $b['timestamp']);
-    });
-
-    // Compute stats
-    $stats = array(
-        'total_count'    => count($all_messages),
-        'sent_count'     => 0,
-        'draft_count'    => 0,
-        'received_count' => 0,
-    );
-
-    foreach ($all_messages as $m) {
-        if ($m['type'] === 'sent') {
-            $stats['sent_count']++;
-        } elseif ($m['type'] === 'draft') {
-            $stats['draft_count']++;
-        } else {
-            $stats['received_count']++;
-        }
-    }
-
-    $result = array(
-        'messages' => $all_messages,
-        'stats'    => $stats,
-        'subject'  => $clean_subject,
-    );
-
-    $requestCache[$cacheKey] = $result;
-    return $result;
 }
 
 /**
@@ -427,19 +490,25 @@ function cv_get_conversation_thread($imapConnection, $currentMailbox, $currentUi
  */
 function cv_render_thread_view($imapConnection, $currentMailbox, $currentUid, $currentMessage, $placement = 'bottom')
 {
-    $threadData = cv_get_conversation_thread($imapConnection, $currentMailbox, $currentUid, $currentMessage);
-    $messages = $threadData['messages'];
-    $stats = $threadData['stats'];
-    $cleanSubject = $threadData['subject'];
+    try {
+        $threadData = cv_get_conversation_thread($imapConnection, $currentMailbox, $currentUid, $currentMessage);
+        $messages = !empty($threadData['messages']) ? $threadData['messages'] : array();
+        $stats = !empty($threadData['stats']) ? $threadData['stats'] : array(
+            'total_count'    => 0,
+            'sent_count'     => 0,
+            'draft_count'    => 0,
+            'received_count' => 0,
+        );
+        $cleanSubject = !empty($threadData['subject']) ? $threadData['subject'] : '';
 
-    $baseUri = sqm_baseuri();
-    $cssUrl = $baseUri . 'plugins/conversation_view/conversation.css';
-    $jsUrl = $baseUri . 'plugins/conversation_view/conversation.js';
-    $ajaxUrl = $baseUri . 'plugins/conversation_view/ajax.php';
-    $token = function_exists('sm_generate_security_token') ? sm_generate_security_token() : '';
+        $baseUri = sqm_baseuri();
+        $cssUrl = $baseUri . 'plugins/conversation_view/conversation.css';
+        $jsUrl = $baseUri . 'plugins/conversation_view/conversation.js';
+        $ajaxUrl = $baseUri . 'plugins/conversation_view/ajax.php';
+        $token = function_exists('sm_generate_security_token') ? sm_generate_security_token() : '';
 
-    $replyAllUrl = $baseUri . 'src/compose.php?smaction_reply_all=1&passed_id=' . $currentUid . '&mailbox=' . urlencode($currentMailbox);
-    $replyUrl = $baseUri . 'src/compose.php?smaction_reply=1&passed_id=' . $currentUid . '&mailbox=' . urlencode($currentMailbox);
+        $replyAllUrl = $baseUri . 'src/compose.php?smaction_reply_all=1&passed_id=' . $currentUid . '&mailbox=' . urlencode($currentMailbox);
+        $replyUrl = $baseUri . 'src/compose.php?smaction_reply=1&passed_id=' . $currentUid . '&mailbox=' . urlencode($currentMailbox);
 
     ?>
     <!-- Conversation View Plugin CSS & JS -->
@@ -572,4 +641,7 @@ function cv_render_thread_view($imapConnection, $currentMailbox, $currentUid, $c
         <?php endif; ?>
     </div>
     <?php
+    } catch (\Throwable $e) {
+        error_log('cv_render_thread_view error: ' . $e->getMessage());
+    }
 }

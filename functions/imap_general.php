@@ -168,6 +168,9 @@ function sqimap_prepare_pipelined_query($new_query,&$tag,&$aQuery,$unique_id) {
 function sqimap_run_pipelined_command ($imap_stream, $aQueryList, $handle_errors,
                        &$aServerResponse, &$aServerMessage, $unique_id = false,
                        $filter=false,$outputstream=false,$no_return=false) {
+    if (!is_array($aQueryList) || empty($aQueryList)) {
+        return array();
+    }
     $aResponse = false;
 
     /*
@@ -1302,7 +1305,7 @@ function sqimap_capability($imap_stream, $capability='', $bUseCache=true) {
     if (!$bUseCache || ! sqgetGlobalVar('sqimap_capabilities', $sqimap_capabilities, SQ_SESSION)) {
         $sqimap_capabilities = array();
         $read = sqimap_run_command($imap_stream, 'CAPABILITY', true, $a, $b);
-        $c = explode(' ', $read[0]);
+        $c = (!empty($read[0]) && is_string($read[0])) ? explode(' ', $read[0]) : array();
         for ($i=2; $i < count($c); $i++) {
             $cap_list = explode('=', $c[$i]);
             if (isset($cap_list[1])) {

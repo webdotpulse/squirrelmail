@@ -211,16 +211,26 @@ function sqimap_get_sort_order($imap_stream, $sSortField, $reverse, $search='ALL
  */
 function parseUidList($aData,$sCommand) {
     $aUid = array();
-    if (isset($aData) && count($aData)) {
-        for ($i=0,$iCnt=count($aData);$i<$iCnt;++$i) {
-            for ($j=0,$jCnt=count($aData[$i]);$j<$jCnt;++$j) {
-                if (preg_match("/^\* $sCommand (.+)$/", $aData[$i][$j], $aMatch)) {
-                    $aUid += explode(' ', trim($aMatch[1]));
+    if (!empty($aData) && is_array($aData)) {
+        $iCnt = count($aData);
+        for ($i=0; $i<$iCnt; ++$i) {
+            if (!empty($aData[$i]) && is_array($aData[$i])) {
+                $jCnt = count($aData[$i]);
+                for ($j=0; $j<$jCnt; ++$j) {
+                    if (isset($aData[$i][$j]) && is_string($aData[$i][$j]) && preg_match("/^\* $sCommand (.+)$/", $aData[$i][$j], $aMatch)) {
+                        $parts = explode(' ', trim($aMatch[1]));
+                        foreach ($parts as $p) {
+                            $p = trim($p);
+                            if ($p !== '') {
+                                $aUid[] = $p;
+                            }
+                        }
+                    }
                 }
             }
         }
     }
-    return array_unique($aUid);
+    return array_values(array_unique($aUid));
 }
 
 /**
@@ -388,7 +398,7 @@ function get_thread_sort($imap_stream, $search='ALL') {
         sqm_trigger_imap_error('SQM_IMAP_NO_THREAD',$query, $response, $message);
     }
     $sThreadResponse = '';
-    if (isset($sRead[0])) {
+    if (!empty($sRead) && is_array($sRead)) {
         for ($i=0,$iCnt=count($sRead);$i<$iCnt;++$i) {
             if (preg_match("/^\* THREAD (.+)$/", $sRead[$i], $aMatch)) {
                 $sThreadResponse = trim($aMatch[1]);
@@ -647,7 +657,7 @@ function sqimap_get_small_header_list($imap_stream, $msg_list,
     $query .= trim($sFetchItems) . ')';
     $aResponse = sqimap_run_command_list ($imap_stream, $query, true, $response, $message, $bUidFetch);
     $aMessages = parseFetch($aResponse,$aMessageList);
-    array_reverse($aMessages);
+    $aMessages = array_reverse($aMessages);
     return $aMessages;
 }
 
@@ -663,11 +673,17 @@ function sqimap_get_small_header_list($imap_stream, $msg_list,
  * @author Marc Groot Koerkamp
  */
 function parseFetch(&$aResponse,$aMessageList = array()) {
+    if (!is_array($aResponse) || empty($aResponse)) {
+        return is_array($aMessageList) ? $aMessageList : array();
+    }
     for ($j=0,$iCnt=count($aResponse);$j<$iCnt;++$j) {
         $aMsg = array();
         $unique_id = '';
 
-        $read = implode('',$aResponse[$j]);
+        if (!isset($aResponse[$j])) {
+            continue;
+        }
+        $read = is_array($aResponse[$j]) ? implode('',$aResponse[$j]) : (string)$aResponse[$j];
         // free up memmory
         unset($aResponse[$j]); /* unset does not reindex the array. the for loop is safe */
         /*
@@ -676,14 +692,20 @@ function parseFetch(&$aResponse,$aMessageList = array()) {
 
         /* extract the message id */
         $i_space = strpos($read,' ',2);/* position 2ed <space> */
+        if ($i_space === false) {
+            continue;
+        }
         $id = substr($read,2/* skip "*<space>" */,$i_space -2);
         $aMsg['ID'] = $id;
         $fetch = substr($read,$i_space+1,5);
-        if (!is_numeric($id) && $fetch !== 'FETCH') {
+        if (!is_numeric($id) || $fetch !== 'FETCH') {
             $aMsg['ERROR'] = $read; // sm_encode_html_special_chars should be done just before display. this is backend code
-            break;
+            continue;
         }
         $i = strpos($read,'(',$i_space+5);
+        if ($i === false) {
+            continue;
+        }
         $read = substr($read,$i+1);
         $i_len = strlen($read);
         $i = 0;
@@ -785,7 +807,7 @@ function parseFetch(&$aResponse,$aMessageList = array()) {
                                     }
                                     break;
                                 case 'content-type':
-                                    $type = $value;
+                                    $type = is_string($value) ? $value : (string)$value;
                                     if ($pos = strpos($type, ";")) {
                                         $type = substr($type, 0, $pos);
                                     }

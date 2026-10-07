@@ -336,7 +336,7 @@ function fetchMessageHeaders($imapConnection, &$aMailbox) {
     /**
      * A uidset with sorted uid's is available. We can use the cache
      */
-    if (isset($aUid) && $aUid ) {
+    if (isset($aUid) && is_array($aUid) && count($aUid)) {
         $aMailbox['TOTAL'][$iSetIndx] = count($aUid);
         if ($start_msg > count($aUid) && count($aUid) > 0) {
             $start_msg = max(1, (ceil(count($aUid) / $iLimit) - 1) * $iLimit + 1);
@@ -429,6 +429,10 @@ function fetchMessageHeaders($imapConnection, &$aMailbox) {
                 $aUid = $filteredUids;
                 $aMailbox['UIDSET'][$iSetIndx] = $aUid;
             }
+        }
+
+        if (!is_array($aUid)) {
+            $aUid = array();
         }
 
         if (!$iError) {
