@@ -33,14 +33,13 @@ extract($t);
 <?php if (!empty($plugin_output['login_top'])) echo $plugin_output['login_top']; ?>
 <div id="sqm_login">
 <table cellspacing="0">
+<?php if (!empty($logo_str)): ?>
  <tr>
   <td class="sqm_loginTop" colspan="2">
-   <?php 
-       echo $logo_str; if (!empty($logo_str)) echo '<br />'; 
-       echo nl2br($sm_attribute_str) . (empty($sm_attribute_str) ? '' : '<br /><br />'); 
-   ?>
+   <?php echo $logo_str . '<br />'; ?>
   </td>
  </tr>
+<?php endif; ?>
  <tr>
   <td class="sqm_loginOrgName" colspan="2">
    <?php echo $org_name_str; ?>

@@ -598,7 +598,7 @@ $default_use_priority = false;
  * @global bool $hide_sm_attributions
  * @since 1.2.0
  */
-$hide_sm_attributions = false;
+$hide_sm_attributions = true;
 
 /**
  * Delivery Receipts Control

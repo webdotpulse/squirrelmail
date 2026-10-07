@@ -1,4 +1,4 @@
-# SquirrelMail 1.5.57
+# SquirrelMail 1.5.58
 
 A modernized, responsive edition of SquirrelMail engineered for PHP 7.0 through 8.2+ with a Single-Page Application (SPA) interface, modern UI styling, and extensive feature enhancements.
 
@@ -57,6 +57,14 @@ This repository includes an [AGENTS.md](file:///home/koen/Git/squirrelmail/AGENT
 ---
 
 ## 📝 Changelog
+
+### Version 1.5.58
+- **Remove SquirrelMail Attribution from Login Page (`src/login.php`, `templates/default/login.tpl`, `functions/display_messages.php`, `templates/default/error_logout.tpl`)**:
+  - Removed "SquirrelMail Webmail / By the SquirrelMail Project Team" attribution text from the login interface (`src/login.php` & `templates/default/login.tpl`).
+  - Conditioned the top header table row on whether an organization logo is configured (`!empty($logo_str)`), eliminating extra empty vertical padding when no logo is present.
+  - Cleared attribution string in `logout_error()` (`functions/display_messages.php` & `templates/default/error_logout.tpl`) for a unified white-labeled appearance across session expiration and logout screens.
+  - Set `$hide_sm_attributions = true` by default in `config/config.php`, `config/config_default.php`, and `install.php`.
+- **Version Bump**: Incremented version from `1.5.57 [SVN]` to `1.5.58 [SVN]`.
 
 ### Version 1.5.57
 - **Fix Mailbox Header Loss ("Unknown sender" / "(no subject)" / Missing Dates) (`functions/imap_messages.php` & `functions/mailbox_display.php`)**:

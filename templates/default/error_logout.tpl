@@ -29,14 +29,13 @@ extract ($t);
 <body>
 <div id="sqm_errorLogout">
 <table class="sqm_errorLogoutTop" cellspacing="0">
+<?php if (!empty($logo_str)): ?>
  <tr>
   <td colspan="2">
-   <?php 
-       echo $logo_str; if (!empty($logo_str)) echo '<br />'; 
-       echo nl2br($sm_attribute_str) . (empty($sm_attribute_str) ? '' : '<br /><br />'); 
-   ?>
+   <?php echo $logo_str . '<br />'; ?>
   </td>
  </tr>
+<?php endif; ?>
 </table>
 </div>
 <br />

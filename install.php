@@ -13,7 +13,7 @@
  */
 
 define('SM_PATH', './');
-define('INSTALLER_VERSION', '1.5.57');
+define('INSTALLER_VERSION', '1.5.58');
 
 // Ensure core constants (such as SM_DEBUG_MODE_OFF) are loaded before config.php
 if (file_exists(SM_PATH . 'include/constants.php')) {
@@ -323,7 +323,7 @@ function save_configuration($data) {
 \$default_left_size        = '150';
 \$force_username_lowercase = false;
 \$default_use_priority     = false;
-\$hide_sm_attributions     = false;
+\$hide_sm_attributions     = true;
 \$default_use_mdn          = true;
 \$edit_identity            = true;
 \$edit_name                = true;
