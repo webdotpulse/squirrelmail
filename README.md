@@ -1,4 +1,4 @@
-# SquirrelMail 1.5.43
+# SquirrelMail 1.5.44
 
 A modernized, responsive edition of SquirrelMail engineered for PHP 7.0 through 8.2+ with a Single-Page Application (SPA) interface, modern UI styling, and extensive feature enhancements.
 
@@ -51,6 +51,16 @@ This repository includes an [AGENTS.md](file:///home/koen/Git/squirrelmail/AGENT
 ---
 
 ## 📝 Changelog
+
+### Version 1.5.44
+- **Removed Legacy Plugins (`bug_report`, `change_password`, `fortune`, `translate`)**:
+  - Removed `bug_report` plugin: purged legacy bug reporting forms, system specifications inspection screens, and associated templates (`plugins/bug_report/`).
+  - Removed `change_password` plugin: removed obsolete plaintext backend password change handlers (`ldap`, `merak`, `mysql`, `peardb`, `poppassd`, `vmailmgrd`) and options hooks (`plugins/change_password/`).
+  - Removed `fortune` plugin: removed legacy server-side fortune cookie CLI runner, options hooks, and templates (`plugins/fortune/` and `templates/default/plugins/fortune/`).
+  - Removed `translate` plugin: removed archaic external translation engine wrapper and options page (`plugins/translate/`) in favor of native browser and modern AI translation tools (`plugins/ai_agent`).
+  - Completely deleted the directories `plugins/bug_report/`, `plugins/change_password/`, `plugins/fortune/`, `plugins/translate/`, and `templates/default/plugins/fortune/`.
+  - Cleaned up documentation, plugins listing (`plugins/README.plugins`, `doc/INSTALL`), and translation extraction script (`po/xgetpo`).
+- **Version Bump**: Incremented version from `1.5.43` to `1.5.44`.
 
 ### Version 1.5.43
 - **Template Manager Primary Button CSS & Readability Fix (`plugins/templates`)**:

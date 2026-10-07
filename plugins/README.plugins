@@ -42,20 +42,22 @@ The following plugins are "core" plugins; that is, plugins shipped with
 the SquirrelMail distribution.  Unless you are a developer and know what
 you are doing, you should not replace these plugins with other versions.
 
-- abook_take
+- abook_import_export
 - administrator
-- bug_report
+- ai_agent
+- autoresponder
 - calendar
-- change_password
 - filters
-- fortune
-- info
+- html_mail
 - listcommands
 - mail_fetch
 - message_details
+- message_labels
+- multi_account
 - newmail
-- plist
+- newmail_notify
+- preview_pane
 - sent_subfolders
-- spamcop
-- squirrelspell
-- translate
+- signature_creator
+- spam_buttons
+- templates

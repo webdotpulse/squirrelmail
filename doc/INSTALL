@@ -247,14 +247,8 @@ c. Setting up SquirrelMail
   enabled in the SquirrelMail configuration script.
 
   Included plugins can use additional configuration files:
-  * change_password
-    configuration file is required. Without it plugin defaults to invalid
-    backend. See plugins/change_password/README
-  * filters, fortune, mail_fetch, newmail, translate
+  * filters, mail_fetch, newmail
     configuration files are optional. See README files in plugin directories.
-  * squirrelspell
-    configuration is stored in plugins/squirrelspell/sqspell_config.php
-    The default configuration might not work at your server.
   * administrator
     plugin must be setup correctly in order to detect administrative user.
     See plugins/administrator/INSTALL

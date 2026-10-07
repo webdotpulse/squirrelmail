@@ -45,21 +45,15 @@ xgettext ${XGETTEXT_OPTIONS} -j \
 xgettext ${XGETTEXT_OPTIONS} -j \
     plugins/administrator/*.php --output=po/squirrelmail.pot
 xgettext ${XGETTEXT_OPTIONS} -j \
-    plugins/bug_report/*.php --output=po/squirrelmail.pot
+    plugins/ai_agent/*.php --output=po/squirrelmail.pot
 xgettext ${XGETTEXT_OPTIONS} -j \
-    plugins/bug_report/templates/default/*.tpl --output=po/squirrelmail.pot
+    plugins/autoresponder/*.php --output=po/squirrelmail.pot
 xgettext ${XGETTEXT_OPTIONS} -j \
     plugins/calendar/*.php --output=po/squirrelmail.pot
 xgettext ${XGETTEXT_OPTIONS} -j \
-    plugins/change_password/*.php --output=po/squirrelmail.pot
-xgettext ${XGETTEXT_OPTIONS} -j \
-    plugins/change_password/backend/*.php --output=po/squirrelmail.pot
-xgettext ${XGETTEXT_OPTIONS} -j \
     plugins/filters/*.php --output=po/squirrelmail.pot
 xgettext ${XGETTEXT_OPTIONS} -j \
-    plugins/fortune/*.php --output=po/squirrelmail.pot
-xgettext ${XGETTEXT_OPTIONS} -j \
-    plugins/info/*.php --output=po/squirrelmail.pot
+    plugins/html_mail/*.php --output=po/squirrelmail.pot
 xgettext ${XGETTEXT_OPTIONS} -j \
     plugins/listcommands/*.php --output=po/squirrelmail.pot
 xgettext ${XGETTEXT_OPTIONS} -j \
@@ -69,21 +63,21 @@ xgettext ${XGETTEXT_OPTIONS} -j \
 xgettext ${XGETTEXT_OPTIONS} -j \
     plugins/message_details/*.php --output=po/squirrelmail.pot
 xgettext ${XGETTEXT_OPTIONS} -j \
+    plugins/message_labels/*.php --output=po/squirrelmail.pot
+xgettext ${XGETTEXT_OPTIONS} -j \
+    plugins/multi_account/*.php --output=po/squirrelmail.pot
+xgettext ${XGETTEXT_OPTIONS} -j \
     plugins/newmail/*.php --output=po/squirrelmail.pot
 xgettext ${XGETTEXT_OPTIONS} -j \
     plugins/preview_pane/*.php --output=po/squirrelmail.pot
 xgettext ${XGETTEXT_OPTIONS} -j \
     plugins/sent_subfolders/*.php --output=po/squirrelmail.pot
 xgettext ${XGETTEXT_OPTIONS} -j \
-    plugins/spamcop/*.php --output=po/squirrelmail.pot
+    plugins/signature_creator/*.php --output=po/squirrelmail.pot
 xgettext ${XGETTEXT_OPTIONS} -j \
-    plugins/squirrelspell/*.php --output=po/squirrelmail.pot
+    plugins/spam_buttons/*.php --output=po/squirrelmail.pot
 xgettext ${XGETTEXT_OPTIONS} -j \
-    plugins/squirrelspell/class/*.php --output=po/squirrelmail.pot
-xgettext ${XGETTEXT_OPTIONS} -j \
-    plugins/squirrelspell/modules/*.mod --output=po/squirrelmail.pot
-xgettext ${XGETTEXT_OPTIONS} -j \
-    plugins/translate/*.php --output=po/squirrelmail.pot
+    plugins/templates/*.php --output=po/squirrelmail.pot
 
 # Templates
 
@@ -91,8 +85,6 @@ xgettext ${XGETTEXT_OPTIONS} -j \
     templates/*.php --output=po/squirrelmail.pot
 xgettext ${XGETTEXT_OPTIONS} -j \
     templates/default/*.tpl --output=po/squirrelmail.pot
-xgettext ${XGETTEXT_OPTIONS} -j \
-    templates/default/plugins/fortune/*.tpl --output=po/squirrelmail.pot
 xgettext ${XGETTEXT_OPTIONS} -j \
     templates/default/plugins/listcommands/*.tpl --output=po/squirrelmail.pot
 xgettext ${XGETTEXT_OPTIONS} -j \
