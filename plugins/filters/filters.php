@@ -52,6 +52,7 @@ if (file_exists(SM_PATH . 'config/filters_config.php')) {
     include_once (SM_PATH . 'plugins/filters/config.php');
 }
 
+if (!function_exists('filters_optpage_register_block')) {
 /**
  * Register option blocks
  * @access private
@@ -77,17 +78,20 @@ function filters_optpage_register_block() {
         );
     }
 }
+}
 
+if (!function_exists('filters_folder_status')) {
 /* Receive the status of the folder and do something with it */
 function filters_folder_status($statusarr) {
 
     global $filter_inbox_count;
     if (empty($filter_inbox_count)) $filter_inbox_count=0;
 
-    if ($statusarr['MAILBOX'] == 'INBOX')
+    if (isset($statusarr['MAILBOX']) && $statusarr['MAILBOX'] == 'INBOX')
     {
      if (!empty($statusarr['MESSAGES'])) $filter_inbox_count=$statusarr['MESSAGES'];
     }
+}
 }
 
 /**

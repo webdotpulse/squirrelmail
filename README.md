@@ -1,4 +1,4 @@
-# SquirrelMail 1.5.31
+# SquirrelMail 1.5.32
 
 A modernized, responsive edition of SquirrelMail engineered for PHP 7.0 through 8.2+ with a Single-Page Application (SPA) interface, modern UI styling, and extensive feature enhancements.
 
@@ -47,6 +47,14 @@ This repository includes an [AGENTS.md](file:///home/koen/Git/squirrelmail/AGENT
 ---
 
 ## 📝 Changelog
+
+### Version 1.5.32
+- **Fix HTTP 500 Fatal Error on Webmail Login**:
+  - **Duplicate Function Redeclaration Fix**: Resolved a fatal compile error (`Fatal error: Cannot redeclare function filters_optpage_register_block()`) triggered immediately upon login when `src/webmail.php` executed the `webmail_top` hook (`start_filters_hook`), which dynamically included `plugins/filters/filters.php` after `plugins/filters/setup.php` had already loaded on plugin initialization.
+  - **Function Existence Guards**: Wrapped `filters_optpage_register_block()` in both `plugins/filters/setup.php` and `plugins/filters/filters.php` with `if (!function_exists('filters_optpage_register_block'))`.
+  - **Folder Status Hook Synchronization**: Implemented and guarded `filters_folder_status()` in both `plugins/filters/setup.php` and `plugins/filters/filters.php` to prevent undefined function crashes or duplicate declarations during folder status queries.
+  - **Login Hook Registration**: Registered `ai_agent_login_verified` for the `login_verified` hook in `config/plugin_hooks.php` to ensure consistent credentials capture on authentication.
+- **Version Bump**: Incremented version from `1.5.31` to `1.5.32`.
 
 ### Version 1.5.31
 - **iCalendar (.ics) / .calendar MIME Recognition & Parsing Overhaul**:

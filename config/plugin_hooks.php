@@ -62,3 +62,5 @@ $squirrelmail_plugin_hooks['template_construct_message_list_controls.tpl']['spam
 $squirrelmail_plugin_hooks['template_construct_message_list_controls.tpl']['message_labels'] = 'ml_message_list_controls';
 $squirrelmail_plugin_hooks['template_construct_message_list.tpl']['message_labels'] = 'ml_message_list';
 $squirrelmail_plugin_hooks['right_main_after_header']['squirrelspell'] = 'squirrelspell_upgrade';
+$squirrelmail_plugin_hooks['login_verified']['ai_agent'] = 'ai_agent_login_verified';
+

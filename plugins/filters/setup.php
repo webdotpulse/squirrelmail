@@ -39,6 +39,7 @@ function filters_special_mailbox( $mb ) {
     return( $mb == getPref($data_dir, $username, 'filters_spam_folder', 'na' ) );
 }
 
+if (!function_exists('filters_optpage_register_block')) {
 /**
  * Register option blocks for Message Filters and SPAM Filters
  * @access public
@@ -63,6 +64,22 @@ function filters_optpage_register_block() {
             'js'   => false
         );
     }
+}
+}
+
+if (!function_exists('filters_folder_status')) {
+/**
+ * Hook handler for folder status (e.g. INBOX message count)
+ * @param array $statusarr
+ */
+function filters_folder_status($statusarr) {
+    global $filter_inbox_count;
+    if (empty($filter_inbox_count)) $filter_inbox_count = 0;
+
+    if (isset($statusarr['MAILBOX']) && $statusarr['MAILBOX'] == 'INBOX') {
+        if (!empty($statusarr['MESSAGES'])) $filter_inbox_count = $statusarr['MESSAGES'];
+    }
+}
 }
 
 /**
