@@ -1,4 +1,4 @@
-# SquirrelMail 1.5.40
+# SquirrelMail 1.5.41
 
 A modernized, responsive edition of SquirrelMail engineered for PHP 7.0 through 8.2+ with a Single-Page Application (SPA) interface, modern UI styling, and extensive feature enhancements.
 
@@ -51,6 +51,13 @@ This repository includes an [AGENTS.md](file:///home/koen/Git/squirrelmail/AGENT
 ---
 
 ## 📝 Changelog
+
+### Version 1.5.41
+- **AI Agent Email Summarizer & Body Text Extraction Fix**:
+  - Resolved `Uncaught NotSupportedError: Failed to execute 'cloneNode' on 'Node': ShadowRoot nodes are not clonable` in `plugins/ai_agent/ai_agent.php` (`getEmailBodyText()`).
+  - Replaced the illegal `shadowHost.shadowRoot.cloneNode(true)` call with safe `innerHTML` serialization into a temporary DOM element with fallback child node cloning.
+  - Strips out scoped `<style>`, `<script>`, and `<noscript>` elements before extracting clean body text for Gemini AI summarization, phishing analysis, and translation.
+- **Version Bump**: Incremented version from `1.5.40` to `1.5.41`.
 
 ### Version 1.5.40
 - **Message Labels Pagination & Labeled Mail Filter Fix**:

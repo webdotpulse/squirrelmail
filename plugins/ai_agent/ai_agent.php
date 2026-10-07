@@ -633,10 +633,19 @@ function ai_agent_read_top_do()
             // 1. Inspect open Shadow DOM host if present
             const shadowHost = document.getElementById('sm-email-shadow-host') || document.querySelector('.sm-email-shadow-container');
             if (shadowHost && shadowHost.shadowRoot) {
-                const clone = shadowHost.shadowRoot.cloneNode(true);
-                const unwanted = clone.querySelectorAll('style, script, noscript');
+                const tempDiv = document.createElement('div');
+                try {
+                    tempDiv.innerHTML = shadowHost.shadowRoot.innerHTML || '';
+                } catch (e) {
+                    Array.from(shadowHost.shadowRoot.childNodes).forEach(child => {
+                        try {
+                            tempDiv.appendChild(child.cloneNode(true));
+                        } catch (err) {}
+                    });
+                }
+                const unwanted = tempDiv.querySelectorAll('style, script, noscript');
                 unwanted.forEach(el => el.remove());
-                const text = (clone.innerText || clone.textContent || '').trim();
+                const text = (tempDiv.innerText || tempDiv.textContent || '').trim();
                 if (text) return text;
             }
 
@@ -655,13 +664,15 @@ function ai_agent_read_top_do()
             const containers = document.querySelectorAll('.sm-read-body-wrapper, div.readBody, .readBody, .message-body, pre, td.readBody');
             let content = '';
             for (let el of containers) {
-                const clone = el.cloneNode(true);
-                const unwanted = clone.querySelectorAll('style, script, noscript, #ai-read-banner, .ai-read-card');
-                unwanted.forEach(e => e.remove());
-                const t = (clone.innerText || clone.textContent || '').trim();
-                if (t.length > content.length) {
-                    content = t;
-                }
+                try {
+                    const clone = el.cloneNode(true);
+                    const unwanted = clone.querySelectorAll('style, script, noscript, #ai-read-banner, .ai-read-card');
+                    unwanted.forEach(e => e.remove());
+                    const t = (clone.innerText || clone.textContent || '').trim();
+                    if (t.length > content.length) {
+                        content = t;
+                    }
+                } catch (e) {}
             }
             if (content) return content;
 
