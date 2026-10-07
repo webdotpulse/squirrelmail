@@ -305,6 +305,20 @@
                     url.searchParams.delete('PG_SHOWALL');
                 }
 
+                // Handle left_main.php actions: "Check Mail", folder collapse/unfold
+                if (url.pathname.endsWith('/left_main.php')) {
+                    e.preventDefault();
+                    this.refreshFolders(url.toString());
+                    // If Check Mail was pressed (no fold/unfold query params), also refresh workspace if viewing a mailbox
+                    if (!url.searchParams.has('fold') && !url.searchParams.has('unfold')) {
+                        const current = new URL(this.state.currentUrl, window.location.origin);
+                        if (current.pathname.includes('webmail.php') || current.pathname.includes('right_main.php')) {
+                            this.navigate(this.state.currentUrl, false);
+                        }
+                    }
+                    return;
+                }
+
                 e.preventDefault();
                 this.navigate(url.toString(), true);
             });
@@ -738,10 +752,12 @@
         // -------------------------------------------------------------------------
         // Folder Tree & Badge Auto-Updating
         // -------------------------------------------------------------------------
-        async refreshFolders() {
+        async refreshFolders(targetUrl) {
             try {
+                this.showLoading();
                 const base = this.getBaseUri();
-                const response = await fetch(base + 'src/left_main.php?ajax=1', {
+                const fetchUrl = targetUrl || (base + 'src/left_main.php?ajax=1');
+                const response = await fetch(fetchUrl, {
                     headers: { 'X-Requested-With': 'XMLHttpRequest' }
                 });
                 if (!response.ok) return;
@@ -750,8 +766,8 @@
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(html, 'text/html');
 
-                const newTree = doc.querySelector('.sm-sidebar-folders-wrapper') || doc.querySelector('.sm-sidebar-tree-container');
-                const curTree = document.querySelector('.sm-sidebar-folders-wrapper') || document.querySelector('.sm-sidebar-tree-container');
+                const newTree = doc.querySelector('.sqm_leftMain') || doc.querySelector('.sm-sidebar-folders-wrapper') || doc.querySelector('.sm-sidebar-tree-container');
+                const curTree = document.querySelector('.sqm_leftMain') || document.querySelector('.sm-sidebar-folders-wrapper') || document.querySelector('.sm-sidebar-tree-container');
 
                 if (newTree && curTree) {
                     curTree.innerHTML = newTree.innerHTML;
@@ -762,6 +778,8 @@
                 }
             } catch (err) {
                 console.error('[SquirrelMail] Failed to refresh folders:', err);
+            } finally {
+                this.hideLoading();
             }
         },
 

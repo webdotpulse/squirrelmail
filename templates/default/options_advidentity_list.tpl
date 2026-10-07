@@ -79,11 +79,20 @@ extract($t);
     </tr>
     <tr>
      <td class="fieldName">
-      <?php echo _("Signature"); ?>
+      <?php echo _("Signature (Plain Text)"); ?>
      </td>
      <td class="fieldValue">
-      <textarea name="newidentities[<?php echo $index; ?>][signature]" cols="50" rows="5">
+      <textarea name="newidentities[<?php echo $index; ?>][signature]" cols="50" rows="4">
 <?php echo $identity['Signature']; ?></textarea>
+     </td>
+    </tr>
+    <tr>
+     <td class="fieldName">
+      <?php echo _("HTML Signature"); ?>
+     </td>
+     <td class="fieldValue">
+      <textarea name="newidentities[<?php echo $index; ?>][html_signature]" class="html-sig-textarea" cols="50" rows="5" placeholder="<?php echo htmlspecialchars(_("<b>Best regards,</b><br>John Doe")); ?>">
+<?php echo $identity['HtmlSignature']; ?></textarea>
      </td>
     </tr>
     <?php /* FIXME: No hooks in templates! */ $temp = array('', &$identity['New'], &$index); echo concat_hook_function('options_identities_table', $temp); ?>

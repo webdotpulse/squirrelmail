@@ -17,6 +17,82 @@
  * Returns an array of all the identities.
  * Array is keyed: full_name, reply_to, email_address, index, signature
  * @return array full_name,reply_to,email_address,index,signature
+/**
+ * Get HTML Signature for an identity
+ *
+ * @param string $data_dir
+ * @param string $username
+ * @param string|int $number 'g' or 0 for default, 1, 2, ... for alternate
+ * @return string
+ * @since 2.0
+ */
+function getHtmlSig($data_dir, $username, $number = 'g') {
+    if ($number === 'g' || $number === 0 || $number === '0') {
+        $sig = getPref($data_dir, $username, 'html_signature');
+        if (empty($sig) && function_exists('getHashedFile')) {
+            $filename = getHashedFile($username, $data_dir, "$username.hsig");
+            if (file_exists($filename)) {
+                $sig = @file_get_contents($filename);
+            }
+        }
+        return !empty($sig) ? (string)$sig : '';
+    } else {
+        $idx = (int)$number;
+        $sig = getPref($data_dir, $username, 'html_signature_' . $idx);
+        if (empty($sig) && function_exists('getHashedFile')) {
+            $filename = getHashedFile($username, $data_dir, "$username.hsi" . $idx);
+            if (file_exists($filename)) {
+                $sig = @file_get_contents($filename);
+            }
+        }
+        return !empty($sig) ? (string)$sig : '';
+    }
+}
+
+/**
+ * Set HTML Signature for an identity
+ *
+ * @param string $data_dir
+ * @param string $username
+ * @param string|int $number 'g' or 0 for default, 1, 2, ... for alternate
+ * @param string $value
+ * @since 2.0
+ */
+function setHtmlSig($data_dir, $username, $number, $value) {
+    if (strlen($value) > 65536) {
+        if (function_exists('error_option_save')) {
+            error_option_save(_("HTML signature is too big."));
+        }
+        return;
+    }
+    if ($number === 'g' || $number === 0 || $number === '0') {
+        setPref($data_dir, $username, 'html_signature', $value);
+        if (function_exists('getHashedFile')) {
+            $filename = getHashedFile($username, $data_dir, "$username.hsig");
+            if (!empty($value)) {
+                @file_put_contents($filename, $value);
+            } else if (file_exists($filename)) {
+                @unlink($filename);
+            }
+        }
+    } else {
+        $idx = (int)$number;
+        setPref($data_dir, $username, 'html_signature_' . $idx, $value);
+        if (function_exists('getHashedFile')) {
+            $filename = getHashedFile($username, $data_dir, "$username.hsi" . $idx);
+            if (!empty($value)) {
+                @file_put_contents($filename, $value);
+            } else if (file_exists($filename)) {
+                @unlink($filename);
+            }
+        }
+    }
+}
+
+/**
+ * Returns an array of all the identities.
+ * Array is keyed: full_name, reply_to, email_address, index, signature, html_signature
+ * @return array full_name,reply_to,email_address,index,signature,html_signature
  * @since 1.4.2
  */
 function get_identities() {
@@ -37,6 +113,7 @@ function get_identities() {
         'email_address' => $em,
         'reply_to' => getPref($data_dir,$username,'reply_to'),
         'signature' => getSig($data_dir,$username,'g'),
+        'html_signature' => getHtmlSig($data_dir,$username,'g'),
         'index' => 0 );
 
     $num_ids = getPref($data_dir,$username,'identities');
@@ -48,6 +125,7 @@ function get_identities() {
             'email_address' => empty($thisem)?$em:$thisem,
             'reply_to' => getPref($data_dir,$username,'reply_to' . $i),
             'signature' => getSig($data_dir,$username,$i),
+            'html_signature' => getHtmlSig($data_dir,$username,$i),
             'index' => $i );
         }
     }
@@ -80,6 +158,7 @@ function save_identities($identities) {
         removePref($data_dir, $username, 'email_address' . $i);
         removePref($data_dir, $username, 'reply_to' . $i);
         setSig($data_dir, $username, $i, '');
+        setHtmlSig($data_dir, $username, $i, '');
     }
 
     foreach($identities as $id=>$ident) {
@@ -92,8 +171,14 @@ function save_identities($identities) {
 
         if ($id === 0) {
             setSig($data_dir, $username, 'g', $ident['signature']);
+            if (isset($ident['html_signature'])) {
+                setHtmlSig($data_dir, $username, 'g', $ident['html_signature']);
+            }
         } else {
             setSig($data_dir, $username, $key, $ident['signature']);
+            if (isset($ident['html_signature'])) {
+                setHtmlSig($data_dir, $username, $key, $ident['html_signature']);
+            }
         }
 
     }
@@ -209,7 +294,7 @@ function sqfixidentities( $identities, $id, $action ) {
  * @since 1.5.1 and 1.4.5
  */
 function empty_identity($ident) {
-    if (empty($ident['full_name']) && empty($ident['email_address']) && empty($ident['signature']) && empty($ident['reply_to'])) {
+    if (empty($ident['full_name']) && empty($ident['email_address']) && empty($ident['signature']) && empty($ident['html_signature']) && empty($ident['reply_to'])) {
         return true;
     } else {
         return false;

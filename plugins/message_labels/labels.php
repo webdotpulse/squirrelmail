@@ -257,3 +257,47 @@ function ml_get_label_counts()
     }
     return $counts;
 }
+
+/**
+ * Batch toggle or set label for multiple message UIDs
+ *
+ * @param string $mailbox
+ * @param array $uids
+ * @param string $labelId
+ * @return bool New active state (true = added, false = removed)
+ */
+function ml_batch_toggle_label($mailbox, $uids, $labelId)
+{
+    $data = ml_load_data();
+    if (!is_array($uids)) $uids = array($uids);
+
+    $hasCount = 0;
+    foreach ($uids as $uid) {
+        $key = ml_get_message_key($mailbox, $uid);
+        if (isset($data['messages'][$key]) && in_array($labelId, $data['messages'][$key])) {
+            $hasCount++;
+        }
+    }
+    $add = ($hasCount < count($uids));
+
+    foreach ($uids as $uid) {
+        $key = ml_get_message_key($mailbox, $uid);
+        if (!isset($data['messages'][$key])) {
+            $data['messages'][$key] = array();
+        }
+        $idx = array_search($labelId, $data['messages'][$key]);
+        if ($add) {
+            if ($idx === false) {
+                $data['messages'][$key][] = $labelId;
+            }
+        } else {
+            if ($idx !== false) {
+                unset($data['messages'][$key][$idx]);
+                $data['messages'][$key] = array_values($data['messages'][$key]);
+            }
+        }
+    }
+
+    ml_save_data($data);
+    return $add;
+}

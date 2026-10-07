@@ -25,7 +25,23 @@ if ($action === 'toggle_label') {
     }
     $state = ml_toggle_message_label($mailbox, $uid, $labelId);
     $activeLabels = ml_get_message_labels($mailbox, $uid);
-    echo json_encode(array('success' => true, 'active' => $state, 'labels' => $activeLabels));
+    echo json_encode(array('success' => true, 'active' => $state, 'labels' => $activeLabels, 'counts' => ml_get_label_counts()));
+    exit;
+}
+
+if ($action === 'batch_toggle_label') {
+    $labelId = isset($_POST['label_id']) ? trim($_POST['label_id']) : '';
+    $uids = isset($_POST['uids']) ? $_POST['uids'] : array();
+    if (is_string($uids)) {
+        $uids = explode(',', $uids);
+    }
+    $uids = array_filter(array_map('intval', (array)$uids));
+    if (empty($uids) || empty($labelId)) {
+        echo json_encode(array('success' => false, 'error' => 'Missing message UIDs or label ID.'));
+        exit;
+    }
+    $state = ml_batch_toggle_label($mailbox, $uids, $labelId);
+    echo json_encode(array('success' => true, 'active' => $state, 'uids' => $uids, 'counts' => ml_get_label_counts()));
     exit;
 }
 

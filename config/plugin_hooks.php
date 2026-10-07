@@ -44,4 +44,5 @@ $squirrelmail_plugin_hooks['template_construct_page_header.tpl']['message_labels
 $squirrelmail_plugin_hooks['template_construct_page_header.tpl']['newmail_notify'] = 'newmail_notify_page_header';
 $squirrelmail_plugin_hooks['template_construct_addressbook_list.tpl']['abook_import_export'] = 'abook_ie_addressbook_list';
 $squirrelmail_plugin_hooks['template_construct_message_list_controls.tpl']['spam_buttons'] = 'sb_message_list_controls';
+$squirrelmail_plugin_hooks['template_construct_message_list.tpl']['message_labels'] = 'ml_message_list';
 $squirrelmail_plugin_hooks['right_main_after_header']['squirrelspell'] = 'squirrelspell_upgrade';

@@ -699,7 +699,12 @@ elseif (isset($sigappend)) {
     //
     sm_validate_security_token($submitted_token, -1, TRUE);
 
-    $signature = $idents[$identity]['signature'];
+    $html_mail_default = function_exists('getPref') ? getPref($data_dir, $username, 'html_mail_default', '1') : '1';
+    if ($html_mail_default === '1' && !empty($idents[$identity]['html_signature'])) {
+        $signature = $idents[$identity]['html_signature'];
+    } else {
+        $signature = $idents[$identity]['signature'];
+    }
 
     $body .= "\n\n".($prefix_sig==true? "-- \n":'').$signature;
     if ($compose_new_win == '1') {
@@ -1414,7 +1419,12 @@ function showInputForm ($session, $values=false) {
 
     $body_str = '';
     if ($use_signature == true && $newmail == true && !isset($from_htmladdr_search)) {
-        $signature = $idents[$identity]['signature'];
+        $html_mail_default = function_exists('getPref') ? getPref($data_dir, $username, 'html_mail_default', '1') : '1';
+        if ($html_mail_default === '1' && !empty($idents[$identity]['html_signature'])) {
+            $signature = $idents[$identity]['html_signature'];
+        } else {
+            $signature = $idents[$identity]['signature'];
+        }
 
         if ($sig_first == '1') {
             /*

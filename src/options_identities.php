@@ -84,6 +84,7 @@ foreach ($identities as $key=>$ident) {
     $a['Email'] = sm_encode_html_special_chars($ident['email_address']);
     $a['ReplyTo'] = sm_encode_html_special_chars($ident['reply_to']);
     $a['Signature'] = sm_encode_html_special_chars($ident['signature']);
+    $a['HtmlSignature'] = sm_encode_html_special_chars(isset($ident['html_signature']) ? $ident['html_signature'] : '');
     $i[$key] = $a;
 }
 
@@ -95,6 +96,7 @@ $a['FullName'] = '';
 $a['Email'] = '';
 $a['ReplyTo'] = '';
 $a['Signature'] = '';
+$a['HtmlSignature'] = '';
 $i[count($i)] = $a;
 
 //FIXME: NO HTML IN THE CORE

@@ -38,11 +38,22 @@ function html_mail_compose_close_do()
     $default_font = function_exists('getPref') ? getPref($data_dir, $username, 'html_mail_font', 'sans-serif') : 'sans-serif';
     $default_size = function_exists('getPref') ? getPref($data_dir, $username, 'html_mail_size', '14px') : '14px';
 
+    require_once(SM_PATH . 'functions/identity.php');
+    $all_idents = get_identities();
+    $ident_sigs = array();
+    foreach ($all_idents as $k => $id) {
+        $ident_sigs[$k] = array(
+            'plain' => isset($id['signature']) ? $id['signature'] : '',
+            'html'  => isset($id['html_signature']) ? $id['html_signature'] : ''
+        );
+    }
+
     ob_start();
     ?>
     <!-- Hidden inputs for HTML mail status and content -->
     <input type="hidden" name="html_mail_enabled" id="html_mail_enabled" value="<?php echo ($default_mode === '1' ? '1' : '0'); ?>" />
     <input type="hidden" name="html_mail_body" id="html_mail_body" value="" />
+    <script>window.smIdentitiesSigs = <?php echo json_encode($ident_sigs); ?>;</script>
 
     <style>
         .html-mail-wrapper {

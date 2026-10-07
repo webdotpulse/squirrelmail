@@ -363,7 +363,12 @@ button, input, select, textarea {
   padding: 16px;
 }
 
-.sm-btn-compose-main {
+.sm-btn-compose-main,
+.sm-btn-compose-main:link,
+.sm-btn-compose-main:visited,
+.sm-btn-compose-main:hover,
+.sm-btn-compose-main:active,
+.sm-btn-compose-main span {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -371,7 +376,7 @@ button, input, select, textarea {
   width: 100%;
   padding: 12px 18px;
   background: linear-gradient(135deg, var(--sm-primary), #1d4ed8);
-  color: #ffffff;
+  color: #ffffff !important;
   font-weight: 600;
   font-size: 14px;
   border: none;
@@ -379,15 +384,30 @@ button, input, select, textarea {
   box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25);
   cursor: pointer;
   transition: all var(--sm-transition-fast);
-  text-decoration: none;
+  text-decoration: none !important;
   min-height: 44px;
+}
+
+.sm-btn-compose-main span {
+  display: inline-block;
+  color: #ffffff !important;
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none !important;
+  line-height: 1;
+}
+
+.sm-btn-compose-main svg {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+  flex-shrink: 0;
 }
 
 .sm-btn-compose-main:hover {
   background: linear-gradient(135deg, var(--sm-primary-hover), #1e40af);
   box-shadow: 0 6px 14px rgba(37, 99, 235, 0.35);
   transform: translateY(-1px);
-  color: #ffffff;
+  color: #ffffff !important;
 }
 
 .sm-sidebar-section-title {
@@ -1231,4 +1251,47 @@ table.table1 input[type="submit"]:hover {
   .sm-folder-link {
     min-height: 44px;
   }
+}
+
+/* -----------------------------------------------------------------------------
+ * Message Labels (Gmail Style)
+ * ----------------------------------------------------------------------------- */
+.sm-sidebar-labels-wrapper {
+  margin-top: 18px;
+  padding: 0 12px;
+}
+
+.sm-label-sidebar-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  border-radius: var(--sm-radius-md, 6px);
+  text-decoration: none !important;
+  font-size: 13px;
+  color: var(--sm-text-primary) !important;
+  transition: all var(--sm-transition-fast, 0.15s ease);
+}
+
+.sm-label-sidebar-link:hover {
+  background: var(--sm-bg-hover);
+  color: var(--sm-text-primary) !important;
+}
+
+.sm-label-sidebar-link.active {
+  background: rgba(37, 99, 235, 0.12);
+  color: var(--sm-primary) !important;
+  font-weight: 600;
+}
+
+.ml-tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  vertical-align: middle;
+  line-height: 1.3;
 }
