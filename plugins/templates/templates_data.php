@@ -119,8 +119,9 @@ function tpl_save_templates($templates)
 function tpl_save_template($templateData, $uploadedFiles = null)
 {
     $templates = tpl_load_templates();
-    $id = !empty($templateData['id']) ? $templateData['id'] : 'tpl_' . uniqid() . '_' . mt_rand(100, 999);
+    $id = !empty($templateData['id']) ? $templateData['id'] : 'tpl_' . uniqid() . '_' . random_int(100, 999);
     $templateData['id'] = $id;
+    $templateData['is_html'] = isset($templateData['is_html']) ? intval($templateData['is_html']) : (preg_match('/<[a-z][\s\S]*>/i', $templateData['body'] ?? '') ? 1 : 1);
 
     if (!isset($templateData['attachments']) || !is_array($templateData['attachments'])) {
         $templateData['attachments'] = isset($templates[$id]['attachments']) ? $templates[$id]['attachments'] : array();

@@ -120,8 +120,9 @@ try {
         if (function_exists('sqimap_get_small_header')) {
             $hdr = sqimap_get_small_header($imapConnection, $uid, false);
             if ($hdr) {
-                $sender = !empty($hdr->from) ? decodeHeader($hdr->from) : '';
-                $subject = !empty($hdr->subject) ? decodeHeader($hdr->subject) : '';
+                $rawFrom = !empty($hdr->from) ? decodeHeader($hdr->from, true, false) : '';
+                $sender = sb_clean_email_address($rawFrom);
+                $subject = !empty($hdr->subject) ? decodeHeader($hdr->subject, true, false) : '';
             }
         }
 

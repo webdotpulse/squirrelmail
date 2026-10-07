@@ -13,7 +13,7 @@
  */
 
 define('SM_PATH', './');
-define('INSTALLER_VERSION', '1.5.35');
+define('INSTALLER_VERSION', '1.5.40');
 
 // Ensure core constants (such as SM_DEBUG_MODE_OFF) are loaded before config.php
 if (file_exists(SM_PATH . 'include/constants.php')) {
@@ -494,6 +494,27 @@ PHP;
         @file_put_contents('config/plugin_hooks.php', $hook_content);
     }
 
+    // Save administrator whitelist if administrator plugin is active or admin_users is submitted
+    if (isset($data['admin_users']) || in_array('administrator', $selected_plugins)) {
+        $raw_admins = isset($data['admin_users']) ? $data['admin_users'] : '';
+        $admin_list = [];
+        $split_admins = preg_split('/[\r\n,;]+/', $raw_admins);
+        foreach ($split_admins as $admin_entry) {
+            $admin_entry = trim($admin_entry);
+            if (!empty($admin_entry)) {
+                $admin_list[] = $admin_entry;
+            }
+        }
+        $admin_list = array_unique($admin_list);
+        if (!empty($admin_list)) {
+            $admins_content = "# SquirrelMail Administrator Whitelist\n# Configured via install.php\n" . implode("\n", $admin_list) . "\n";
+            @file_put_contents('config/admins', $admins_content);
+        } elseif (!file_exists('config/admins')) {
+            $admins_content = "# SquirrelMail Administrator Whitelist\n# Configured via install.php\nadmin\n";
+            @file_put_contents('config/admins', $admins_content);
+        }
+    }
+
     return [
         'success' => true,
         'message' => 'SquirrelMail installed and configured successfully!',
@@ -533,6 +554,25 @@ if ($is_already_installed) {
     @include('config/config.php');
     if (isset($org_name)) $existing_org = $org_name;
     if (isset($imapServerAddress)) $existing_server = $imapServerAddress;
+}
+
+// Load existing administrator whitelist if available
+$existing_admins = '';
+if (file_exists('config/admins') && is_readable('config/admins')) {
+    $admin_lines = file('config/admins', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    $clean_admins = [];
+    if ($admin_lines !== false) {
+        foreach ($admin_lines as $l) {
+            $l = trim($l);
+            if ($l !== '' && $l[0] !== '#') {
+                $clean_admins[] = $l;
+            }
+        }
+    }
+    $existing_admins = implode(', ', $clean_admins);
+}
+if (empty($existing_admins)) {
+    $existing_admins = 'koen, koen@thechargegrid.com, admin, admin@thechargegrid.com';
 }
 ?>
 <!DOCTYPE html>
@@ -1587,24 +1627,10 @@ if ($is_already_installed) {
                             </div>
                         </label>
                         <label class="plugin-check">
-                            <input type="checkbox" name="plugins[]" value="squirrelspell" checked>
-                            <div>
-                                <strong>squirrelspell</strong>
-                                <div class="field-desc">Built-in spell checker for compose window.</div>
-                            </div>
-                        </label>
-                        <label class="plugin-check">
                             <input type="checkbox" name="plugins[]" value="message_details" checked>
                             <div>
                                 <strong>message_details</strong>
                                 <div class="field-desc">View full RFC headers and raw message source.</div>
-                            </div>
-                        </label>
-                        <label class="plugin-check">
-                            <input type="checkbox" name="plugins[]" value="info" checked>
-                            <div>
-                                <strong>info</strong>
-                                <div class="field-desc">Displays IMAP server information in administration.</div>
                             </div>
                         </label>
                         <label class="plugin-check">
@@ -1614,6 +1640,35 @@ if ($is_already_installed) {
                                 <div class="field-desc">Automated message sorting into folders based on criteria and background cron processing.</div>
                             </div>
                         </label>
+                        <label class="plugin-check">
+                            <input type="checkbox" name="plugins[]" value="signature_creator" checked>
+                            <div>
+                                <strong>signature_creator</strong>
+                                <div class="field-desc">Modern visual HTML email signature designer with 6 pre-designed responsive templates.</div>
+                            </div>
+                        </label>
+                        <label class="plugin-check">
+                            <input type="checkbox" name="plugins[]" value="administrator" id="plugin-administrator-check" checked>
+                            <div>
+                                <strong>administrator</strong>
+                                <div class="field-desc">Web-based SquirrelMail configuration management panel for authorized administrators.</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Administrator Whitelist Settings -->
+                <div class="form-section" id="admin-whitelist-card" style="margin-top: 24px; padding: 20px; background: var(--bg); border: 1px solid var(--card-border); border-radius: var(--radius-sm);">
+                    <h3 class="form-section-title" style="margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                        <span>🔐</span> Web Administration Allowed Logins &amp; Email Addresses
+                    </h3>
+                    <p class="field-desc" style="margin-bottom: 14px;">
+                        Specify login usernames or full email addresses allowed to view and access the <strong>Administration</strong> panel in Webmail Options. Multiple entries can be separated by commas or line breaks. Saved to <code>config/admins</code>.
+                    </p>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="admin_users" class="form-label">Authorized Administrator Logins / Email Addresses</label>
+                        <textarea name="admin_users" id="admin_users" class="form-control" rows="3" placeholder="e.g. koen, admin@thechargegrid.com, admin"><?php echo htmlspecialchars($existing_admins, ENT_QUOTES, 'UTF-8'); ?></textarea>
+                        <small class="field-desc">Only users matching these logins or email addresses will see the Administration block in Options.</small>
                     </div>
                 </div>
 
@@ -1638,6 +1693,7 @@ if ($is_already_installed) {
                         <div><strong>SMTP Server:</strong> <span id="sum-smtp">smtp.gmail.com:465</span></div>
                         <div><strong>IMAP Server Type:</strong> <span id="sum-type">gmail</span></div>
                         <div><strong>Active Theme:</strong> <span id="sum-theme" style="color: var(--primary); font-weight: 700;">Gmail Theme</span></div>
+                        <div style="grid-column: span 2;"><strong>Admin Whitelist:</strong> <span id="sum-admins" style="color: var(--primary); font-weight: 600;"><?php echo htmlspecialchars($existing_admins, ENT_QUOTES, 'UTF-8'); ?></span></div>
                     </div>
                 </div>
 
@@ -1830,6 +1886,10 @@ if ($is_already_installed) {
                 document.getElementById('sum-smtp').textContent = document.getElementById('smtp_host').value + ':' + document.getElementById('smtp_port').value;
                 document.getElementById('sum-type').textContent = document.getElementById('imap_type').value;
                 document.getElementById('sum-theme').textContent = document.getElementById('default_theme').value === 'gmail' ? 'Gmail Theme' : document.getElementById('default_theme').value;
+                const adminUsersEl = document.getElementById('admin_users');
+                if (adminUsersEl && document.getElementById('sum-admins')) {
+                    document.getElementById('sum-admins').textContent = adminUsersEl.value.trim() || '(Default: posix owner)';
+                }
             }
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }

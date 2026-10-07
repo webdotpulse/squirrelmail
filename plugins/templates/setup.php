@@ -209,14 +209,37 @@ function tpl_compose_close()
                     attHtml += '</div>';
                 }
 
+                var isHtml = !tpl.hasOwnProperty('is_html') || tpl.is_html == 1 || /<[a-z][\s\S]*>/i.test(tpl.body);
+                var htmlBadge = isHtml ? '<span style="font-size:10px; font-weight:700; background:#e6f4ea; color:#137333; padding:1px 5px; border-radius:3px; margin-left:6px;">HTML</span>' : '';
+
                 card.innerHTML =
                     '<div style="display:flex; justify-content:space-between; align-items:center;">' +
-                        '<strong style="font-size:14px; color:#202124;">' + escapeHtml(tpl.title) + '</strong>' +
+                        '<div><strong style="font-size:14px; color:#202124;">' + escapeHtml(tpl.title) + '</strong>' + htmlBadge + '</div>' +
                         '<span style="font-size:11px; padding:2px 8px; border-radius:10px; background:#f1f3f4; color:#5f6368;">' + escapeHtml(tpl.category || 'General') + '</span>' +
                     '</div>' +
                     '<div style="font-size:12px; color:#5f6368; margin-top:4px;">' + (tpl.subject ? '<strong>Subject:</strong> ' + escapeHtml(tpl.subject) : '') + '</div>' +
-                    '<div style="font-size:12px; color:#3c4043; margin-top:4px; line-height:1.4; white-space:pre-wrap; max-height:48px; overflow:hidden;">' + escapeHtml(tpl.body) + '</div>' +
-                    attHtml;
+                    '<div style="font-size:12px; color:#3c4043; margin-top:4px; line-height:1.4; max-height:44px; overflow:hidden; text-overflow:ellipsis;">' + escapeHtml(tpl.body.replace(/<[^>]*>/g, ' ')) + '</div>' +
+                    attHtml +
+                    '<div style="margin-top:8px; display:flex; justify-content:space-between; align-items:center; padding-top:6px; border-top:1px solid #f1f3f4;">' +
+                        '<button type="button" class="tpl-btn-prev" style="padding:2px 8px; font-size:11px; background:#f8fafc; border:1px solid #cbd5e1; border-radius:4px; cursor:pointer; color:#1a73e8;">👁️ Preview HTML</button>' +
+                        '<span style="font-size:11px; color:#1a73e8; font-weight:600;">Insert Template →</span>' +
+                    '</div>' +
+                    '<div class="tpl-inline-preview" style="display:none; margin-top:8px; padding:10px 12px; background:#fafbfc; border:1px dashed #cbd5e1; border-radius:6px; font-size:13px; max-height:180px; overflow-y:auto;">' +
+                        (isHtml ? tpl.body : escapeHtml(tpl.body).replace(/\n/g, '<br>')) +
+                    '</div>';
+
+                var prevBtn = card.querySelector('.tpl-btn-prev');
+                if (prevBtn) {
+                    prevBtn.onclick = function(e) {
+                        e.stopPropagation();
+                        var prevBox = card.querySelector('.tpl-inline-preview');
+                        if (prevBox) {
+                            var isOpen = prevBox.style.display !== 'none';
+                            prevBox.style.display = isOpen ? 'none' : 'block';
+                            prevBtn.textContent = isOpen ? '👁️ Preview HTML' : '✕ Hide Preview';
+                        }
+                    };
+                }
 
                 card.onclick = function() {
                     applyTemplate(tpl.id);
@@ -248,6 +271,14 @@ function tpl_compose_close()
             .then(r => r.json())
             .then(data => {
                 if (data.success) {
+                    var isHtmlTpl = data.is_html == 1 || /<[a-z][\s\S]*>/i.test(data.body);
+
+                    // Switch to rich HTML mode if template is HTML and current mode is plain
+                    var htmlToggleInput = document.getElementById('html_mail_enabled');
+                    if (isHtmlTpl && htmlToggleInput && htmlToggleInput.value === '0' && typeof window.htmlMailToggleMode === 'function') {
+                        window.htmlMailToggleMode();
+                    }
+
                     // Update body textarea
                     if (bodyInput) {
                         bodyInput.value = data.body;
@@ -256,7 +287,7 @@ function tpl_compose_close()
                     // Update WYSIWYG editor if rich text mode is active
                     var wysiwyg = document.getElementById('html-mail-wysiwyg');
                     if (wysiwyg) {
-                        if (/<[a-z][\s\S]*>/i.test(data.body)) {
+                        if (isHtmlTpl) {
                             wysiwyg.innerHTML = data.body;
                         } else {
                             var paras = data.body.split("\n\n");

@@ -133,7 +133,7 @@ function load_optpage_data_personal() {
         'type'    => SMOPT_TYPE_TEXTAREA,
         'refresh' => SMOPT_REFRESH_NONE,
         'size'    => SMOPT_SIZE_LARGE,
-        'trailing_text' => _("Rich HTML formatted signature. Use the formatting toolbar or paste raw HTML tags."),
+        'trailing_text' => _("Rich HTML formatted signature. Use the formatting toolbar or paste raw HTML tags.") . '<br><a href="' . sqm_baseuri() . 'plugins/signature_creator/options.php" class="sm-btn sm-btn-secondary" style="margin-top:6px; display:inline-flex; align-items:center; gap:6px; text-decoration:none; font-weight:600; color:#1a73e8;">✒️ ' . _("Launch Signature Creator &amp; Templates Studio") . '</a>',
         'save'    => 'save_option_html_signature'
     );
 

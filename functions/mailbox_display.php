@@ -63,9 +63,12 @@ function sqm_api_mailbox_select($imapConnection,$account,$mailbox,$aConfig,$aPro
     if (empty($aMbxResponse))
        return $aMbxResponse;
 
+    $curr_label = isset($aConfig['label_filter']) ? $aConfig['label_filter'] : (!empty($_GET['label_filter']) ? trim($_GET['label_filter']) : '');
+    $mbxCacheKey = $account.'_'.$mailbox . (!empty($curr_label) ? '_lbl_'.$curr_label : '');
+
     if ($mailbox_cache) {
-        if (isset($mailbox_cache[$account.'_'.$mailbox])) {
-            $aCachedMailbox = $mailbox_cache[$account.'_'.$mailbox];
+        if (isset($mailbox_cache[$mbxCacheKey])) {
+            $aCachedMailbox = $mailbox_cache[$mbxCacheKey];
         } else {
             $aCachedMailbox = false;
         }
@@ -109,6 +112,8 @@ function sqm_api_mailbox_select($imapConnection,$account,$mailbox,$aConfig,$aPro
     }
 
     $aMailbox['ACCOUNT'] = $account;
+    $aMailbox['CACHEKEY'] = $mbxCacheKey;
+    $aMailbox['LABEL_FILTER'] = $curr_label;
     $aMailbox['UIDSET'][$iSetIndx] = false;
     $aMailbox['ID'] = false;
     $aMailbox['SETINDEX'] = $iSetIndx;
@@ -118,10 +123,12 @@ function sqm_api_mailbox_select($imapConnection,$account,$mailbox,$aConfig,$aPro
         /**
          * Validate integrity of cached data
          */
+        $cached_label = isset($aCachedMailbox['LABEL_FILTER']) ? $aCachedMailbox['LABEL_FILTER'] : '';
         if ($aCachedMailbox['EXISTS'] == $aMbxResponse['EXISTS'] &&
             $aMbxResponse['EXISTS'] &&
             $aCachedMailbox['UIDVALIDITY'] == $aMbxResponse['UIDVALIDITY'] &&
             $aCachedMailbox['UIDNEXT']  == $aMbxResponse['UIDNEXT'] &&
+            $curr_label === $cached_label &&
             isset($aCachedMailbox['SEARCH'][$iSetIndx]) &&
             (!isset($aConfig['search']) || /* always set search from the searchpage */
              $aCachedMailbox['SEARCH'][$iSetIndx] == $aConfig['search'])) {
@@ -332,6 +339,13 @@ function fetchMessageHeaders($imapConnection, &$aMailbox) {
      * A uidset with sorted uid's is available. We can use the cache
      */
     if (isset($aUid) && $aUid ) {
+        $aMailbox['TOTAL'][$iSetIndx] = count($aUid);
+        if ($start_msg > count($aUid) && count($aUid) > 0) {
+            $start_msg = max(1, (ceil(count($aUid) / $iLimit) - 1) * $iLimit + 1);
+            $aMailbox['PAGEOFFSET'] = $start_msg;
+            $aMailbox['OFFSET'] = $start_msg - 1;
+        }
+
         // limit the cache to SQM_MAX_PAGES_IN_CACHE
         if (!$aMailbox['SHOWALL'][$iSetIndx] && isset($aMailbox['MSG_HEADERS'])) {
             $iMaxMsgs = $iLimit * SQM_MAX_PAGES_IN_CACHE;
@@ -391,33 +405,51 @@ function fetchMessageHeaders($imapConnection, &$aMailbox) {
                 $iError = _get_sorted_msgs_list($imapConnection,$aMailbox,$iError);
                 $aUid = $aMailbox['UIDSET'][$iSetIndx];
             }
-            if (!$iError) {
-                /**
-                 * Number of messages is the resultset
-                 */
-                $aMailbox['TOTAL'][$iSetIndx] = count($aUid);
-                $id_slice = array_slice($aUid,$aMailbox['OFFSET'], $iLimit);
-                if (count($id_slice)) {
-                    $aMailbox['MSG_HEADERS'] = sqimap_get_small_header_list($imapConnection,$id_slice,
-                        $aHeaderFields,$aFetchItems);
-                } else {
-                    $iError = 1; // FIX ME, define an error code
-                }
-            }
         } else { //
             $iError = 0;
             $iError = _get_sorted_msgs_list($imapConnection,$aMailbox,$iError);
             $aUid = $aMailbox['UIDSET'][$iSetIndx];
+        }
 
-            if (!$iError) {
-                /**
-                 * Number of messages is the resultset
-                 */
-                $aMailbox['TOTAL'][$iSetIndx] = count($aUid);
-                $id_slice = array_slice($aUid,$aMailbox['OFFSET'], $iLimit);
-                if (count($id_slice)) {
-                    $aMailbox['MSG_HEADERS'] = sqimap_get_small_header_list($imapConnection,$id_slice,
-                        $aHeaderFields,$aFetchItems);
+        // Apply label filter if specified
+        $labelFilter = !empty($aMailbox['LABEL_FILTER']) ? $aMailbox['LABEL_FILTER'] : (!empty($_GET['label_filter']) ? trim($_GET['label_filter']) : '');
+        if (!empty($labelFilter)) {
+            if (file_exists(SM_PATH . 'plugins/message_labels/labels.php')) {
+                include_once(SM_PATH . 'plugins/message_labels/labels.php');
+            }
+            if (function_exists('ml_get_labeled_uids')) {
+                $labeledUids = ml_get_labeled_uids($aMailbox['NAME'], $labelFilter);
+                $labeledLookup = array_flip($labeledUids);
+                $filteredUids = array();
+                if (is_array($aUid)) {
+                    foreach ($aUid as $u) {
+                        if (isset($labeledLookup[$u])) {
+                            $filteredUids[] = $u;
+                        }
+                    }
+                }
+                $aUid = $filteredUids;
+                $aMailbox['UIDSET'][$iSetIndx] = $aUid;
+            }
+        }
+
+        if (!$iError) {
+            /**
+             * Number of messages is the resultset
+             */
+            $aMailbox['TOTAL'][$iSetIndx] = count($aUid);
+            if ($aMailbox['OFFSET'] >= count($aUid) && count($aUid) > 0) {
+                $aMailbox['OFFSET'] = max(0, (ceil(count($aUid) / $iLimit) - 1) * $iLimit);
+                $aMailbox['PAGEOFFSET'] = $aMailbox['OFFSET'] + 1;
+            }
+            $id_slice = array_slice($aUid,$aMailbox['OFFSET'], $iLimit);
+            if (count($id_slice)) {
+                $aMailbox['MSG_HEADERS'] = sqimap_get_small_header_list($imapConnection,$id_slice,
+                    $aHeaderFields,$aFetchItems);
+            } else {
+                if (!empty($labelFilter)) {
+                    $aMailbox['MSG_HEADERS'] = array();
+                    $iError = 0;
                 } else {
                     $iError = 1; // FIX ME, define an error code
                 }
@@ -998,6 +1030,10 @@ function showMessagesForMailbox($imapConnection, &$aMailbox,$aProps, &$iError) {
     }
 
     $baseurl = $source_url.'?mailbox=' . urlencode($aMailbox['NAME']) .'&amp;account='.$aMailbox['ACCOUNT'] . (strpos($source_url, 'src/search.php') ? '&amp;smtoken=' . sm_generate_security_token() : '');
+    $label_filter_val = !empty($aMailbox['LABEL_FILTER']) ? $aMailbox['LABEL_FILTER'] : (!empty($_GET['label_filter']) ? trim($_GET['label_filter']) : '');
+    if (!empty($label_filter_val)) {
+        $baseurl .= '&amp;label_filter=' . urlencode($label_filter_val);
+    }
     $where = urlencode($aMailbox['SEARCH'][$iSetIndx][0]);
     $what = urlencode($aMailbox['SEARCH'][$iSetIndx][1]);
     $baseurl .= '&amp;where=' . $where .  '&amp;what=' .  $what;
@@ -1158,6 +1194,9 @@ function showMessagesForMailbox($imapConnection, &$aMailbox,$aProps, &$iError) {
         }
         $aFormElements['account']  = array('value' => $iAccount,'type' => 'hidden');
     }
+    if (!empty($label_filter_val)) {
+        $aFormElements['label_filter'] = array('value' => htmlspecialchars($label_filter_val, ENT_QUOTES), 'type' => 'hidden');
+    }
     do_hook('message_list_controls', $aFormElements);
 
     /*
@@ -1201,6 +1240,7 @@ function showMessagesForMailbox($imapConnection, &$aMailbox,$aProps, &$iError) {
     $aTemplate['thread_name'] = $thread_name;
     $aTemplate['php_self'] = str_replace('&','&amp;',$php_self);
     $aTemplate['mailbox'] = $sMailbox;
+    $aTemplate['label_filter'] = $label_filter_val;
 //FIXME: javascript_on is always assigned to the template object in places like init.php; is there some reason to reassign it here?  is there some chance that it was changed?  if not, please remove this line!
     $aTemplate['javascript_on'] = (isset($aProps['config']['javascript_on'])) ? $aProps['config']['javascript_on'] : false;
     $aTemplate['enablesort'] = (isset($aProps['config']['enablesort'])) ? $aProps['config']['enablesort'] : false;

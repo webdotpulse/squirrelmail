@@ -25,6 +25,8 @@ if ($action === 'toggle_label') {
     }
     $state = ml_toggle_message_label($mailbox, $uid, $labelId);
     $activeLabels = ml_get_message_labels($mailbox, $uid);
+    sqsession_unregister('mailbox_cache');
+    unset($_SESSION['mailbox_cache']);
     echo json_encode(array('success' => true, 'active' => $state, 'labels' => $activeLabels, 'counts' => ml_get_label_counts()));
     exit;
 }
@@ -41,6 +43,8 @@ if ($action === 'batch_toggle_label') {
         exit;
     }
     $state = ml_batch_toggle_label($mailbox, $uids, $labelId);
+    sqsession_unregister('mailbox_cache');
+    unset($_SESSION['mailbox_cache']);
     echo json_encode(array('success' => true, 'active' => $state, 'uids' => $uids, 'counts' => ml_get_label_counts()));
     exit;
 }

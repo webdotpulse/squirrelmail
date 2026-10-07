@@ -312,3 +312,43 @@ function ml_batch_toggle_label($mailbox, $uids, $labelId)
     ml_save_data($data);
     return $add;
 }
+
+/**
+ * Get all message UIDs for a mailbox that have a specific label
+ *
+ * @param string $mailbox
+ * @param string $labelId
+ * @return array Array of integer UIDs
+ */
+function ml_get_labeled_uids($mailbox, $labelId)
+{
+    $data = ml_load_data();
+    if (empty($data['messages']) || empty($labelId)) {
+        return array();
+    }
+
+    $targetPrefix1 = rawurlencode($mailbox) . ':';
+    $targetPrefix2 = $mailbox . ':';
+    $len1 = strlen($targetPrefix1);
+    $len2 = strlen($targetPrefix2);
+
+    $uids = array();
+    foreach ($data['messages'] as $key => $labels) {
+        if (!is_array($labels) || !in_array($labelId, $labels)) {
+            continue;
+        }
+
+        $uidStr = null;
+        if (strpos($key, $targetPrefix1) === 0) {
+            $uidStr = substr($key, $len1);
+        } else if (strpos($key, $targetPrefix2) === 0) {
+            $uidStr = substr($key, $len2);
+        }
+
+        if ($uidStr !== null && is_numeric($uidStr)) {
+            $uids[] = intval($uidStr);
+        }
+    }
+
+    return $uids;
+}

@@ -342,7 +342,7 @@ foreach ($accounts_to_process as $acc) {
     // --- 0. BACKGROUND USER MESSAGE FILTERS ---
     $stat_filtered = 0;
     if (function_exists('user_filters')) {
-        global $username, $data_dir, $AllowSpamFilters;
+        global $username, $data_dir;
         $username = $user;
         $user_rules = load_filters();
         if (!empty($user_rules)) {
@@ -357,11 +357,6 @@ foreach ($accounts_to_process as $acc) {
             } else {
                 cron_log("     [FILTERS] No messages matched user filter criteria.");
             }
-        }
-
-        // Also run DNS-based spam filters if enabled
-        if (!empty($AllowSpamFilters) && function_exists('spam_filters') && !$dry_run) {
-            spam_filters($imap_stream);
         }
     }
 

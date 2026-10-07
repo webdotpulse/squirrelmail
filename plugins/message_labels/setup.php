@@ -62,15 +62,21 @@ function ml_left_main()
     $html = '<div class="sm-sidebar-labels-wrapper" style="margin-top: 16px; padding: 0 12px; font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, sans-serif;">'
           . '<div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--sm-text-muted, #5f6368); letter-spacing: 0.8px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between;">'
           . '<span style="display: flex; align-items: center; gap: 6px;">🏷️ ' . _("Labels") . '</span>'
-          . '<a href="../plugins/message_labels/options.php" style="color: #1a73e8; text-decoration: none; font-size: 16px; font-weight: bold; line-height: 1;" title="' . _("Manage Labels") . '">+</a>'
+          . '<a href="' . sqm_baseuri() . 'plugins/message_labels/options.php" style="color: #1a73e8; text-decoration: none; font-size: 16px; font-weight: bold; line-height: 1;" title="' . _("Manage Labels") . '">+</a>'
           . '</div>'
           . '<div style="display: flex; flex-direction: column; gap: 3px;">';
 
+    $curMailbox = isset($_GET['mailbox']) && !empty($_GET['mailbox']) ? trim($_GET['mailbox']) : 'INBOX';
+
     foreach ($data['labels'] as $lid => $lDef) {
+        $targetMailbox = $curMailbox;
+        if ($targetMailbox !== 'INBOX' && count(ml_get_labeled_uids($targetMailbox, $lid)) === 0 && count(ml_get_labeled_uids('INBOX', $lid)) > 0) {
+            $targetMailbox = 'INBOX';
+        }
         $count = isset($counts[$lid]) ? $counts[$lid] : 0;
         $color = $lDef['color'];
         $isActive = ($activeFilter === $lid);
-        $url = '../src/right_main.php?mailbox=INBOX&label_filter=' . urlencode($lid);
+        $url = sqm_baseuri() . 'src/webmail.php?mailbox=' . urlencode($targetMailbox) . '&label_filter=' . urlencode($lid);
 
         $bgStyle = $isActive ? 'background: rgba(26, 115, 232, 0.12); font-weight: 600;' : 'background: transparent;';
         $activeBorder = $isActive ? 'border-left: 3px solid ' . htmlspecialchars($color) . ';' : 'border-left: 3px solid transparent;';
@@ -435,7 +441,7 @@ function ml_message_list($args = null)
         }
 
         $lDef = $data['labels'][$labelFilter];
-        $clearUrl = 'webmail.php?mailbox=' . urlencode($mailbox);
+        $clearUrl = sqm_baseuri() . 'src/webmail.php?mailbox=' . urlencode($mailbox);
         $banner = '<div style="margin-bottom: 12px; padding: 10px 16px; background: ' . htmlspecialchars($lDef['bg'] ?? '#e8f0fe') . '; border: 1px solid ' . htmlspecialchars($lDef['color']) . '40; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; font-size: 13px; font-weight: 500; color: #202124;">'
                 . '<div style="display: flex; align-items: center; gap: 8px;">'
                 . '<span style="font-size: 16px;">🏷️</span>'

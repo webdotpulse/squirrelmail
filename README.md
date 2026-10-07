@@ -1,4 +1,4 @@
-# SquirrelMail 1.5.35
+# SquirrelMail 1.5.40
 
 A modernized, responsive edition of SquirrelMail engineered for PHP 7.0 through 8.2+ with a Single-Page Application (SPA) interface, modern UI styling, and extensive feature enhancements.
 
@@ -11,13 +11,17 @@ A modernized, responsive edition of SquirrelMail engineered for PHP 7.0 through 
   - Curated modern design system in `assets/css/app.css` with CSS custom properties (`--sm-*`).
   - Native Light and Dark mode toggle with persistent preferences.
   - Crisp, modern SVG iconography throughout the application.
-- **Unified Inbox & Multi-Account Support** (`plugins/multi_account`):
-  - Aggregate emails across primary and secondary accounts into a single unified stream.
-  - Real-time unread badges and single-line status display in the sidebar.
-  - Dynamic display: Unified Inbox button and multi-account container in the sidebar and menuline are only rendered when there is more than 1 connected/enabled mail account.
-- **Email Templates & Attachments** (`plugins/templates`):
-  - Pre-defined and custom canned responses with dynamic variable tags (`{name}`, `{date}`, `{my_name}`, etc.).
-  - Automatic file attachment capability (brochures, PDFs, intake forms) directly from templates into Compose.
+- **Signature Creator & Templates Studio** (`plugins/signature_creator`):
+  - Interactive visual designer with 6 ready-made professional HTML signature templates (Modern Clean, Corporate Two-Column, Minimalist Chic, Executive Classic, Tech & Developer, Creative Card).
+  - Dynamic live real-time preview updating on keystroke.
+  - Custom brand color picker, photo/logo embeds, social badges, and direct saving to SquirrelMail identity signatures (`html_signature` & plain text).
+- **Email Templates & Attachments with Full HTML Creation & Preview** (`plugins/templates`):
+  - Rich WYSIWYG editor with formatting toolbar (headings, bold, italic, colors, links, lists) and quick-insert chips for dynamic placeholders (`{name}`, `{email}`, `{date}`, etc.).
+  - Live real-time HTML preview pane with simulated recipient placeholder data.
+  - Interactive HTML preview modal for all saved templates directly in the template manager and compose insertion dialog.
+- **Spam Buttons & AI Learning Dashboard** (`plugins/spam_buttons`):
+  - "Learn from Junk/Spam folder" scanner to batch-train keywords, reputations, and AI heuristics on existing junk mail.
+  - Normalized sender reputation extraction, preventing double-escaped HTML entity corruption (`&#32;`, `&lt;`, `&gt;`) and cleanly managing whitelists/blacklists.
 - **Rich HTML Signatures** (`plugins/html_mail`):
   - Full HTML & plaintext signature support configurable per identity in Personal Options.
 - **Message Labels & Categorization** (`plugins/message_labels`):
@@ -47,6 +51,69 @@ This repository includes an [AGENTS.md](file:///home/koen/Git/squirrelmail/AGENT
 ---
 
 ## 📝 Changelog
+
+### Version 1.5.40
+- **Message Labels Pagination & Labeled Mail Filter Fix**:
+  - **IMAP Header Fetch Pipeline Filtering**: Resolved a critical issue in `functions/mailbox_display.php` (`fetchMessageHeaders()`) where SquirrelMail sliced the first 25 messages of the unfiltered mailbox before labels were evaluated. Only labeled emails that happened to fall within that initial slice were displayed, leaving other labeled messages invisible.
+  - **UID Filtering by Label Before Slicing**: Implemented `ml_get_labeled_uids()` in `plugins/message_labels/labels.php` and integrated it into `fetchMessageHeaders()` to filter `$aMailbox['UIDSET']` by the active label *prior* to calculating the result count and slicing messages. Now all labeled messages in the active mailbox are properly loaded from IMAP.
+  - **Accurate Paginator Count & Slices**: Fixed mailbox message count calculations so the paginator accurately reflects the number of labeled messages (e.g. `Viewing Messages: 1 to 5 (5 total)` rather than the total count of all mailbox messages). If labeled messages exceed the page size, messages are correctly partitioned across pages.
+  - **Preserved `label_filter` Across Navigation Links**: Updated `functions/template/paginator_util.php` (`get_paginator_link()`, `get_paginator_str()`, `get_compact_paginator_str()`), `functions/mailbox_display.php` (`$baseurl`), and message list controls so that all paginator links (`Previous`, `Next`, numeric pages, `Show All`, `Paginate`), thread view links, column header sort links, and form actions maintain the active `&label_filter=...` parameter.
+  - **Isolated Mailbox Session Cache**: Updated `sqm_api_mailbox_select()` and `src/right_main.php` to include `_lbl_<label_filter>` in the session `mailbox_cache` key, preventing cached UID sets of normal and filtered views from colliding or overwriting each other.
+  - **Sidebar Label Link Improvements**: Updated `plugins/message_labels/setup.php` (`ml_left_main()`) to dynamically link to the current mailbox if it contains messages with that label (falling back to `INBOX` if only `INBOX` has them), using standard SPA `sqm_baseuri()` paths.
+  - **Zero-Message Graceful Display**: Updated `templates/default/message_list.tpl` to display a clean, centered notice when no messages match the selected label, while retaining the label banner and "✕ Clear Filter" button.
+- **Version Bump**: Incremented version from `1.5.39` to `1.5.40`.
+
+### Version 1.5.39
+- **Removed Obsolete Plugins (`squirrelspell`, `spamcop`, `info`)**:
+  - Removed `squirrelspell` plugin: purged obsolete server-side aspell/pspell dictionary routines and compose toolbar buttons in favor of modern client-side browser spell checking.
+  - Removed `spamcop` plugin: removed legacy third-party SpamCop reporting code in favor of the modern AI Spam & Reputation Dashboard (`plugins/spam_buttons` & `plugins/ai_agent`).
+  - Removed `info` plugin: purged legacy 2002 IMAP CAPABILITY inspection tool.
+  - Completely deleted the `plugins/squirrelspell/`, `plugins/spamcop/`, and `plugins/info/` directories.
+  - Removed references from `config/config.php`, `config/config_default.php`, and `install.php`.
+  - Rebuilt `config/plugin_hooks.php` to unregister all obsolete hooks.
+- **Version Bump**: Incremented version from `1.5.38` to `1.5.39`.
+
+### Version 1.5.38
+- **Administrator Plugin Activation & Installer Whitelist Management**:
+  - Activated the `administrator` plugin ([plugins/administrator](file:///home/koen/Git/squirrelmail/plugins/administrator)) in `config/config.php` and `config/config_default.php`.
+  - Added dedicated Web Administration Access configuration in the Web Installer ([install.php](file:///home/koen/Git/squirrelmail/install.php)) Step 4 (Plugins) and Step 5 (Review & Install Summary), allowing administrators to configure authorized login usernames and email addresses during installation.
+  - Automatically reads, preloads, and writes the whitelist to [config/admins](file:///home/koen/Git/squirrelmail/config/admins) upon installation.
+  - Updated [plugins/administrator/auth.php](file:///home/koen/Git/squirrelmail/plugins/administrator/auth.php) with case-insensitive matching supporting both usernames (`koen`) and full email addresses (`koen@thechargegrid.com`), comments, and fallback to POSIX ownership.
+  - Hardened [plugins/administrator/options.php](file:///home/koen/Git/squirrelmail/plugins/administrator/options.php) to strictly save changes on `POST` requests, validated CSRF security tokens (`smtoken`), enforced `sqm_baseuri()` routing, and added immediate status feedback alerts.
+  - Rebuilt plugin hooks in `config/plugin_hooks.php` registering `administrator` and `signature_creator`.
+- **Version Bump**: Incremented version from `1.5.37` to `1.5.38`.
+
+### Version 1.5.37
+- **Removed Obsolete DNSBL (DNS Blackhole List) Spam Filtering Code**:
+  - Removed archaic, synchronous DNS lookup routines (`spam_filters`, `filters_spam_check_site`, `filters_SaveCache`, `filters_LoadCache`, and `filters_bulkquery`) from `plugins/filters/filters.php` that queried defunct 20-year-old blacklists and introduced severe webmail and cron latency.
+  - Deleted legacy 2002 C binary directory `plugins/filters/bulkquery/`.
+  - Streamlined `plugins/filters/filters.php` to focus strictly on user message sorting rules (Sender, Recipient, Subject, Headers, Body) with clean backwards-compatibility shims.
+  - Replaced `plugins/filters/spamoptions.php` with an automatic, safe redirection to the modern AI Spam & Reputation Dashboard (`plugins/spam_buttons/options.php`).
+  - Removed obsolete DNSBL checks and globals from `plugins/ai_agent/cron.php`, accelerating automated background message filtering.
+  - Cleaned DNSBL configurations from `plugins/filters/config_default.php` and updated documentation.
+- **Version Bump**: Incremented version from `1.5.36` to `1.5.37`.
+
+### Version 1.5.36
+- **Email Templates & Attachments - Full HTML Creation, Editing, & Preview**:
+  - Upgraded `plugins/templates/templates_manager.php` with a rich visual WYSIWYG editor and formatting toolbar (headings, bold, italic, underline, strikethrough, text and background colors, lists, alignment, link and image insertion, divider lines, and clean formatting).
+  - Added interactive tag insertion chips for `{name}`, `{first_name}`, `{full_name}`, `{email}`, `{subject}`, `{date}`, `{my_name}`, and `{my_email}`.
+  - Built a live HTML preview card with a toggle for simulated recipient placeholder data that renders in real-time as the user types.
+  - Added an interactive modal preview dialog to preview any template in rich HTML before editing or using it.
+  - Enhanced the compose window template selector modal (`plugins/templates/setup.php`) with an inline "👁️ Preview HTML" viewer and automatic switching to rich HTML mode when inserting HTML templates.
+- **Signature Creator & Templates Studio (`plugins/signature_creator`)**:
+  - Built a brand-new visual HTML email signature designer with 6 ready-made responsive templates: Modern Clean, Corporate Two-Column, Minimalist Chic, Executive Classic, Tech & Developer, and Creative Card.
+  - Dynamic live preview updating in real-time with brand accent color picker, profile photo/logo embedding, contact fields, and social media badges.
+  - Seamless bidirectional integration with SquirrelMail identities: saves directly to `setHtmlSig` and `setSig`, auto-enables signatures (`use_signature = 1`), and provides "Copy HTML" and "Copy Plain Text" clipboard exports.
+  - Registered in SquirrelMail Options (`optpage_register_block`) and added a launcher button in Personal Options (`include/options/personal.php`).
+- **Fixed Blacklisted/Whitelisted Senders Entity Mangling in `plugins/spam_buttons`**:
+  - Fixed an issue where `decodeHeader()` returned HTML-safe entities (converting spaces into `&#32;` and brackets into `&lt;` and `&gt;`), which were stored raw and then double-encoded by `htmlspecialchars()` into distorted strings like `finance&#32;xplained...`.
+  - Implemented `sb_clean_email_address()` to decode entities, strip tags, and reliably extract clean email addresses or domains (`noreply@mailing.financeexplained.be`).
+  - Automatically sanitized and normalized existing training data on load.
+  - Added quick-remove buttons for whitelisted and blacklisted senders on the dashboard.
+- **Learn from Junk/Spam Folder in Spam Buttons & AI Learning Dashboard**:
+  - Added `sb_learn_from_junk_folder()` in `plugins/spam_buttons/spam_learn.php` and an action card with a "Learn from Junk/Spam Folder" button in `plugins/spam_buttons/options.php`.
+  - Discovers the Junk/Spam IMAP folder, batch-scans existing messages, extracts clean sender addresses into the blacklist, updates spam keyword frequencies, and triggers Gemini AI heuristic learning.
+- **Version Bump**: Incremented version from `1.5.35` to `1.5.36`.
 
 ### Version 1.5.35
 - **Fix Mailbox View Message Priority Persistence & Display**:

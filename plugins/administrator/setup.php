@@ -35,11 +35,13 @@ function squirrelmail_administrator_optpage_register_block() {
     if ( adm_check_user() ) {
         global $optpage_blocks;
 
+        $baseUri = function_exists('sqm_baseuri') ? sqm_baseuri() : (defined('SM_PATH') ? SM_PATH : '../');
+
         $optpage_blocks[] = array(
             'name' => _("Administration"),
-            'url'  => SM_PATH . 'plugins/administrator/options.php',
-            'desc' => _("This module allows administrators to manage SquirrelMail main configuration remotely."),
+            'url'  => $baseUri . 'plugins/administrator/options.php',
+            'desc' => _("Manage SquirrelMail primary configuration, mail server settings, folders, and security options remotely from webmail."),
             'js'   => false
-            );
+        );
     }
 }

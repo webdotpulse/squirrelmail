@@ -96,12 +96,14 @@ if (!empty($plugin_output['mailbox_index_before'])) echo $plugin_output['mailbox
  * Calculate string "Viewing message x to y (z total)"
  */
 $msg_cnt_str = '';
-if ($pageOffset < $end_msg) {
+if ($iNumberOfMessages == 0) {
+    $msg_cnt_str = _("Viewing Messages: 0 (0 total)");
+} else if ($pageOffset < $end_msg) {
     $msg_cnt_str = sprintf(_("Viewing Messages: %s to %s (%s total)"),
                            '<em>' . $pageOffset . '</em>',
                            '<em>' . $end_msg . '</em>',
                            $iNumberOfMessages);
-} else if ($pageOffset == $end_msg) {
+} else if ($pageOffset >= $end_msg) {
     $msg_cnt_str = sprintf(_("Viewing Message: %s (%s total)"),
                            '<em>' . $pageOffset . '</em>',
                            $iNumberOfMessages);
@@ -273,6 +275,10 @@ if ($pageOffset < $end_msg) {
             /**
               * main message iteration loop
               */
+            if (empty($aMessages)) {
+                $emptyText = !empty($label_filter) ? _("No messages found with this label.") : _("No messages found in this folder.");
+                echo '<tr><td colspan="' . $iColCnt . '" style="text-align: center; padding: 48px 16px; color: var(--sm-text-muted, #5f6368); font-size: 14px;">' . htmlspecialchars($emptyText) . '</td></tr>';
+            } else {
             foreach ($aMessages as $iUid => $aMsg) {
 
                 echo $sLine;
@@ -543,6 +549,7 @@ $row_class = trim((empty($class) ? '' : $class) . ' sm-message-row' . ($is_unrea
 /*
  * End displaying row part
  */
+        }
         }
 
 ?>

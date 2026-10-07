@@ -81,6 +81,7 @@ if ($action === 'apply_template') {
         'success'          => true,
         'subject'          => $subj,
         'body'             => $body,
+        'is_html'          => !empty($tpl['is_html']) ? 1 : (preg_match('/<[a-z][\s\S]*>/i', $tpl['body']) ? 1 : 0),
         'attachments'      => $tpl['attachments'],
         'attached_count'   => count($attachedFiles),
         'attached_files'   => $attachedFiles

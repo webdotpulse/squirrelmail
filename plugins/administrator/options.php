@@ -230,10 +230,10 @@ include_once(SM_PATH . 'plugins/administrator/defines.php');
 /* additional functions */
 include_once(SM_PATH . 'plugins/administrator/auth.php');
 
-global $data_dir, $username;
+$baseUri = function_exists('sqm_baseuri') ? sqm_baseuri() : (defined('SM_PATH') ? SM_PATH : '../../');
 
 if ( !adm_check_user() ) {
-    header('Location: ' . SM_PATH . 'src/options.php') ;
+    header('Location: ' . $baseUri . 'src/options.php') ;
     exit;
 }
 
@@ -272,7 +272,11 @@ if ( sqgetGlobalVar('switch', $switch, SQ_GET) ) {
     setPref($data_dir, $username, "adm_$switch", $colapse[$switch] );
 }
 
-echo '<form action="options.php" method="post" name="options">' .
+$formUrl = $baseUri . 'plugins/administrator/options.php';
+$csrfToken = function_exists('sm_generate_security_token') ? sm_generate_security_token() : '';
+
+echo '<form action="' . htmlspecialchars($formUrl, ENT_QUOTES, 'UTF-8') . '" method="post" name="options">' .
+     '<input type="hidden" name="smtoken" value="' . htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') . '" />' .
      '<table width="95%" align="center" bgcolor="'.$color[5].'"><tr><td>'.
      '<table width="100%" cellspacing="0" bgcolor="'.$color[4].'">'.
      '<tr bgcolor="'.$color[5].'"><th colspan="2">'.
@@ -346,8 +350,9 @@ foreach ( $newcfg as $k => $v ) {
             } else {
                 $sw = '(-)';
             }
+            $switchUrl = $baseUri . 'plugins/administrator/options.php?switch=' . urlencode($k);
             echo '<tr bgcolor="'.$color[0].'"><th colspan="2">'.
-                 "<a href=\"options.php?switch=$k\" style=\"text-decoration:none\">".
+                 "<a href=\"" . htmlspecialchars($switchUrl, ENT_QUOTES, 'UTF-8') . "\" style=\"text-decoration:none\">".
                  '<b>'.$sw.'</b></a> '.$name.'</th></tr>';
             $act_grp = $k;
             break;
@@ -538,8 +543,9 @@ if ( $colapse['Group8'] == 'on' ) {
 } else {
     $sw = '(-)';
 }
+$switchGrp8Url = $baseUri . 'plugins/administrator/options.php?switch=Group8';
 echo '<tr bgcolor="'.$color[0].'"><th colspan="2">'.
-     '<a href="options.php?switch=Group8" style="text-decoration:none"><b>'.
+     '<a href="' . htmlspecialchars($switchGrp8Url, ENT_QUOTES, 'UTF-8') . '" style="text-decoration:none"><b>'.
      $sw.'</b></a> '._("Plugins").'</th></tr>';
 
 if ( $colapse['Group8'] == 'off' ) {
@@ -610,44 +616,51 @@ if ( $colapse['Group8'] == 'off' ) {
              "</td></tr>\n";
     }
 }
+$testUrl = $baseUri . 'src/configtest.php';
 echo '<tr bgcolor="'.$color[5].'"><th colspan="2"><input value="'.
      _("Change Settings").'" type="submit" /><br />'.
-     '<a href="'.SM_PATH.'src/configtest.php" target="_blank">'.
+     '<a href="'.htmlspecialchars($testUrl, ENT_QUOTES, 'UTF-8').'" target="_blank">'.
      _("Test Configuration")."</a></th></tr>\n".
      '</table></td></tr></table></form>';
 
 /*
-    Write the options to the file.
+    Write the options to the file strictly on POST requests.
 */
-
-// Test/debug
-// $cfgfile = '/tmp/config.php';
-if ( $fp = @fopen( $cfgfile, 'w' ) ) {
-    fwrite( $fp, "<?php\n".
-    "/**\n".
-    " * SquirrelMail Configuration File\n".
-    " * Created using the Administrator Plugin\n".
-    " */\n".
-    "\n" );
-
-    foreach ( $newcfg as $k => $v ) {
-        if ( $k[0] == '$' && $v <> '' || is_int($v)) {
-            if ( substr( $k, 1, 11 ) == 'ldap_server' ) {
-                $v = substr( $v, 0, strlen( $v ) - 1 ) . "\n)";
-                $v = str_replace( 'array(', "array(\n\t", $v );
-                $v = str_replace( "',", "',\n\t", $v );
-            }
-            /* FIXME: add elseif that reverts plugins[#] to plugins[] */
-            fwrite( $fp, "$k = $v;\n" );
-        }
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (function_exists('sm_validate_security_token')) {
+        sm_validate_security_token(SQ_POST, 'smtoken');
     }
-    // close php
-    fwrite( $fp, '?>' );
-    fclose( $fp );
-} else {
-    echo '<br /><p align="center"><big>'.
-         _("Config file can't be opened. Please check config.php.").
-         '</big></p>';
+
+    if ($fp = @fopen($cfgfile, 'w')) {
+        fwrite($fp, "<?php\n" .
+            "/**\n" .
+            " * SquirrelMail Configuration File\n" .
+            " * Created using the Administrator Plugin\n" .
+            " */\n\n");
+
+        foreach ($newcfg as $k => $v) {
+            if (($k[0] == '$' && $v !== '') || is_int($v)) {
+                if (substr($k, 1, 11) == 'ldap_server') {
+                    $v = substr($v, 0, strlen($v) - 1) . "\n)";
+                    $v = str_replace('array(', "array(\n\t", $v);
+                    $v = str_replace("',", "',\n\t", $v);
+                }
+                // Revert indexed $plugins[N] to $plugins[]
+                if (preg_match('/^\$plugins\[\d+\]/', $k)) {
+                    fwrite($fp, "\$plugins[] = $v;\n");
+                } else {
+                    fwrite($fp, "$k = $v;\n");
+                }
+            }
+        }
+        fwrite($fp, "\n");
+        fclose($fp);
+        echo '<div style="max-width: 95%; margin: 15px auto; padding: 14px 18px; background: rgba(34,197,94,0.15); border: 1px solid rgba(34,197,94,0.4); border-radius: 8px; color: #15803d; font-weight: 600; text-align: center;">' .
+             '✓ ' . _("Configuration updated and saved successfully to config/config.php.") . '</div>';
+    } else {
+        echo '<div style="max-width: 95%; margin: 15px auto; padding: 14px 18px; background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.4); border-radius: 8px; color: #b91c1c; font-weight: 600; text-align: center;">' .
+             '⚠ ' . _("Config file could not be opened for writing. Please verify web server write permissions on config/config.php (e.g. chmod 660 config/config.php).") . '</div>';
+    }
 }
 
 ?>

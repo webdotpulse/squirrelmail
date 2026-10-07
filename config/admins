@@ -1,0 +1,8 @@
+# SquirrelMail Administrator Whitelist
+# Users and email addresses allowed to access the Administration Panel (plugins/administrator)
+# One username or email address per line. Case-insensitive.
+
+koen
+koen@thechargegrid.com
+admin
+admin@thechargegrid.com

@@ -22,30 +22,18 @@ function squirrelmail_plugin_init_filters() {
     $squirrelmail_plugin_hooks['left_main_before']['filters'] = 'start_filters_hook';
     $squirrelmail_plugin_hooks['right_main_after_header']['filters'] = 'start_filters_hook';
     $squirrelmail_plugin_hooks['optpage_register_block']['filters'] = 'filters_optpage_register_block';
-    $squirrelmail_plugin_hooks['special_mailbox']['filters'] = 'filters_special_mailbox';
     $squirrelmail_plugin_hooks['rename_or_delete_folder']['filters'] = 'update_for_folder_hook';
     $squirrelmail_plugin_hooks['template_construct_login_webmail.tpl']['filters'] = 'start_filters_hook';
     $squirrelmail_plugin_hooks['folder_status']['filters'] = 'filters_folder_status';
 }
 
-/**
- * Report spam folder as special mailbox
- * @param string $mb variable used by hook
- * @return string spam folder name
- * @access private
- */
-function filters_special_mailbox( $mb ) {
-    global $data_dir, $username;
-    return( $mb == getPref($data_dir, $username, 'filters_spam_folder', 'na' ) );
-}
-
 if (!function_exists('filters_optpage_register_block')) {
 /**
- * Register option blocks for Message Filters and SPAM Filters
+ * Register option blocks for Message Filters
  * @access public
  */
 function filters_optpage_register_block() {
-    global $optpage_blocks, $AllowSpamFilters;
+    global $optpage_blocks;
 
     $baseUri = function_exists('sqm_baseuri') ? sqm_baseuri() : (defined('SM_PATH') ? SM_PATH : '../');
 
@@ -55,15 +43,6 @@ function filters_optpage_register_block() {
         'desc' => _("Automatically sort incoming email into specific folders based on sender, recipient, subject, headers, or body content (runs in webmail and in background cron)."),
         'js'   => false
     );
-
-    if (!isset($AllowSpamFilters) || $AllowSpamFilters) {
-        $optpage_blocks[] = array(
-            'name' => _("SPAM Filters"),
-            'url'  => $baseUri . 'plugins/filters/spamoptions.php',
-            'desc' => _("SPAM filters allow you to select from various DNS based blacklists to detect junk email in your INBOX and move it to another folder (like Trash)."),
-            'js'   => false
-        );
-    }
 }
 }
 

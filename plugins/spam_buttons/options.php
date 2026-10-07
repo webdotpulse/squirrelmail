@@ -13,15 +13,70 @@ include_once(SM_PATH . 'functions/page_header.php');
 include_once(SM_PATH . 'plugins/spam_buttons/spam_learn.php');
 
 $msg = null;
+$msg_type = 'success';
 
 // Handle Reset Training Data
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'reset_training') {
     $token = isset($_POST['smtoken']) ? $_POST['smtoken'] : '';
     if (!empty($token) && function_exists('sm_validate_security_token') && !sm_validate_security_token($token, -1, false)) {
         $msg = _("Invalid security token.");
+        $msg_type = 'error';
     } else {
         @unlink(sb_get_learning_file());
         $msg = _("AI spam training data and learning memory have been reset.");
+        $msg_type = 'success';
+    }
+}
+
+// Handle Learn from Junk/Spam folder
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'learn_junk') {
+    $token = isset($_POST['smtoken']) ? $_POST['smtoken'] : '';
+    if (!empty($token) && function_exists('sm_validate_security_token') && !sm_validate_security_token($token, -1, false)) {
+        $msg = _("Invalid security token.");
+        $msg_type = 'error';
+    } else {
+        $limit = isset($_POST['scan_limit']) ? intval($_POST['scan_limit']) : 100;
+        if ($limit < 10) $limit = 50;
+        $res = sb_learn_from_junk_folder($limit);
+        if (!empty($res['success'])) {
+            $msg = $res['message'];
+            $msg_type = 'success';
+        } else {
+            $msg = !empty($res['error']) ? $res['error'] : _("Failed to scan Junk folder.");
+            $msg_type = 'error';
+        }
+    }
+}
+
+// Handle Remove Sender from Whitelist / Blacklist
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'remove_sender') {
+    $token = isset($_POST['smtoken']) ? $_POST['smtoken'] : '';
+    if (!empty($token) && function_exists('sm_validate_security_token') && !sm_validate_security_token($token, -1, false)) {
+        $msg = _("Invalid security token.");
+        $msg_type = 'error';
+    } else {
+        $list = isset($_POST['list']) ? trim($_POST['list']) : '';
+        $sender = isset($_POST['sender']) ? trim($_POST['sender']) : '';
+        $data = sb_load_training_data();
+        if ($list === 'blacklist') {
+            $idx = array_search($sender, $data['blacklist']);
+            if ($idx !== false) {
+                unset($data['blacklist'][$idx]);
+                $data['blacklist'] = array_values($data['blacklist']);
+                sb_save_training_data($data);
+                $msg = sprintf(_("Removed '%s' from blacklist."), htmlspecialchars($sender));
+                $msg_type = 'success';
+            }
+        } elseif ($list === 'whitelist') {
+            $idx = array_search($sender, $data['whitelist']);
+            if ($idx !== false) {
+                unset($data['whitelist'][$idx]);
+                $data['whitelist'] = array_values($data['whitelist']);
+                sb_save_training_data($data);
+                $msg = sprintf(_("Removed '%s' from whitelist."), htmlspecialchars($sender));
+                $msg_type = 'success';
+            }
+        }
     }
 }
 
@@ -117,6 +172,18 @@ displayPageHeader($color, 'None');
     font-size: 13px;
     color: #3c4043;
 }
+.sb-rep-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 8px;
+    border-radius: 4px;
+    background: #fafbfc;
+    margin-bottom: 4px;
+}
+.sb-rep-item:hover {
+    background: #f1f3f4;
+}
 </style>
 
 <div class="sb-container">
@@ -128,8 +195,8 @@ displayPageHeader($color, 'None');
     </div>
 
     <?php if ($msg): ?>
-    <div style="background: #e6f4ea; color: #137333; padding: 12px 18px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #ceead6;">
-        ✅ <?php echo htmlspecialchars($msg); ?>
+    <div style="background: <?php echo ($msg_type === 'error' ? '#fce8e6' : '#e6f4ea'); ?>; color: <?php echo ($msg_type === 'error' ? '#c5221f' : '#137333'); ?>; padding: 12px 18px; border-radius: 8px; margin-bottom: 20px; border: 1px solid <?php echo ($msg_type === 'error' ? '#fad2cf' : '#ceead6'); ?>;">
+        <?php echo ($msg_type === 'error' ? '⚠️ ' : '✅ '); ?><?php echo htmlspecialchars($msg); ?>
     </div>
     <?php endif; ?>
 
@@ -150,6 +217,26 @@ displayPageHeader($color, 'None');
         <div class="sb-stat-card">
             <div class="sb-stat-val" style="color: #ea8600;"><?php echo count($data['blacklist']); ?></div>
             <div class="sb-stat-title"><?php echo _("Blacklisted Senders"); ?></div>
+        </div>
+    </div>
+
+    <!-- SCAN & LEARN FROM JUNK FOLDER -->
+    <div class="sb-card" style="border-left: 4px solid #1a73e8; background: linear-gradient(to right, #f8fafd, #ffffff);">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+            <div>
+                <h3 class="sb-card-title" style="margin-bottom: 6px;">📥 <?php echo _("Learn from Junk / Spam Folder"); ?></h3>
+                <p style="font-size: 13px; color: #5f6368; margin: 0; max-width: 580px;">
+                    <?php echo _("Automatically analyze and train your spam filters on emails already sitting in your Junk/Spam folder. This updates your spam keywords, blacklists repeat spam senders, and refines AI heuristics without moving any emails."); ?>
+                </p>
+            </div>
+            <form method="post" id="learn-junk-form" onsubmit="var b=document.getElementById('learn-junk-btn'); if(b){b.disabled=true; b.innerHTML='⏳ Scanning Junk...';}">
+                <input type="hidden" name="action" value="learn_junk">
+                <input type="hidden" name="smtoken" value="<?php echo function_exists('sm_generate_security_token') ? sm_generate_security_token() : ''; ?>">
+                <button type="submit" id="learn-junk-btn" style="padding: 10px 18px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; background: #1a73e8; color: #ffffff; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; box-shadow: 0 1px 3px rgba(0,0,0,0.12);">
+                    <span>📥</span>
+                    <span><?php echo _("Learn from Junk/Spam Folder"); ?></span>
+                </button>
+            </form>
         </div>
     </div>
 
@@ -188,27 +275,45 @@ displayPageHeader($color, 'None');
         <h3 class="sb-card-title">🛡️ <?php echo _("Sender Reputations"); ?></h3>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
             <div>
-                <h4 style="margin: 0 0 8px; color: #137333; font-size: 14px;">✅ <?php echo _("Whitelisted (Trusted)"); ?></h4>
+                <h4 style="margin: 0 0 8px; color: #137333; font-size: 14px;">✅ <?php echo _("Whitelisted (Trusted)"); ?> (<?php echo count($data['whitelist']); ?>)</h4>
                 <?php if (empty($data['whitelist'])): ?>
                     <div style="font-size: 12px; color: #9aa0a6;"><?php echo _("No whitelisted senders yet."); ?></div>
                 <?php else: ?>
-                    <ul style="margin: 0; padding-left: 18px; font-size: 13px;">
-                        <?php foreach (array_slice($data['whitelist'], 0, 10) as $w): ?>
-                            <li><code><?php echo htmlspecialchars($w); ?></code></li>
+                    <div style="max-height: 240px; overflow-y: auto; padding-right: 4px;">
+                        <?php foreach (array_slice($data['whitelist'], 0, 50) as $w): ?>
+                            <div class="sb-rep-item">
+                                <code style="font-size: 12px; color: #137333;"><?php echo htmlspecialchars($w); ?></code>
+                                <form method="post" style="display: inline; margin: 0;">
+                                    <input type="hidden" name="action" value="remove_sender">
+                                    <input type="hidden" name="list" value="whitelist">
+                                    <input type="hidden" name="sender" value="<?php echo htmlspecialchars($w); ?>">
+                                    <input type="hidden" name="smtoken" value="<?php echo function_exists('sm_generate_security_token') ? sm_generate_security_token() : ''; ?>">
+                                    <button type="submit" title="<?php echo _("Remove from Whitelist"); ?>" style="background: none; border: none; color: #9aa0a6; cursor: pointer; padding: 0 4px; font-size: 12px;" onclick="return confirm('Remove <?php echo htmlspecialchars(addslashes($w)); ?> from whitelist?');">✕</button>
+                                </form>
+                            </div>
                         <?php endforeach; ?>
-                    </ul>
+                    </div>
                 <?php endif; ?>
             </div>
             <div>
-                <h4 style="margin: 0 0 8px; color: #c5221f; font-size: 14px;">🚫 <?php echo _("Blacklisted (Spam)"); ?></h4>
+                <h4 style="margin: 0 0 8px; color: #c5221f; font-size: 14px;">🚫 <?php echo _("Blacklisted (Spam)"); ?> (<?php echo count($data['blacklist']); ?>)</h4>
                 <?php if (empty($data['blacklist'])): ?>
                     <div style="font-size: 12px; color: #9aa0a6;"><?php echo _("No blacklisted senders yet."); ?></div>
                 <?php else: ?>
-                    <ul style="margin: 0; padding-left: 18px; font-size: 13px;">
-                        <?php foreach (array_slice($data['blacklist'], 0, 10) as $b): ?>
-                            <li><code><?php echo htmlspecialchars($b); ?></code></li>
+                    <div style="max-height: 240px; overflow-y: auto; padding-right: 4px;">
+                        <?php foreach (array_slice($data['blacklist'], 0, 50) as $b): ?>
+                            <div class="sb-rep-item">
+                                <code style="font-size: 12px; color: #c5221f;"><?php echo htmlspecialchars($b); ?></code>
+                                <form method="post" style="display: inline; margin: 0;">
+                                    <input type="hidden" name="action" value="remove_sender">
+                                    <input type="hidden" name="list" value="blacklist">
+                                    <input type="hidden" name="sender" value="<?php echo htmlspecialchars($b); ?>">
+                                    <input type="hidden" name="smtoken" value="<?php echo function_exists('sm_generate_security_token') ? sm_generate_security_token() : ''; ?>">
+                                    <button type="submit" title="<?php echo _("Remove from Blacklist"); ?>" style="background: none; border: none; color: #9aa0a6; cursor: pointer; padding: 0 4px; font-size: 12px;" onclick="return confirm('Remove <?php echo htmlspecialchars(addslashes($b)); ?> from blacklist?');">✕</button>
+                                </form>
+                            </div>
                         <?php endforeach; ?>
-                    </ul>
+                    </div>
                 <?php endif; ?>
             </div>
         </div>

@@ -50,6 +50,7 @@ sqgetGlobalVar('lastTargetMailbox', $lastTargetMailbox, SQ_SESSION);
 sqgetGlobalVar('targetMailbox', $lastTargetMailbox, SQ_POST);
 sqgetGlobalVar('note',              $note,              SQ_GET);
 sqgetGlobalVar('mail_sent',         $mail_sent,         SQ_GET);
+sqgetGlobalVar('label_filter',      $label_filter);
 
 
 if ( sqGetGlobalVarMultiple('startMessage', $temp, 'paginator_submit') ) {
@@ -196,6 +197,9 @@ $aConfig = array(
                 // incoming vars
                 'offset' => $startMessage // offset in paginator
                 );
+if (!empty($label_filter)) {
+    $aConfig['label_filter'] = $label_filter;
+}
 /**
  * The showall functionality is for the moment added to the config array
  * to avoid storage of the showall link in the mailbox pref. We could change
@@ -269,9 +273,10 @@ if (isset($aMailbox['FORWARD_SESSION'])) {
                   . '&fwduid=' . implode('_', $fwd_uids);
     }
 
+    $cache_key = !empty($aMailbox['CACHEKEY']) ? $aMailbox['CACHEKEY'] : ($account.'_'.$aMailbox['NAME']);
     if ($compose_new_win) {
         /* add the mailbox to the cache */
-        $mailbox_cache[$account.'_'.$aMailbox['NAME']] = $aMailbox;
+        $mailbox_cache[$cache_key] = $aMailbox;
         sqsession_register($mailbox_cache,'mailbox_cache');
         session_write_close();
         sqsession_start();
@@ -283,7 +288,7 @@ if (isset($aMailbox['FORWARD_SESSION'])) {
         }
         $onload = "comp_in_new('$comp_uri', $compose_width, $compose_height);";
     } else {
-        $mailbox_cache[$account.'_'.$aMailbox['NAME']] = $aMailbox;
+        $mailbox_cache[$cache_key] = $aMailbox;
         sqsession_register($mailbox_cache,'mailbox_cache');
 
         // save mailboxstate
@@ -390,5 +395,6 @@ $oTemplate->display('footer.tpl');
 
 
 /* add the mailbox to the cache */
-$mailbox_cache[$account.'_'.$aMailbox['NAME']] = $aMailbox;
+$cache_key = !empty($aMailbox['CACHEKEY']) ? $aMailbox['CACHEKEY'] : ($account.'_'.$aMailbox['NAME']);
+$mailbox_cache[$cache_key] = $aMailbox;
 sqsession_register($mailbox_cache,'mailbox_cache');

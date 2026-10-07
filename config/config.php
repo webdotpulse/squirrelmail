@@ -998,10 +998,10 @@ $plugins[] = 'message_labels';
 $plugins[] = 'newmail_notify';
 $plugins[] = 'spam_buttons';
 $plugins[] = 'templates';
-$plugins[] = 'squirrelspell';
 $plugins[] = 'message_details';
-$plugins[] = 'info';
 $plugins[] = 'filters';
+$plugins[] = 'signature_creator';
+$plugins[] = 'administrator';
 
 /**
  * To disable all plugins regardless of any that are installed 
