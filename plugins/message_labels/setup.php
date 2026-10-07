@@ -162,37 +162,55 @@ function ml_read_body_header_right(&$links)
 
     ob_start();
     ?>
-    <div style="position: relative; display: inline-block;">
-        <button type="button" class="btn btn-secondary" onclick="mlToggleDropdown()" style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; font-size: 12px; font-weight: 500; border-radius: 4px; border: 1px solid #dadce0; background: #ffffff; color: #3c4043; cursor: pointer;">
-            <span>🏷️</span> <span><?php echo _("Labels"); ?></span> <span>▼</span>
+    <div class="ml-dropdown-wrapper" style="position: relative; display: inline-flex; align-items: center;">
+        <button type="button" class="sm-btn sm-btn-secondary sm-btn-sm ml-dropdown-btn" onclick="mlToggleDropdown(event)" style="display: inline-flex; align-items: center; gap: 5px; cursor: pointer; white-space: nowrap;">
+            <span>🏷️</span> <span><?php echo _("Labels"); ?></span> <span style="font-size: 8px; opacity: 0.7; margin-left: 2px;">▼</span>
         </button>
-        <div id="ml-dropdown" class="ml-dropdown-menu">
-            <div style="padding: 4px 14px 8px; font-size: 11px; font-weight: 700; color: #5f6368; text-transform: uppercase;">
+        <div id="ml-dropdown" class="ml-dropdown-menu" style="display: none; position: absolute; top: calc(100% + 4px); right: 0; min-width: 210px; background: var(--sm-bg-surface, #ffffff); border: 1px solid var(--sm-border, #dadce0); border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.16); z-index: 10005; padding: 6px 0;">
+            <div class="ml-dropdown-header" style="padding: 6px 14px 4px; font-size: 11px; font-weight: 700; color: var(--sm-text-muted, #5f6368); text-transform: uppercase; letter-spacing: 0.5px;">
                 <?php echo _("Label Message As"); ?>
             </div>
             <?php foreach ($data['labels'] as $lid => $lDef):
                 $isChecked = isset($activeLabels[$lid]);
             ?>
-            <div class="ml-dropdown-item" onclick="mlToggleLabel('<?php echo htmlspecialchars($mailbox, ENT_QUOTES); ?>', <?php echo $uid; ?>, '<?php echo $lid; ?>')">
-                <input type="checkbox" id="ml-chk-<?php echo $lid; ?>" <?php if ($isChecked) echo 'checked'; ?> onclick="event.stopPropagation(); mlToggleLabel('<?php echo htmlspecialchars($mailbox, ENT_QUOTES); ?>', <?php echo $uid; ?>, '<?php echo $lid; ?>')">
-                <span style="width: 10px; height: 10px; border-radius: 50%; background: <?php echo htmlspecialchars($lDef['color']); ?>;"></span>
-                <span><?php echo htmlspecialchars($lDef['name']); ?></span>
+            <div class="ml-dropdown-item" onclick="mlToggleLabel('<?php echo htmlspecialchars($mailbox, ENT_QUOTES); ?>', <?php echo $uid; ?>, '<?php echo $lid; ?>')" style="display: flex; align-items: center; gap: 10px; padding: 7px 14px; font-size: 13px; font-weight: 500; color: var(--sm-text-primary, #202124); cursor: pointer;">
+                <input type="checkbox" id="ml-chk-<?php echo $lid; ?>" <?php if ($isChecked) echo 'checked'; ?> onclick="event.stopPropagation(); mlToggleLabel('<?php echo htmlspecialchars($mailbox, ENT_QUOTES); ?>', <?php echo $uid; ?>, '<?php echo $lid; ?>')" style="margin: 0; cursor: pointer;">
+                <span class="ml-label-dot" style="width: 10px; height: 10px; min-width: 10px; min-height: 10px; border-radius: 50%; background: <?php echo htmlspecialchars($lDef['color']); ?>; flex-shrink: 0; display: inline-block;"></span>
+                <span style="flex: 1;"><?php echo htmlspecialchars($lDef['name']); ?></span>
             </div>
             <?php endforeach; ?>
-            <div style="border-top: 1px solid #dadce0; margin-top: 6px; padding: 6px 14px 2px;">
-                <a href="<?php echo SM_PATH; ?>plugins/message_labels/options.php" style="font-size: 12px; color: #1a73e8; text-decoration: none;">⚙️ <?php echo _("Manage labels..."); ?></a>
+            <div class="ml-dropdown-divider" style="border-top: 1px solid var(--sm-border, #dadce0); margin: 4px 0;"></div>
+            <div class="ml-dropdown-footer" style="padding: 4px 14px 4px;">
+                <a href="<?php echo SM_PATH; ?>plugins/message_labels/options.php" style="font-size: 12px; color: var(--sm-primary, #1a73e8); text-decoration: none; display: inline-flex; align-items: center; gap: 6px; font-weight: 500;">⚙️ <?php echo _("Manage labels..."); ?></a>
             </div>
         </div>
     </div>
 
     <script>
-    function mlToggleDropdown() {
+    function mlToggleDropdown(e) {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
         var menu = document.getElementById('ml-dropdown');
-        menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
+        if (!menu) return;
+        var isShown = (menu.style.display === 'block' || menu.classList.contains('show'));
+        if (isShown) {
+            menu.classList.remove('show');
+            menu.style.display = 'none';
+        } else {
+            document.querySelectorAll('.ml-dropdown-menu').forEach(function(m) {
+                m.classList.remove('show');
+                m.style.display = 'none';
+            });
+            menu.classList.add('show');
+            menu.style.display = 'block';
+        }
     }
     document.addEventListener('click', function(e) {
         var menu = document.getElementById('ml-dropdown');
         if (menu && !menu.parentElement.contains(e.target)) {
+            menu.classList.remove('show');
             menu.style.display = 'none';
         }
     });
@@ -248,90 +266,133 @@ function ml_message_list_controls($args = null)
 
     ob_start();
     ?>
-    <div style="position: relative; display: inline-block;">
-        <button type="button" class="sm-btn sm-btn-secondary sm-btn-sm" onclick="mlToggleBatchDropdown(event)" style="display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; font-size: 12px; font-weight: 600; border-radius: 4px; border: 1px solid var(--sm-border, #dadce0); background: var(--sm-bg-surface, #ffffff); color: var(--sm-text-primary, #3c4043); cursor: pointer;" title="<?php echo _("Label Selected Messages"); ?>">
+    <div class="ml-dropdown-wrapper" style="position: relative; display: inline-flex; align-items: center;">
+        <button type="button" class="sm-btn sm-btn-secondary sm-btn-sm ml-dropdown-btn" onclick="mlToggleBatchDropdown(event)" title="<?php echo _("Label Selected Messages"); ?>" style="display: inline-flex; align-items: center; gap: 5px; cursor: pointer; white-space: nowrap;">
             <span>🏷️</span>
             <span><?php echo _("Labels"); ?></span>
-            <span style="font-size: 9px; opacity: 0.7;">▼</span>
+            <span style="font-size: 8px; opacity: 0.7; margin-left: 2px;">▼</span>
         </button>
-        <div id="ml-batch-dropdown" class="ml-dropdown-menu" style="left: 0; right: auto; min-width: 190px; display: none;">
-            <div style="padding: 6px 12px 4px; font-size: 11px; font-weight: 700; color: #5f6368; text-transform: uppercase;">
+        <div id="ml-batch-dropdown" class="ml-dropdown-menu" style="display: none; position: absolute; top: calc(100% + 4px); left: 0; min-width: 210px; background: var(--sm-bg-surface, #ffffff); border: 1px solid var(--sm-border, #dadce0); border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.16), 0 2px 6px rgba(0,0,0,0.08); z-index: 10005; padding: 6px 0;">
+            <div class="ml-dropdown-header" style="padding: 6px 14px 4px; font-size: 11px; font-weight: 700; color: var(--sm-text-muted, #5f6368); text-transform: uppercase; letter-spacing: 0.5px;">
                 <?php echo _("Label Selected Messages"); ?>
             </div>
             <?php foreach ($data['labels'] as $lid => $lDef): ?>
-            <div class="ml-dropdown-item" onclick="mlApplyBatchLabel('<?php echo htmlspecialchars($mailbox, ENT_QUOTES); ?>', '<?php echo $lid; ?>')">
-                <span style="width: 10px; height: 10px; border-radius: 50%; background: <?php echo htmlspecialchars($lDef['color']); ?>; flex-shrink: 0;"></span>
-                <span><?php echo htmlspecialchars($lDef['name']); ?></span>
+            <div class="ml-dropdown-item" onclick="mlApplyBatchLabel('<?php echo htmlspecialchars($mailbox, ENT_QUOTES); ?>', '<?php echo $lid; ?>')" style="display: flex; align-items: center; gap: 10px; padding: 7px 14px; font-size: 13px; font-weight: 500; color: var(--sm-text-primary, #202124); cursor: pointer;">
+                <span class="ml-label-dot" style="width: 10px; height: 10px; min-width: 10px; min-height: 10px; border-radius: 50%; background: <?php echo htmlspecialchars($lDef['color']); ?>; flex-shrink: 0; display: inline-block;"></span>
+                <span style="flex: 1;"><?php echo htmlspecialchars($lDef['name']); ?></span>
             </div>
             <?php endforeach; ?>
-            <div style="border-top: 1px solid #dadce0; margin-top: 4px; padding: 6px 12px 2px;">
-                <a href="<?php echo SM_PATH; ?>plugins/message_labels/options.php" style="font-size: 11.5px; color: #1a73e8; text-decoration: none;">⚙️ <?php echo _("Manage labels..."); ?></a>
+            <div class="ml-dropdown-divider" style="border-top: 1px solid var(--sm-border, #dadce0); margin: 4px 0;"></div>
+            <div class="ml-dropdown-item" onclick="mlApplyBatchLabel('<?php echo htmlspecialchars($mailbox, ENT_QUOTES); ?>', '__clear__')" style="display: flex; align-items: center; gap: 10px; padding: 7px 14px; font-size: 13px; font-weight: 500; color: var(--sm-danger, #d93025); cursor: pointer;">
+                <span style="font-size: 12px; width: 10px; text-align: center; display: inline-block;">✕</span>
+                <span><?php echo _("Remove all labels"); ?></span>
+            </div>
+            <div class="ml-dropdown-divider" style="border-top: 1px solid var(--sm-border, #dadce0); margin: 4px 0;"></div>
+            <div class="ml-dropdown-footer" style="padding: 4px 14px 4px;">
+                <a href="<?php echo SM_PATH; ?>plugins/message_labels/options.php" style="font-size: 12px; color: var(--sm-primary, #1a73e8); text-decoration: none; display: inline-flex; align-items: center; gap: 6px; font-weight: 500;">⚙️ <?php echo _("Manage labels..."); ?></a>
             </div>
         </div>
     </div>
     <script>
-    if (typeof window.mlToggleBatchDropdown !== 'function') {
-        window.mlToggleBatchDropdown = function(e) {
-            if (e) e.stopPropagation();
-            var menu = document.getElementById('ml-batch-dropdown');
-            if (menu) {
-                menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
-            }
-        };
+    window.mlToggleBatchDropdown = function(e) {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        var menu = document.getElementById('ml-batch-dropdown');
+        if (!menu) return;
+        var isShown = (menu.style.display === 'block' || menu.classList.contains('show'));
+        if (isShown) {
+            menu.classList.remove('show');
+            menu.style.display = 'none';
+        } else {
+            document.querySelectorAll('.ml-dropdown-menu').forEach(function(m) {
+                m.classList.remove('show');
+                m.style.display = 'none';
+            });
+            menu.classList.add('show');
+            menu.style.display = 'block';
+        }
+    };
+
+    if (!window.mlDropdownListenerAttached) {
+        window.mlDropdownListenerAttached = true;
         document.addEventListener('click', function(e) {
+            var wrapper = document.querySelector('.ml-dropdown-wrapper');
             var menu = document.getElementById('ml-batch-dropdown');
-            if (menu && !menu.parentElement.contains(e.target)) {
+            if (menu && (!wrapper || !wrapper.contains(e.target))) {
+                menu.classList.remove('show');
                 menu.style.display = 'none';
             }
         });
-        window.mlApplyBatchLabel = function(mailbox, labelId) {
-            var menu = document.getElementById('ml-batch-dropdown');
-            if (menu) menu.style.display = 'none';
-
-            var checkedBoxes = document.querySelectorAll('form[name="messageListForm"] input[type="checkbox"][name^="msg"]:checked, form#message_list input[type="checkbox"][name^="msg"]:checked, input[type="checkbox"][name^="msg"]:checked');
-            var uids = [];
-            checkedBoxes.forEach(function(cb) {
-                if (cb.value && cb.value !== 'on' && !isNaN(cb.value)) {
-                    uids.push(cb.value);
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                var menu = document.getElementById('ml-batch-dropdown');
+                if (menu) {
+                    menu.classList.remove('show');
+                    menu.style.display = 'none';
                 }
-            });
-            if (uids.length === 0) {
-                alert("<?php echo _("Please select one or more messages using the checkboxes first."); ?>");
-                return;
             }
+        });
+    }
 
-            var formData = new FormData();
-            formData.append('action', 'batch_toggle_label');
-            formData.append('mailbox', mailbox);
-            formData.append('label_id', labelId);
-            formData.append('uids', uids.join(','));
+    window.mlApplyBatchLabel = function(mailbox, labelId) {
+        var menu = document.getElementById('ml-batch-dropdown');
+        if (menu) {
+            menu.classList.remove('show');
+            menu.style.display = 'none';
+        }
 
-            var ajaxUrl = (typeof window.sqmApp !== 'undefined' && window.sqmApp.getBaseUri)
-                ? window.sqmApp.getBaseUri() + 'plugins/message_labels/ajax.php'
-                : '<?php echo SM_PATH; ?>plugins/message_labels/ajax.php';
+        var checkedBoxes = document.querySelectorAll(
+            'input[type="checkbox"][name^="msg["]:checked, ' +
+            'input[type="checkbox"][name^="msg"]:checked, ' +
+            'input[type="checkbox"][name^="check["]:checked'
+        );
+        var uids = [];
+        checkedBoxes.forEach(function(cb) {
+            if (cb.value && cb.value !== 'on' && !isNaN(cb.value)) {
+                uids.push(cb.value);
+            }
+        });
 
-            fetch(ajaxUrl, {
-                method: 'POST',
-                body: formData
-            })
-            .then(function(r) { return r.json(); })
-            .then(function(data) {
-                if (data.success) {
-                    if (typeof window.sqmApp !== 'undefined' && typeof window.sqmApp.navigate === 'function') {
-                        window.sqmApp.navigate(window.location.href, false);
+        if (uids.length === 0) {
+            alert("<?php echo _("Please select one or more messages using the checkboxes first."); ?>");
+            return;
+        }
+
+        var formData = new FormData();
+        formData.append('action', 'batch_toggle_label');
+        formData.append('mailbox', mailbox);
+        formData.append('label_id', labelId);
+        formData.append('uids', uids.join(','));
+
+        var ajaxUrl = (typeof window.sqmApp !== 'undefined' && typeof window.sqmApp.getBaseUri === 'function')
+            ? window.sqmApp.getBaseUri() + 'plugins/message_labels/ajax.php'
+            : '<?php echo SM_PATH; ?>plugins/message_labels/ajax.php';
+
+        fetch(ajaxUrl, {
+            method: 'POST',
+            body: formData
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.success) {
+                if (typeof window.sqmApp !== 'undefined' && typeof window.sqmApp.navigate === 'function') {
+                    window.sqmApp.navigate(window.location.href, false);
+                    if (typeof window.sqmApp.refreshFolders === 'function') {
                         window.sqmApp.refreshFolders();
-                    } else {
-                        window.location.reload();
                     }
                 } else {
-                    alert(data.error || 'Failed to apply label');
+                    window.location.reload();
                 }
-            })
-            .catch(function(err) {
-                window.location.reload();
-            });
-        };
-    }
+            } else {
+                alert(data.error || 'Failed to apply label');
+            }
+        })
+        .catch(function(err) {
+            window.location.reload();
+        });
+    };
     </script>
     <?php
     $btn = ob_get_clean();

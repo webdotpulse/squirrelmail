@@ -750,6 +750,117 @@ img[src$=".svg"],
   min-height: 30px;
 }
 
+/* Message Labels & Actions Dropdown Menu */
+.ml-dropdown-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.ml-dropdown-menu {
+  display: none;
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 210px;
+  background-color: var(--sm-bg-surface, #ffffff);
+  border: 1px solid var(--sm-border, #dadce0);
+  border-radius: var(--sm-radius-md, 8px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16), 0 2px 6px rgba(0, 0, 0, 0.08);
+  z-index: 10005;
+  padding: 6px 0;
+  box-sizing: border-box;
+}
+
+.ml-dropdown-menu.show {
+  display: block !important;
+}
+
+.ml-dropdown-header {
+  padding: 6px 14px 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--sm-text-muted, #5f6368);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.ml-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--sm-text-primary, #202124);
+  cursor: pointer;
+  transition: background-color var(--sm-transition-fast, 0.15s ease);
+  user-select: none;
+  text-decoration: none;
+  box-sizing: border-box;
+}
+
+.ml-dropdown-item:hover {
+  background-color: var(--sm-hover-bg, #f1f3f4);
+  color: var(--sm-primary, #1a73e8);
+}
+
+.ml-dropdown-item .ml-label-dot {
+  width: 10px;
+  height: 10px;
+  min-width: 10px;
+  min-height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: inline-block;
+}
+
+.ml-dropdown-divider {
+  border-top: 1px solid var(--sm-border, #dadce0);
+  margin: 4px 0;
+}
+
+.ml-dropdown-footer {
+  padding: 4px 14px 4px;
+}
+
+.ml-dropdown-footer a {
+  font-size: 12px;
+  color: var(--sm-primary, #1a73e8);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+}
+
+.ml-dropdown-footer a:hover {
+  text-decoration: underline;
+}
+
+.ml-tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-right: 6px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.ml-star-icon {
+  cursor: pointer;
+  font-size: 16px;
+  color: #dadce0;
+  transition: color 0.15s, transform 0.15s;
+}
+
+.ml-star-icon.starred {
+  color: #fbbc04;
+}
+
 /* Paginator */
 .sm-paginator {
   display: inline-flex;

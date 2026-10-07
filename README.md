@@ -1,4 +1,4 @@
-# SquirrelMail 1.5.4
+# SquirrelMail 1.5.5
 
 A modernized, responsive edition of SquirrelMail engineered for PHP 7.0 through 8.2+ with a Single-Page Application (SPA) interface, modern UI styling, and extensive feature enhancements.
 
@@ -43,6 +43,10 @@ This repository includes an [AGENTS.md](file:///home/koen/Git/squirrelmail/AGENT
 ---
 
 ## 📝 Changelog
+
+### Version 1.5.5
+- **Mailbox Labels Dropdown Positioning & Styling**: Fixed layout issues with the "🏷️ Labels ▼" dropdown where the menu was rendered as an in-flow static block (causing flex wrapping, height expansion, and toolbar distortion). Integrated absolute popup overlay styling (`.ml-dropdown-wrapper`, `.ml-dropdown-menu`, `.ml-dropdown-item`) into `assets/css/app.css` with dark mode support, color indicator dots, outside-click & Escape dismissal, and added a "Remove all labels" action.
+- **Version Bump**: Incremented version from `1.5.4` to `1.5.5`.
 
 ### Version 1.5.4
 - **Sidebar Compose Button**: Fixed oversized styling and eliminated nested inner button rendering (`.sm-btn-compose-main span`), delivering a compact, sleek primary action button.

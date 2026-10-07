@@ -271,6 +271,17 @@ function ml_batch_toggle_label($mailbox, $uids, $labelId)
     $data = ml_load_data();
     if (!is_array($uids)) $uids = array($uids);
 
+    if ($labelId === '__clear__') {
+        foreach ($uids as $uid) {
+            $key = ml_get_message_key($mailbox, $uid);
+            if (isset($data['messages'][$key])) {
+                unset($data['messages'][$key]);
+            }
+        }
+        ml_save_data($data);
+        return false;
+    }
+
     $hasCount = 0;
     foreach ($uids as $uid) {
         $key = ml_get_message_key($mailbox, $uid);
