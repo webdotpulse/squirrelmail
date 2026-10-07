@@ -587,30 +587,17 @@ function formatMenubar($aMailbox, $passed_id, $passed_ent_id, $message,
 
     $comp_uri = $base_uri.'src/compose.php' .
                 '?passed_id=' . $passed_id .
-                '&amp;mailbox=' . $urlMailbox .
-                '&amp;startMessage=' . $startMessage .
-                 (isset($passed_ent_id) ? '&amp;passed_ent_id='.$passed_ent_id : '');
+                '&mailbox=' . $urlMailbox .
+                '&startMessage=' . $startMessage .
+                 (isset($passed_ent_id) ? '&passed_ent_id='.$passed_ent_id : '');
 
     // Start form for reply/reply all/forward..
     $target = '';
     $on_click='';
-    $method='post';
+    $method='get';
     $onsubmit='';
     if ($compose_new_win == '1') {
-        if (!preg_match("/^[0-9]{3,4}$/", $compose_width)) {
-            $compose_width = '640';
-        }
-        if (!preg_match("/^[0-9]{3,4}$/", $compose_height)) {
-            $compose_height = '550';
-        }
-        if ( checkForJavascript() ) {
-          $on_click='comp_in_new_form(\''.$comp_uri.'\', this, this.form,'. $compose_width .',' . $compose_height .')';
-          $comp_uri = 'javascript:void(0)';
-          $method='get';
-          $onsubmit = 'return false';
-        } else {
-          $target = '_blank';
-        }
+        $target = '_blank';
     }
 
     $oTemplate->assign('nav_on_top', $nav_on_top);
@@ -633,9 +620,10 @@ function formatMenubar($aMailbox, $passed_id, $passed_ent_id, $message,
     $oTemplate->assign('button_onclick', $on_click);
     $oTemplate->assign('forward_as_attachment_enabled', $enable_forward_as_attachment==1);
 
-    //FIXME: I am surprised these aren't already given to the template; probably needs to be given at a higher level, so I have NO IDEA if this is the right place to do this...  adding them so template can construct its own API calls... we can build those herein too if preferrable
     $oTemplate->assign('mailbox', $aMailbox['NAME']);
     $oTemplate->assign('passed_id', $passed_id);
+    $oTemplate->assign('startMessage', $startMessage);
+    $oTemplate->assign('passed_ent_id', isset($passed_ent_id) ? $passed_ent_id : '');
     $oTemplate->assign('what', $what);
 
     // If Draft folder - create Resume link

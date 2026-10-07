@@ -28,7 +28,6 @@ function multi_account_left_main_do()
 
     $baseUri = sqm_baseuri();
     $inboxUrl = $baseUri . 'plugins/multi_account/unified_inbox.php';
-    $optionsUrl = $baseUri . 'plugins/multi_account/options.php';
 
     ob_start();
     ?>
@@ -146,23 +145,6 @@ function multi_account_left_main_do()
             padding: 0 5px;
             border-radius: 8px;
         }
-        .sqm-acc-actions {
-            margin-top: 6px;
-            padding-top: 6px;
-            border-top: 1px solid var(--sm-border, #f1f3f4);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            font-size: 11px;
-        }
-        .sqm-acc-action-link {
-            color: var(--sm-text-muted, #5f6368);
-            text-decoration: none;
-        }
-        .sqm-acc-action-link:hover {
-            color: var(--sm-primary, #1a73e8);
-            text-decoration: underline;
-        }
     </style>
 
     <div class="sqm-multi-account-container" id="sqm-multi-account-widget">
@@ -215,14 +197,6 @@ function multi_account_left_main_do()
             </ul>
         <?php endif; ?>
 
-        <div class="sqm-acc-actions">
-            <a href="<?php echo htmlspecialchars($optionsUrl); ?>" class="sqm-acc-action-link">
-                ⚙️ <?php echo _("Manage Accounts"); ?>
-            </a>
-            <a href="javascript:void(0);" onclick="sqmRefreshMultiCounts();" class="sqm-acc-action-link" title="<?php echo _("Refresh unread counters"); ?>">
-                🔄
-            </a>
-        </div>
     </div>
 
     <script type="text/javascript">

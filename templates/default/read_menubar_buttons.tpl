@@ -77,49 +77,52 @@ if ($nav_on_top) {
 <table class="<?php echo $table_class; ?>" cellspacing="0">
  <tr class="buttons">
   <td class="buttons">
-   <form name="composeForm" action="<?php 
-                  echo $compose_href . '" '  
-                     . (!empty($form_method) ? 'method="' . $form_method . '" ' : '')
-                     . (!empty($form_target) ? 'target="' . $form_target . '" ' : '')
-                     . (!empty($form_onsubmit) ? 'onsubmit="' . $form_onsubmit . '" ' : '')
-                     . $form_extra; ?> >
-   <small>
-    <?php
-        if ($can_resume_draft) {
-            ?>
-    <input type="submit" name="smaction_draft" value="<?php echo _("Resume Draft"); ?>" onclick="<?php echo $button_onclick; ?>" />&nbsp;
-            <?php
-        } elseif ($can_edit_as_new) {
-            ?>
-    <input type="submit" name="smaction_edit_new" value="<?php echo _("Edit Message as New"); ?>" onclick="<?php echo $button_onclick; ?>" />&nbsp;
-            <?php
-        }
-    ?>
-    <input type="submit" name="smaction_reply" <?php if ($accesskey_read_msg_reply != 'NONE') echo 'accesskey="' . $accesskey_read_msg_reply . '" '; ?>value="<?php echo _("Reply"); ?>" onclick="<?php echo $button_onclick; ?>" />&nbsp;
-    <input type="submit" name="smaction_reply_all" <?php if ($accesskey_read_msg_reply_all != 'NONE') echo 'accesskey="' . $accesskey_read_msg_reply_all . '" '; ?>value="<?php echo _("Reply All"); ?>" onclick="<?php echo $button_onclick; ?>" />
-    &nbsp;&nbsp;|&nbsp;&nbsp;
-    <input type="submit" name="smaction_forward" <?php if ($accesskey_read_msg_forward != 'NONE') echo 'accesskey="' . $accesskey_read_msg_forward . '" '; ?>value="<?php echo _("Forward"); ?>" onclick="<?php echo $button_onclick; ?>" />
-    <?php
-    if ($forward_as_attachment_enabled) {
-        ?>
-    <input type="checkbox" name="smaction_attache" id="smaction_attache" <?php if ($accesskey_read_msg_as_attach != 'NONE') echo 'accesskey="' . $accesskey_read_msg_as_attach . '" '; ?>/>
-    <label for="smaction_attache"><?php echo _("As Attachment"); ?></label>
-        <?php
-    }
-    ?>
-   </small>
+   <form name="composeForm" action="<?php echo sqm_baseuri(); ?>src/compose.php" method="get"<?php echo (!empty($form_target) ? ' target="' . $form_target . '"' : ''); ?> style="display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 0;">
+    <input type="hidden" name="passed_id" value="<?php echo htmlspecialchars((string)$passed_id, ENT_QUOTES); ?>" />
+    <input type="hidden" name="mailbox" value="<?php echo htmlspecialchars((string)$mailbox, ENT_QUOTES); ?>" />
+    <input type="hidden" name="startMessage" value="<?php echo htmlspecialchars((string)($startMessage ?? 1), ENT_QUOTES); ?>" />
+    <?php if (!empty($passed_ent_id)) { ?>
+    <input type="hidden" name="passed_ent_id" value="<?php echo htmlspecialchars((string)$passed_ent_id, ENT_QUOTES); ?>" />
+    <?php } ?>
+
+    <?php if ($can_resume_draft) { ?>
+    <button type="submit" name="smaction" value="draft" class="sm-btn sm-btn-secondary sm-btn-sm" title="<?php echo _("Resume Draft"); ?>">
+      <?php echo _("Resume Draft"); ?>
+    </button>
+    <?php } elseif ($can_edit_as_new) { ?>
+    <button type="submit" name="smaction" value="edit_as_new" class="sm-btn sm-btn-secondary sm-btn-sm" title="<?php echo _("Edit Message as New"); ?>">
+      <?php echo _("Edit Message as New"); ?>
+    </button>
+    <?php } ?>
+
+    <button type="submit" name="smaction" value="reply" class="sm-btn sm-btn-secondary sm-btn-sm" <?php if ($accesskey_read_msg_reply != 'NONE') echo 'accesskey="' . $accesskey_read_msg_reply . '" '; ?>title="<?php echo _("Reply"); ?>">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px; vertical-align: -2px;"><polyline points="9 17 4 12 9 7"></polyline><path d="M20 18v-2a4 4 0 0 0-4-4H4"></path></svg>
+      <?php echo _("Reply"); ?>
+    </button>
+    <button type="submit" name="smaction" value="reply_all" class="sm-btn sm-btn-secondary sm-btn-sm" <?php if ($accesskey_read_msg_reply_all != 'NONE') echo 'accesskey="' . $accesskey_read_msg_reply_all . '" '; ?>title="<?php echo _("Reply All"); ?>">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px; vertical-align: -2px;"><polyline points="7 17 2 12 7 7"></polyline><polyline points="12 17 7 12 12 7"></polyline><path d="M22 18v-2a4 4 0 0 0-4-4H7"></path></svg>
+      <?php echo _("Reply All"); ?>
+    </button>
+    <button type="submit" name="smaction" value="forward" class="sm-btn sm-btn-secondary sm-btn-sm" <?php if ($accesskey_read_msg_forward != 'NONE') echo 'accesskey="' . $accesskey_read_msg_forward . '" '; ?>title="<?php echo _("Forward"); ?>">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px; vertical-align: -2px;"><polyline points="15 17 20 12 15 7"></polyline><path d="M4 18v-2a4 4 0 0 1 4-4h12"></path></svg>
+      <?php echo _("Forward"); ?>
+    </button>
+    <?php if ($forward_as_attachment_enabled) { ?>
+    <label style="display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--sm-text-secondary); cursor: pointer; margin-left: 2px;">
+      <input type="checkbox" name="smaction_attache" id="smaction_attache" value="1" <?php if ($accesskey_read_msg_as_attach != 'NONE') echo 'accesskey="' . $accesskey_read_msg_as_attach . '" '; ?>/>
+      <?php echo _("As Attachment"); ?>
+    </label>
+    <?php } ?>
    </form>
     &nbsp;&nbsp;|&nbsp;&nbsp;
     <?php
     if ($can_be_deleted) {
         ?>
-    <form name="deleteMessageForm" action="<?php echo $move_delete_form_action; ?>" method="post">
+    <form name="deleteMessageForm" action="<?php echo $move_delete_form_action; ?>" method="post" style="display: inline-flex; align-items: center; gap: 6px; margin: 0;">
      <input type="hidden" name="smtoken" value="<?php echo sm_generate_security_token(); ?>" />
      <?php echo $delete_form_extra; ?>
-     <small>
-     <input type="submit" name="delete" <?php if ($accesskey_read_msg_delete != 'NONE') echo 'accesskey="' . $accesskey_read_msg_delete . '" '; ?>value="<?php echo _("Delete"); ?>" />
-     <input type="checkbox" name="bypass_trash" id="bypass_trash" <?php if ($accesskey_read_msg_bypass_trash != 'NONE') echo 'accesskey="' . $accesskey_read_msg_bypass_trash . '" '; ?>/><label for="bypass_trash"><?php echo _("Bypass Trash"); ?></label>
-     </small>
+     <input type="submit" name="delete" class="sm-btn sm-btn-danger sm-btn-sm" <?php if ($accesskey_read_msg_delete != 'NONE') echo 'accesskey="' . $accesskey_read_msg_delete . '" '; ?>value="<?php echo _("Delete"); ?>" />
+     <label style="display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--sm-text-secondary); cursor: pointer;"><input type="checkbox" name="bypass_trash" id="bypass_trash" <?php if ($accesskey_read_msg_bypass_trash != 'NONE') echo 'accesskey="' . $accesskey_read_msg_bypass_trash . '" '; ?>/><?php echo _("Bypass Trash"); ?></label>
     </form>
         <?php
     }
@@ -130,27 +133,25 @@ if ($nav_on_top) {
    <?php
     if ($can_be_moved) {
         ?>
-    <form name="moveMessageForm" action="<?php echo $move_delete_form_action; ?>" method="post">
+    <form name="moveMessageForm" action="<?php echo $move_delete_form_action; ?>" method="post" style="display: inline-flex; align-items: center; gap: 6px; margin: 0;">
      <input type="hidden" name="smtoken" value="<?php echo sm_generate_security_token(); ?>" />
      <?php echo $move_form_extra; ?>
-     <small>
-     <?php echo _("Move To"); ?>:
-     <select <?php if ($accesskey_read_msg_move_to != 'NONE') echo 'accesskey="' . $accesskey_read_msg_move_to . '" '; ?>name="targetMailbox">
+     <span style="font-size: 12px; color: var(--sm-text-secondary);"><?php echo _("Move To"); ?>:</span>
+     <select class="sm-select sm-select-sm" style="font-size: 12px; padding: 4px 8px;" <?php if ($accesskey_read_msg_move_to != 'NONE') echo 'accesskey="' . $accesskey_read_msg_move_to . '" '; ?>name="targetMailbox">
      <?php
         foreach ($mailboxes as $value=>$option) {
             echo '<option value="'. $value .'"' . ($value==$last_move_target ? ' selected="selected"' : '').'>' . $option .'</option>'."\n";
         }
      ?>
      </select>
-     <input type="submit" name="moveButton" <?php if ($accesskey_read_msg_move != 'NONE') echo 'accesskey="' . $accesskey_read_msg_move . '" '; ?>value="<?php echo _("Move"); ?>" />
+     <input type="submit" name="moveButton" class="sm-btn sm-btn-secondary sm-btn-sm" <?php if ($accesskey_read_msg_move != 'NONE') echo 'accesskey="' . $accesskey_read_msg_move . '" '; ?>value="<?php echo _("Move"); ?>" />
      <?php
         if ($can_be_copied) {
             ?>
-     <input type="submit" name="copyButton" <?php if ($accesskey_read_msg_copy != 'NONE') echo 'accesskey="' . $accesskey_read_msg_copy . '" '; ?>value="<?php echo _("Copy"); ?>" />
+     <input type="submit" name="copyButton" class="sm-btn sm-btn-secondary sm-btn-sm" <?php if ($accesskey_read_msg_copy != 'NONE') echo 'accesskey="' . $accesskey_read_msg_copy . '" '; ?>value="<?php echo _("Copy"); ?>" />
             <?php
         }
      ?>
-     </small>
     </form>
         <?php
     }

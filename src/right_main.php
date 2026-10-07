@@ -249,15 +249,26 @@ if ($sError) {
  */
 $onload = '';
 if (isset($aMailbox['FORWARD_SESSION'])) {
+    $fwd_uids = $aMailbox['FORWARD_SESSION']['UIDS'] ?? array();
+    $fwd_session_num = $aMailbox['FORWARD_SESSION']['SESSION_NUMBER'] ?? '';
+
+    if (count($fwd_uids) === 1) {
+        $single_uid = $fwd_uids[0];
+        $comp_uri = $base_uri . 'src/compose.php?mailbox=' . urlencode($mailbox)
+                  . '&passed_id=' . urlencode($single_uid)
+                  . '&smaction=forward';
+    } else {
+        $comp_uri = $base_uri . 'src/compose.php?mailbox=' . urlencode($mailbox)
+                  . '&session=' . urlencode($fwd_session_num)
+                  . '&smaction=forward_as_attachment'
+                  . '&fwduid=' . implode('_', $fwd_uids);
+    }
+
     if ($compose_new_win) {
         /* add the mailbox to the cache */
         $mailbox_cache[$account.'_'.$aMailbox['NAME']] = $aMailbox;
         sqsession_register($mailbox_cache,'mailbox_cache');
-        // write the session in order to make sure that the compose window has
-        // access to the composemessages array which is stored in the session
         session_write_close();
-        // restart the session. Do not use sqsession_is_active because the session_id
-        // isn't empty after a session_write_close
         sqsession_start();
         if (!preg_match("/^[0-9]{3,4}$/", $compose_width)) {
             $compose_width = '640';
@@ -265,11 +276,6 @@ if (isset($aMailbox['FORWARD_SESSION'])) {
         if (!preg_match("/^[0-9]{3,4}$/", $compose_height)) {
             $compose_height = '550';
         }
-        // do not use &amp;, it will break the query string and $session will not be detected!!!
-        $comp_uri = $base_uri . 'src/compose.php?mailbox='. urlencode($mailbox)
-                  . '&session='.urlencode($aMailbox['FORWARD_SESSION']['SESSION_NUMBER'])
-                  . '&smaction=forward_as_attachment'
-                  . '&fwduid=' . implode('_', $aMailbox['FORWARD_SESSION']['UIDS']);
         $onload = "comp_in_new('$comp_uri', $compose_width, $compose_height);";
     } else {
         $mailbox_cache[$account.'_'.$aMailbox['NAME']] = $aMailbox;
@@ -279,11 +285,7 @@ if (isset($aMailbox['FORWARD_SESSION'])) {
         sqsession_register($aMailbox,'aLastSelectedMailbox');
         session_write_close();
         // we have to redirect to the compose page
-        $location = $base_uri . 'src/compose.php?mailbox='. urlencode($mailbox)
-                  . '&session='.$aMailbox['FORWARD_SESSION']['SESSION_NUMBER']
-                  . '&smaction=forward_as_attachment'
-                  . '&fwduid=' . implode('_', $aMailbox['FORWARD_SESSION']['UIDS']);
-        sqm_redirect($location);
+        sqm_redirect($comp_uri);
     }
 }
 

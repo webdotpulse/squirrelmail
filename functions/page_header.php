@@ -184,6 +184,14 @@ function displayHtmlHeader( $title = 'SquirrelMail', $xtra = '', $do_hook = TRUE
         $theme_file = SM_PATH . $chosen_theme;
         $theme_ver = file_exists($theme_file) ? filemtime($theme_file) : '1.0';
         $header_tags .= '<link rel="stylesheet" type="text/css" href="' . sqm_baseuri() . $chosen_theme . '?v=' . $theme_ver . '" id="sm-custom-theme-css" />' . "\n";
+    } elseif (!empty($used_theme) && $used_theme !== 'none' && is_dir($used_theme)) {
+        $theme_css_files = list_files($used_theme, '.css');
+        foreach ($theme_css_files as $tfile) {
+            $full_tfile = $used_theme . '/' . $tfile;
+            $theme_ver = file_exists($full_tfile) ? filemtime($full_tfile) : '1.0';
+            $web_href = sqm_baseuri() . ltrim(preg_replace('#^(\.\./|\./|' . preg_quote(SM_PATH, '#') . ')+#', '', $full_tfile), '/');
+            $header_tags .= '<link rel="stylesheet" type="text/css" href="' . $web_href . '?v=' . $theme_ver . '" id="sm-custom-theme-css" />' . "\n";
+        }
     }
     $header_tags .= '<script type="text/javascript">window.sqmBaseUri = "' . sqm_baseuri() . '";</script>' . "\n";
 

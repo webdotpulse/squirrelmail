@@ -92,6 +92,13 @@ sqgetGlobalVar('passed_id',$passed_id, $SQ_GLOBAL, NULL, SQ_TYPE_BIGINT);
 sqgetGlobalVar('passed_ent_id',$passed_ent_id, $SQ_GLOBAL);
 sqgetGlobalVar('fwduid',$fwduid, $SQ_GLOBAL, '');
 
+if (empty($passed_id) && !empty($fwduid)) {
+    $aFwdUids = explode('_', $fwduid);
+    if (count($aFwdUids) == 1 && preg_match('/^[0-9]+$/', $aFwdUids[0])) {
+        $passed_id = (int)$aFwdUids[0];
+    }
+}
+
 sqgetGlobalVar('attach',$attach, SQ_POST);
 sqgetGlobalVar('draft',$draft, SQ_POST);
 sqgetGlobalVar('draft_id',$draft_id, $SQ_GLOBAL);
@@ -139,6 +146,12 @@ if ( !sqgetGlobalVar('smaction',$action) )
     if ( sqgetGlobalVar('smaction_attache',$tmp) )    $action = 'forward_as_attachment';
     if ( sqgetGlobalVar('smaction_draft',$tmp) )      $action = 'draft';
     if ( sqgetGlobalVar('smaction_edit_new',$tmp) )   $action = 'edit_as_new';
+}
+if ($action == 'forward' && sqgetGlobalVar('smaction_attache', $tmp)) {
+    $action = 'forward_as_attachment';
+}
+if (empty($action) && !empty($passed_id)) {
+    $action = 'forward';
 }
 
 sqgetGlobalVar('smtoken', $submitted_token, $SQ_GLOBAL, '');
@@ -761,8 +774,8 @@ elseif (isset($sigappend)) {
     if (!isset($passed_id)) {
         $passed_id = '';
     }
-    if (!isset($mailbox)) {
-        $mailbox = '';
+    if (!isset($mailbox) || empty($mailbox)) {
+        $mailbox = 'INBOX';
     }
     if (!isset($action)) {
         $action = '';
@@ -772,8 +785,24 @@ elseif (isset($sigappend)) {
 
     // forward as attachment - subject is in the message in session
     //
-    if ($action == 'forward_as_attachment' && empty($values['subject']))
-        $subject = $composeMessage->rfc822_header->subject;
+    if ($action == 'forward_as_attachment') {
+        if (empty($values['subject']) && !empty($composeMessage->rfc822_header->subject)) {
+            $subject = $composeMessage->rfc822_header->subject;
+            $values['subject'] = $subject;
+        }
+        if (empty($values['body'])) {
+            $fwd_body = "-------- " . _("Forwarded Messages") . " --------\n";
+            if (!empty($composeMessage->entities)) {
+                foreach ($composeMessage->entities as $ent) {
+                    $att_name = $ent->mime_header->getParameter('name');
+                    if (!empty($att_name)) {
+                        $fwd_body .= _("Attachment: ") . decodeHeader($att_name, false, false, true) . "\n";
+                    }
+                }
+            }
+            $values['body'] = $fwd_body . "\n";
+        }
+    }
 
     /* in case the origin is not read_body.php */
     if (isset($send_to)) {

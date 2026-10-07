@@ -777,17 +777,14 @@ $user_theme_default = 0;
  * @global array $user_themes
  * @since 1.5.2
  */
-$user_themes[0]['PATH'] = 'none';
-$user_themes[0]['NAME'] = 'Default';
+$user_themes[0]['PATH'] = '../css/modern_responsive/';
+$user_themes[0]['NAME'] = 'Modern Responsive';
 
-$user_themes[1]['PATH'] = '../css/blue_gradient/';
-$user_themes[1]['NAME'] = 'Blue Options';
+$user_themes[1]['PATH'] = '../css/modern_responsive_dark/';
+$user_themes[1]['NAME'] = 'Modern Responsive Dark';
 
-$user_themes[2]['PATH'] = '../css/gmail/';
-$user_themes[2]['NAME'] = 'Gmail';
-
-$user_themes[3]['PATH'] = '../css/modern_responsive/';
-$user_themes[3]['NAME'] = 'Modern Responsive';
+$user_themes[2]['PATH'] = '../css/modern_responsive_emerald/';
+$user_themes[2]['NAME'] = 'Modern Responsive Emerald';
 
 /**
  * Message Icons control
@@ -877,8 +874,6 @@ $rpc_templateset = 'default_rpc';
 
 $aTemplateSet[0]['ID'] = 'default';
 $aTemplateSet[0]['NAME'] = 'Default';
-$aTemplateSet[1]['ID'] = 'default_advanced';
-$aTemplateSet[1]['NAME'] = 'Advanced';
 
 /**
  * Default interface font size.

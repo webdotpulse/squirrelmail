@@ -48,16 +48,7 @@ extract($t);
       <input type="text" name="subject" id="subject" class="sm-compose-input" value="<?php echo $subject; ?>" placeholder="<?php echo _("Subject line"); ?>" <?php if (!empty($accesskey_compose_subject) && $accesskey_compose_subject != 'NONE') echo 'accesskey="' . $accesskey_compose_subject . '" '; echo $input_onfocus ?? ''; ?> />
     </div>
 
-    <div class="sm-compose-field-row">
-      <label class="sm-compose-label" for="header_mailprio"><?php echo _("Priority"); ?>:</label>
-      <div style="display: flex; align-items: center; gap: 8px;">
-        <select id="header_mailprio" class="sm-compose-select" onchange="var p=document.getElementById('mailprio'); if(p) p.value=this.value;" style="padding: 5px 12px; font-size: 13px; font-weight: 500; border-radius: var(--sm-radius-sm, 6px); border: 1px solid var(--sm-border); background: var(--sm-bg-surface); color: var(--sm-text-primary); cursor: pointer;">
-          <option value="1" <?php if (($mailprio ?? ($current_priority ?? 3)) == 1) echo 'selected="selected"'; ?>>🔴 <?php echo _("High"); ?></option>
-          <option value="3" <?php if (($mailprio ?? ($current_priority ?? 3)) == 3 || empty($mailprio)) echo 'selected="selected"'; ?>>⚪ <?php echo _("Normal"); ?></option>
-          <option value="5" <?php if (($mailprio ?? ($current_priority ?? 3)) == 5) echo 'selected="selected"'; ?>>🔵 <?php echo _("Low"); ?></option>
-        </select>
-      </div>
-    </div>
+    <input type="hidden" name="mailprio" id="mailprio" value="<?php echo htmlspecialchars((string)($mailprio ?? ($current_priority ?? 3)), ENT_QUOTES); ?>" />
   </section>
 
   <style>

@@ -193,6 +193,7 @@ $mailbox_structure = getBoxStructure($boxes);
 unset($boxes);
 
 $oTemplate->assign('clock', $clock);
+$oTemplate->assign('clock_time', !empty($clk) ? $clk : '');
 $oTemplate->assign('mailboxes', $mailbox_structure);
 
 /*

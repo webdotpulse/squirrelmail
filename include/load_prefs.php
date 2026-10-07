@@ -537,8 +537,9 @@ if (!$found_theme) {
     }
 }
 
-if (!$found_theme || $chosen_theme == 'none') {
-    $chosen_theme_path = NULL;
+if (!$found_theme || $chosen_theme == 'none' || empty($chosen_theme_path)) {
+    $chosen_theme = $user_themes[0]['PATH'];
+    $chosen_theme_path = preg_replace("/(\.\.\/){1,}/", SM_PATH, $user_themes[0]['PATH']);
 }
 
 

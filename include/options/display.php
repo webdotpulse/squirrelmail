@@ -72,39 +72,10 @@ function load_optpage_data_display() {
         );
     }
 
-    /* Load the theme option. */
+    /* Load the theme option: strictly Modern Responsive and its variants */
     $theme_values = array();
-    
-    // Always provide the template default first.
-    $theme_values['none'] = 'Template Default Theme';
-
-    // Modern CSS Themes from themes/css/
-    $css_theme_files = glob(SM_PATH . 'themes/css/*.css');
-    if ($css_theme_files) {
-        foreach ($css_theme_files as $filepath) {
-            $filename = basename($filepath);
-            // Skip font-size helper stylesheets
-            if (preg_match('/^(comic-sans|sans|serif|tahoma|verdana)-\d+\.css$/', $filename)) {
-                continue;
-            }
-            $theme_id = substr($filename, 0, strrpos($filename, '.'));
-            $name = ucwords(str_replace('_', ' ', $theme_id));
-            $theme_values['themes/css/' . $filename] = sm_encode_html_special_chars($name) . ' (CSS)';
-        }
-    }
-
-    // List alternate themes provided by templates first
-    $template_themes = $oTemplate->get_alternative_stylesheets(true);
-    asort($template_themes);
-    foreach ($template_themes as $sheet=>$name) {
-        $theme_values[$sheet] = 'Template Theme - '.sm_encode_html_special_chars($name);
-    }
-    // Next, list user-provided styles
-    asort($user_themes);
     foreach ($user_themes as $style) {
-        if ($style['PATH'] == 'none')
-            continue;
-        $theme_values[$style['PATH']] = 'User Theme - '.sm_encode_html_special_chars($style['NAME']);
+        $theme_values[$style['PATH']] = sm_encode_html_special_chars($style['NAME']);
     }
 
     if (count($theme_values) > 1) {
@@ -542,10 +513,8 @@ function icon_theme_save($option) {
 }
 
 function css_theme_save ($option) {
-    global $user_themes, $oTemplate;
+    global $user_themes;
 
-    // Don't assume the new value is there, double check
-    // and only save if found
     $found = false;
     reset($user_themes);
     foreach ($user_themes as $data) {
@@ -555,18 +524,8 @@ function css_theme_save ($option) {
         }
     }
     
-    if (!$found) {
-        $template_themes = $oTemplate->get_alternative_stylesheets(true);
-        foreach ($template_themes as $path => $name) {
-            if ($path == $option->new_value) {
-                $found = true;
-                break;
-            }
-        }
-    }
-    
-    if (!$found)
-        $option->new_value = 'none';
+    if (!$found && isset($user_themes[0]['PATH']))
+        $option->new_value = $user_themes[0]['PATH'];
         
     save_option($option);
 }

@@ -1,4 +1,4 @@
-# SquirrelMail 1.5.13
+# SquirrelMail 1.5.18
 
 A modernized, responsive edition of SquirrelMail engineered for PHP 7.0 through 8.2+ with a Single-Page Application (SPA) interface, modern UI styling, and extensive feature enhancements.
 
@@ -43,6 +43,56 @@ This repository includes an [AGENTS.md](file:///home/koen/Git/squirrelmail/AGENT
 ---
 
 ## 📝 Changelog
+
+### Version 1.5.18
+- **Sidebar Multi-Account Widget Streamlining**:
+  - Removed the redundant `[⚙️ Manage Accounts]` action link and footer border from the sidebar widget in `plugins/multi_account/multi_account.php`.
+  - Account configuration remains directly accessible via SquirrelMail Options (`src/options.php` -> Multi-Account Manager) and on the Unified Inbox view (`plugins/multi_account/unified_inbox.php`).
+- **Version Bump**: Incremented version from `1.5.17` to `1.5.18`.
+
+### Version 1.5.17
+- **Removed Skin "Advanced Modus" (`default_advanced`)**:
+  - Completely purged the legacy `templates/default_advanced` skin directory and obsolete template files.
+  - Removed template set registration in `config/config.php` and `config/config_default.php`, retaining exclusively the modern standard `default` template set.
+  - Cleanly eliminated the Skin selection control from Display Preferences (`include/options/display.php`) and the web installer (`install.php`), falling back seamlessly to `default`.
+- **Modern Responsive Theme Suite & New Variants**:
+  - Removed all obsolete, legacy color themes (Gmail clone, Blue Options, Classic Default, and 20+ legacy CSS stylesheets), focusing entirely on the **Modern Responsive** design language.
+  - Created two brand-new theme variants:
+    - **Modern Responsive Dark**: A sophisticated dark theme with deep navy/charcoal surfaces (`#0b1120`, `#111827`), refined borders (`#1f2937`), crisp high-contrast typography, and electric cyan accents (`#38bdf8`).
+    - **Modern Responsive Emerald**: A clean, vibrant theme with fresh mint background tones (`#f0fdf4`), pure white content cards, and rich emerald accents (`#059669`).
+  - Added standalone theme definition files (`themes/modern_responsive_dark.php`, `themes/modern_responsive_emerald.php`), alternate template stylesheets, and CSS theme directories (`css/modern_responsive_dark/default.css`, `css/modern_responsive_emerald/default.css`).
+  - Enhanced theme stylesheet loading order in `functions/page_header.php` so user theme CSS custom properties take priority across both the outer SPA shell and inner workspace.
+  - Updated the Web Installer (`install.php`) Step 4 with modern color previews for the 3 Modern Responsive themes.
+- **Version Bump**: Incremented version from `1.5.16` to `1.5.17`.
+
+### Version 1.5.16
+- **Removed Redundant Priority Controls from Compose Page**:
+  - Completely removed the redundant and cluttering Priority selector rows and dropdowns from `templates/default/compose_header.tpl` and `templates/default/compose_buttons.tpl`.
+  - Preserved background priority handling via a hidden form input (`mailprio`) so email deliveries and replies proceed seamlessly without cluttering the compose interface.
+- **Version Bump**: Incremented version from `1.5.15` to `1.5.16`.
+
+### Version 1.5.15
+- **Sidebar Folder Header & Actions Modernization**:
+  - Completely redesigned the sidebar folder header in `templates/default/left_main.tpl` and `templates/default_advanced/left_main.tpl`, replacing legacy ASCII bracketed links (`[ Check Mail ]`) and raw text characters (`+`) with sleek, modern UI action controls.
+  - Eliminated awkward multi-line text wrapping caused by cramped flex rows in the 260px sidebar pane.
+  - **Sleek Action Buttons**: Introduced `.sm-sidebar-action-btn` buttons for **Manage Folders** (crisp SVG plus icon) and **Check Mail** (SVG sync icon with hover micro-rotation and instant feedback).
+  - **Dedicated Refresh Timestamp**: Moved the folder refresh clock metadata (`src/left_main.php`) to a dedicated subtitle row below the header actions with a subtle clock icon, ensuring clean scannability without wrapping or truncation.
+  - **Animated Folder Refresh**: Enhanced `assets/js/app.js` and `assets/css/app.css` with a smooth `.sm-spin` loading animation on the refresh icon during folder tree AJAX synchronization.
+- **Version Bump**: Incremented version from `1.5.14` to `1.5.15`.
+
+### Version 1.5.14
+- **Email Reading Action Buttons (Reply, Reply All, Forward)**:
+  - Modernized menubar action controls in `templates/default/read_menubar_buttons.tpl` and `templates/default_advanced/read_menubar_buttons.tpl` into responsive `.sm-btn` elements with inline SVG icons.
+  - Eliminated legacy JavaScript popup blockers and `onsubmit="return false"` handlers in `src/read_body.php` that prevented Reply, Reply All, and Forward buttons from triggering within modern browsers and SPA navigation.
+  - Converted `composeForm` to a clean GET form with explicit hidden fields (`passed_id`, `mailbox`, `startMessage`, `passed_ent_id`), ensuring accurate routing to `src/compose.php`.
+- **Mailbox Overview Email Forwarding**:
+  - Fixed single-message Forwarding from mailbox message listings in `src/right_main.php`: single selected messages are now forwarded inline with full quoted text, original sender, date, and attachments populated automatically in compose.
+  - Fixed batch multi-message Forwarding: attached `.eml` entities are preloaded into compose with an itemized summary in the compose body.
+  - Resolved missing body issue in `src/compose.php`: ensured fallback UID resolution from `fwduid`, default mailbox assignment (`INBOX`), and automatic conversion to `forward_as_attachment` when the "As Attachment" checkbox is checked.
+- **SPA Router URI Sanitization**:
+  - Enhanced `assets/js/app.js` to automatically sanitize HTML entity ampersands (`&amp;` -> `&`) in intercepted form actions and links, preventing URL query parameter mangling (e.g., `amp;mailbox`).
+  - Styled message reading menubars cleanly and hid redundant `#page_header` navigation bars inside the SPA workspace.
+- **Version Bump**: Incremented version from `1.5.13` to `1.5.14`.
 
 ### Version 1.5.13
 - **Direct Login Redirection on Logout (Skip Signout Page)**:

@@ -1,0 +1,427 @@
+/* ==========================================================================
+   SquirrelMail - Modern Responsive Theme (Dark Variant)
+   Deep midnight navy dark mode aesthetic with electric cyan/sky blue accents
+   ========================================================================== */
+
+/* Modern CSS Reset & Typography */
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+:root {
+    --sm-primary: #38bdf8;
+    --sm-primary-hover: #0ea5e9;
+    --sm-primary-light: rgba(56, 189, 248, 0.15);
+    --sm-primary-border: #0284c7;
+    --sm-accent: #38bdf8;
+    --sm-text-dark: #f8fafc;
+    --sm-text-primary: #f8fafc;
+    --sm-text-body: #cbd5e1;
+    --sm-text-secondary: #94a3b8;
+    --sm-text-muted: #64748b;
+    --sm-bg-canvas: #090d16;
+    --sm-bg-body: #0b1120;
+    --sm-bg-sidebar: #070c18;
+    --sm-bg-surface: #111827;
+    --sm-bg-card: #151e32;
+    --sm-bg-alt: #1e293b;
+    --sm-hover-bg: #1e293b;
+    --sm-unread-bg: #13233c;
+    --sm-selected-bg: #1e3a5f;
+    --sm-border: #1f2937;
+    --sm-border-light: #162032;
+    --sm-border-hover: #374151;
+    --sm-danger: #f87171;
+    --sm-danger-light: #2d1515;
+    --sm-radius-sm: 4px;
+    --sm-radius-md: 6px;
+    --sm-radius-lg: 8px;
+    --sm-radius-pill: 9999px;
+    --sm-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+    --sm-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+    --sm-font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+body {
+    font-family: var(--sm-font-stack);
+    color: var(--sm-text-body);
+    background-color: var(--sm-bg-body);
+    line-height: 1.5;
+    margin: 0;
+    padding: 12px 16px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Modern Sleek Dark Scrollbars */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: #0b1120;
+}
+::-webkit-scrollbar-thumb {
+    background: #1f2937;
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #374151;
+}
+
+/* Base Links */
+a:link, a:visited {
+    color: var(--sm-primary);
+    text-decoration: none;
+    transition: color 0.15s ease, background 0.15s ease;
+}
+a:hover, a:active {
+    color: var(--sm-primary-hover);
+    text-decoration: underline;
+}
+
+/* Form Controls (Inputs, Selects, Buttons) */
+input[type="text"],
+input[type="password"],
+input[type="email"],
+select,
+textarea {
+    font-family: var(--sm-font-stack);
+    font-size: 13.5px;
+    padding: 7px 11px;
+    border: 1px solid var(--sm-border);
+    border-radius: var(--sm-radius-md);
+    background-color: #111827;
+    color: var(--sm-text-dark);
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    box-sizing: border-box;
+    max-width: 100%;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="email"]:focus,
+select:focus,
+textarea:focus {
+    border-color: var(--sm-primary);
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+}
+
+/* Buttons */
+input[type="submit"],
+input[type="button"],
+input[type="reset"],
+button {
+    font-family: var(--sm-font-stack);
+    font-size: 13px;
+    font-weight: 500;
+    padding: 7px 14px;
+    border-radius: var(--sm-radius-md);
+    border: 1px solid var(--sm-border);
+    background-color: #1e293b;
+    color: var(--sm-text-dark);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.15s ease;
+    line-height: 1.4;
+}
+
+input[type="submit"]:hover,
+input[type="button"]:hover,
+button:hover {
+    background-color: #334155;
+    border-color: #475569;
+    color: var(--sm-primary);
+}
+
+/* Primary Action Buttons */
+input[type="submit"][name="send"],
+input[type="submit"][value*="Send"],
+.btn-primary {
+    background-color: var(--sm-primary) !important;
+    border-color: var(--sm-primary) !important;
+    color: #0b1120 !important;
+    font-weight: 600;
+}
+input[type="submit"][name="send"]:hover,
+input[type="submit"][value*="Send"]:hover,
+.btn-primary:hover {
+    background-color: var(--sm-primary-hover) !important;
+    color: #0b1120 !important;
+}
+
+/* Left Navigation Sidebar (Folder Tree) */
+body.sqm_leftMain {
+    background-color: var(--sm-bg-sidebar) !important;
+    color: var(--sm-text-dark);
+    padding: 10px 12px;
+    border-right: 1px solid var(--sm-border);
+}
+
+.sqm_leftMain a:link, .sqm_leftMain a:visited {
+    color: var(--sm-text-dark);
+    text-decoration: none;
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: var(--sm-radius-md);
+    font-size: 13px;
+    font-weight: 500;
+    transition: background-color 0.15s ease;
+}
+
+.sqm_leftMain a:hover, .sqm_leftMain a:active {
+    background-color: #1e293b;
+    color: var(--sm-primary);
+    text-decoration: none;
+}
+
+.leftunseen {
+    color: var(--sm-primary) !important;
+    font-weight: 700 !important;
+}
+
+.leftspecial, .leftspecial a:link, .leftspecial a:visited {
+    color: #f43f5e !important;
+    font-weight: 600 !important;
+}
+
+.sqm_folderHeader {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--sm-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--sm-border);
+    margin-bottom: 8px;
+    display: block;
+}
+
+/* Top App Header & Menuline */
+td.header1, .sqm_loginOrgName, .sqm_signoutBar {
+    background-color: #111827 !important;
+    border-bottom: 1px solid var(--sm-border);
+    padding: 10px 16px;
+}
+
+.sqm_menuline {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px 0 14px 0;
+    border-bottom: 1px solid var(--sm-border);
+    margin-bottom: 16px;
+}
+
+.sqm_menuline a:link, .sqm_menuline a:visited {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 12px;
+    border-radius: var(--sm-radius-md);
+    background-color: #1e293b;
+    color: var(--sm-text-dark);
+    font-size: 12.5px;
+    font-weight: 500;
+    text-decoration: none;
+    border: 1px solid transparent;
+    transition: all 0.15s ease;
+}
+
+.sqm_menuline a:hover, .sqm_menuline a:active {
+    background-color: var(--sm-primary-light);
+    color: var(--sm-primary);
+    border-color: var(--sm-primary-border);
+    text-decoration: none;
+}
+
+/* Message List Table */
+table.table1, table.table_empty, .sqm_wrapperTable {
+    width: 100% !important;
+    border-collapse: collapse;
+    background-color: #111827;
+    border: 1px solid var(--sm-border);
+    border-radius: var(--sm-radius-lg);
+    overflow: hidden;
+    box-shadow: var(--sm-shadow-sm);
+    margin-bottom: 16px;
+}
+
+/* Table Headers */
+tr.header5, tr.header4, th, .thead_caption {
+    background-color: #1e293b !important;
+    color: var(--sm-text-muted) !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    border-bottom: 1px solid var(--sm-border);
+    padding: 9px 12px !important;
+    text-align: left;
+}
+
+/* Table Data Rows */
+table.table1 td, tr.even td, tr.odd td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--sm-border);
+    vertical-align: middle;
+    font-size: 13.5px;
+    transition: background 0.1s ease;
+}
+
+tr.odd, tr.even {
+    background-color: #111827;
+}
+
+tr.odd:hover, tr.even:hover {
+    background-color: #1e293b !important;
+}
+
+/* Bold Styling for Unread Messages */
+tr.unread td, tr.unread b, tr.unread a {
+    font-weight: 700 !important;
+    color: var(--sm-text-dark) !important;
+}
+
+/* Message View / Reading Pane Card */
+.read-message-card {
+    background: #111827;
+    border: 1px solid var(--sm-border);
+    border-radius: var(--sm-radius-lg);
+    box-shadow: var(--sm-shadow-sm);
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.read-message-headers {
+    border-bottom: 1px solid var(--sm-border);
+    padding-bottom: 14px;
+    margin-bottom: 16px;
+    font-size: 13.5px;
+    line-height: 1.6;
+}
+
+.read-message-body {
+    font-size: 14px;
+    line-height: 1.6;
+    color: #cbd5e1;
+    word-break: break-word;
+    overflow-x: auto;
+}
+
+/* Compose Screen */
+.compose-table {
+    width: 100%;
+    max-width: 900px;
+    margin: 0 auto;
+    background: #111827;
+    border: 1px solid var(--sm-border);
+    border-radius: var(--sm-radius-lg);
+    padding: 16px;
+    box-shadow: var(--sm-shadow-sm);
+}
+
+.compose-table td {
+    padding: 8px 10px;
+}
+
+textarea#body {
+    width: 100% !important;
+    min-height: 280px;
+    border: 1px solid var(--sm-border);
+    border-radius: var(--sm-radius-md);
+    background-color: #0b1120;
+    color: var(--sm-text-dark);
+    padding: 12px;
+    font-size: 14px;
+    font-family: inherit;
+    line-height: 1.6;
+    box-sizing: border-box;
+}
+
+/* Error and Alert Boxes */
+.error_table, .sqm_errorBox {
+    background-color: var(--sm-danger-light) !important;
+    border: 1px solid #7f1d1d !important;
+    color: #fca5a5 !important;
+    border-radius: var(--sm-radius-md);
+    padding: 12px 16px;
+    margin: 12px 0;
+    font-weight: 500;
+}
+
+/* ==========================================================================
+   Mobile Responsive Adjustments
+   ========================================================================== */
+
+@media screen and (max-width: 768px) {
+    body {
+        padding: 8px;
+    }
+
+    .sqm_menuline {
+        gap: 6px;
+        justify-content: flex-start;
+    }
+    .sqm_menuline a:link, .sqm_menuline a:visited {
+        padding: 6px 10px;
+        font-size: 12px;
+    }
+
+    table.table1 {
+        display: block;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        border-radius: var(--sm-radius-md);
+    }
+
+    table.table1 td, table.table1 th {
+        padding: 8px 8px;
+        font-size: 12.5px;
+    }
+
+    .col-priority,
+    .col-size,
+    .col-flags,
+    td[headers*="priority"],
+    th[id*="priority"] {
+        display: none !important;
+    }
+
+    input[type="text"],
+    input[type="password"],
+    input[type="email"],
+    select {
+        width: 100% !important;
+        font-size: 15px !important;
+    }
+
+    input[type="submit"],
+    input[type="button"],
+    button {
+        min-height: 38px;
+        padding: 8px 14px;
+    }
+
+    .compose-table {
+        padding: 8px;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    body {
+        padding: 4px;
+    }
+
+    .sqm_folderHeader {
+        font-size: 12px;
+    }
+
+    table.table1 td {
+        padding: 8px 6px;
+    }
+}

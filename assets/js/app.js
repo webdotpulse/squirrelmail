@@ -479,6 +479,7 @@
                         resolvedHref = window.location.origin + base + 'src/' + href;
                     }
                 }
+                if (resolvedHref) resolvedHref = resolvedHref.replace(/&amp;/g, '&');
 
                 const url = new URL(resolvedHref, window.location.origin);
                 // Check if external domain
@@ -658,6 +659,7 @@
                 if (!form || form.getAttribute('target') === '_blank') return;
 
                 let action = (e.submitter && e.submitter.formAction) || form.getAttribute('action') || form.action || window.location.href;
+                if (action) action = action.replace(/&amp;/g, '&');
                 // If relative action, resolve against base + 'src/'
                 const currentContextUrl = this.state.currentUrl || window.location.href;
                 if (action && !/^https?:\/\/|^\/\//i.test(action)) {
@@ -673,6 +675,7 @@
                         action = window.location.origin + this.getBaseUri() + 'src/' + action;
                     }
                 }
+                if (action) action = action.replace(/&amp;/g, '&');
 
                 // Do not intercept auth, redirect, signout, install, or forms outside the SPA shell
                 if (form.id === 'login_form' || 
@@ -966,8 +969,11 @@
         // Folder Tree & Badge Auto-Updating
         // -------------------------------------------------------------------------
         async refreshFolders(targetUrl) {
+            const refreshIcon = document.querySelector('.sm-folder-refresh-btn svg');
             try {
                 this.showLoading();
+                if (refreshIcon) refreshIcon.classList.add('sm-spin');
+
                 const base = this.getBaseUri();
                 const fetchUrl = targetUrl || (base + 'src/left_main.php?ajax=1');
                 const response = await fetch(fetchUrl, {
@@ -992,6 +998,7 @@
             } catch (err) {
                 console.error('[SquirrelMail] Failed to refresh folders:', err);
             } finally {
+                if (refreshIcon) refreshIcon.classList.remove('sm-spin');
                 this.hideLoading();
             }
         },
