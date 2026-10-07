@@ -1023,6 +1023,9 @@ if ($show_html_default == 1) {
     $ent_ar = $message->findDisplayEntity(array());
 } else {
     $ent_ar = $message->findDisplayEntity(array(), array('text/plain'));
+    if (empty($ent_ar)) {
+        $ent_ar = $message->findDisplayEntity(array());
+    }
 }
 $cnt = count($ent_ar);
 for ($i = 0; $i < $cnt; $i++) {

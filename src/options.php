@@ -327,6 +327,7 @@ if ($optpage == SMOPT_PAGE_MAIN) {
     /******************************************/
     /* Build our array of Option Page Blocks. */
     /******************************************/
+    global $optpage_blocks;
     $optpage_blocks = array();
 
     // access keys...

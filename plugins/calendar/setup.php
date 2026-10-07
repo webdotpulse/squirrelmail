@@ -18,6 +18,9 @@ function squirrelmail_plugin_init_calendar()
     $squirrelmail_plugin_hooks['read_body_header_right']['calendar']
         = 'calendar_read_body_header_right';
 
+    $squirrelmail_plugin_hooks['read_body_top']['calendar']
+        = 'calendar_read_body_top';
+
     $squirrelmail_plugin_hooks['template_construct_read_message_body.tpl']['calendar']
         = 'calendar_read_message_body';
 
@@ -351,6 +354,23 @@ function calendar_read_message_body($args = null)
 }
 
 /**
+ * Direct hook for read_body_top
+ */
+function calendar_read_body_top(&$args = null)
+{
+    static $rendered = false;
+    if ($rendered) {
+        return array();
+    }
+    $res = calendar_read_message_body($args);
+    if (!empty($res['read_body_top']) && empty($GLOBALS['oTemplate'])) {
+        $rendered = true;
+        echo $res['read_body_top'];
+    }
+    return $res;
+}
+
+/**
  * Hook for calendar attachments (.ics / text/calendar / application/ics)
  */
 function calendar_attachment_hook(&$Args)
@@ -368,6 +388,19 @@ function calendar_attachment_hook(&$Args)
             'text' => '📅 ' . _("Add to Calendar")
         );
     }
+
+    // Direct click to calendar importer
+    $Args[5] = $calUrl;
+
+    // Normalize filename display
+    if (isset($Args[6])) {
+        if (substr(strtolower($Args[6]), -9) === '.calendar') {
+            $Args[6] = substr($Args[6], 0, -9) . '.ics';
+        }
+        if (empty($Args[6]) || substr($Args[6], 0, 9) === 'untitled-') {
+            $Args[6] = 'invite.ics';
+        }
+    }
 }
 
 /**
@@ -379,7 +412,7 @@ function calendar_attachment_generic_hook(&$Args)
     $type0 = isset($Args[9]) ? strtolower($Args[9]) : '';
     $type1 = isset($Args[10]) ? strtolower($Args[10]) : '';
 
-    if (substr($filename, -4) === '.ics' || ($type0 === 'text' && $type1 === 'calendar') || ($type0 === 'application' && $type1 === 'ics')) {
+    if (substr($filename, -4) === '.ics' || substr($filename, -9) === '.calendar' || ($type0 === 'text' && ($type1 === 'calendar' || $type1 === 'x-vcalendar')) || ($type0 === 'application' && ($type1 === 'ics' || $type1 === 'calendar'))) {
         calendar_attachment_hook($Args);
     }
 }

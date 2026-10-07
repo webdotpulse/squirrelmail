@@ -132,12 +132,18 @@ if (strlen($filename) < 1) {
         $suffix = 'ps';
     else if ($type1 == 'rfc822' && $type0 == 'message')
         $suffix = 'eml';
+    else if (($type1 == 'calendar' || $type1 == 'x-vcalendar' || $type1 == 'ics') && ($type0 == 'text' || $type0 == 'application'))
+        $suffix = 'ics';
     else
         $suffix = $type1;
 
     if ($filename == '')
         $filename = 'untitled' . strip_tags($ent_id);
     $filename = $filename . '.' . $suffix;
+}
+
+if (substr(strtolower($filename), -9) === '.calendar') {
+    $filename = substr($filename, 0, -9) . '.ics';
 }
 
 /**

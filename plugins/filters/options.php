@@ -536,6 +536,60 @@ displayPageHeader($color, 'None');
             </button>
         </form>
     </div>
+
+    <!-- BACKGROUND CRON AUTOMATION CARD -->
+    <?php
+    $cronScript = realpath(SM_PATH . 'plugins/ai_agent/cron.php');
+    $cronLog = SM_PATH . 'plugins/ai_agent/data/cron.log';
+    $lastLogSnippet = '';
+    $lastRunTime = null;
+    if (file_exists($cronLog) && is_readable($cronLog)) {
+        $lines = @file($cronLog, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        if (!empty($lines)) {
+            $recent = array_slice($lines, -5);
+            $lastLogSnippet = implode("\n", $recent);
+            // Extract timestamp from last line if available
+            $lastLine = end($lines);
+            if (preg_match('/^\[([0-9]{4}-[0-9]{2}-[0-9]{2}\s+[0-9]{2}:[0-9]{2}:[0-9]{2})\]/', $lastLine, $ts)) {
+                $lastRunTime = $ts[1];
+            }
+        }
+    }
+    ?>
+    <div class="sm-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
+            <h2 class="sm-card-title" style="margin: 0;">⏰ <?php echo _("Background Automation &amp; Server Cron"); ?></h2>
+            <span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0;">
+                <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #10b981;"></span>
+                <?php echo _("Continuous Background Filtering Active"); ?>
+            </span>
+        </div>
+        <p style="font-size: 13px; color: var(--sm-text-secondary, #475569); margin: 0 0 14px 0; line-height: 1.5;">
+            <?php echo _("Message filters execute automatically when you navigate or refresh SquirrelMail, and <strong>run continuously in the background even when you are logged out</strong> using the server-side cron automation script."); ?>
+        </p>
+
+        <div style="background: var(--sm-hover-bg, #f8fafc); border: 1px solid var(--sm-border, #e2e8f0); border-radius: var(--sm-radius-sm, 6px); padding: 12px 16px; margin-bottom: 14px;">
+            <div style="font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--sm-text-secondary, #64748b); margin-bottom: 6px;">
+                📋 <?php echo _("Shared Server Cronjob Command (Every 5 minutes)"); ?>
+            </div>
+            <code style="font-family: var(--sm-font-mono, monospace); font-size: 13px; color: var(--sm-text-primary, #0f172a); word-break: break-all; display: block; user-select: all;">
+                */5 * * * * php <?php echo htmlspecialchars($cronScript ?: (SM_PATH . 'plugins/ai_agent/cron.php')); ?> &gt;&gt; <?php echo htmlspecialchars(dirname($cronScript ?: SM_PATH) . '/data/cron.log'); ?> 2&gt;&amp;1
+            </code>
+        </div>
+
+        <?php if (!empty($lastRunTime)): ?>
+        <div style="font-size: 12px; color: var(--sm-text-secondary, #64748b); display: flex; align-items: center; gap: 8px;">
+            <span>🕒 <?php echo _("Last cron execution:"); ?> <strong><?php echo htmlspecialchars($lastRunTime); ?></strong></span>
+        </div>
+        <?php endif; ?>
+
+        <?php if (!empty($lastLogSnippet)): ?>
+        <details style="margin-top: 10px; font-size: 12px;">
+            <summary style="cursor: pointer; color: var(--sm-primary, #2563eb); font-weight: 500;"><?php echo _("View recent background execution log"); ?></summary>
+            <pre style="background: #0f172a; color: #e2e8f0; padding: 10px 14px; border-radius: 6px; font-family: monospace; font-size: 12px; overflow-x: auto; margin-top: 8px;"><?php echo htmlspecialchars($lastLogSnippet); ?></pre>
+        </details>
+        <?php endif; ?>
+    </div>
 </div>
 
 <?php

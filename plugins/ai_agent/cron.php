@@ -39,6 +39,10 @@ if (file_exists(SM_PATH . 'config/config.php')) {
     require_once(SM_PATH . 'config/config_default.php');
 }
 require_once(SM_PATH . 'functions/strings.php');
+require_once(SM_PATH . 'functions/plugin.php');
+if (file_exists(SM_PATH . 'config/plugin_hooks.php')) {
+    require_once(SM_PATH . 'config/plugin_hooks.php');
+}
 require_once(SM_PATH . 'include/languages.php');
 require_once(SM_PATH . 'functions/imap_general.php');
 require_once(SM_PATH . 'functions/imap_mailbox.php');
@@ -62,10 +66,15 @@ require_once(SM_PATH . 'plugins/ai_agent/config.php');
 require_once(SM_PATH . 'plugins/ai_agent/gemini_client.php');
 require_once(SM_PATH . 'plugins/ai_agent/credentials.php');
 
+// Load Message Filters plugin for background filtering
+if (file_exists(SM_PATH . 'plugins/filters/filters.php')) {
+    require_once(SM_PATH . 'plugins/filters/filters.php');
+}
+
 // Parse CLI arguments
-$options = getopt('', ['user:', 'limit:', 'dry-run', 'help', 'pass:', 'password:', 'set-pass:', 'host:', 'port:']);
+$options = getopt('', ['user:', 'limit:', 'dry-run', 'filter-only', 'help', 'pass:', 'password:', 'set-pass:', 'host:', 'port:']);
 if (isset($options['help'])) {
-    echo "SquirrelMail AI Agent Cron Automation (Gemini 3.8)\n";
+    echo "SquirrelMail Background Automation & AI Cron (Gemini 3.8 & Message Filters)\n";
     echo "Usage: php cron.php [options]\n";
     echo "  --user=<name>         Inspect specific user account (e.g. user@domain.com)\n";
     echo "  --password=<secret>   Specify IMAP password for this execution\n";
@@ -73,14 +82,16 @@ if (isset($options['help'])) {
     echo "  --host=<server>       Override IMAP server host\n";
     echo "  --port=<port>         Override IMAP server port\n";
     echo "  --limit=<n>           Maximum unseen messages to process (default 20)\n";
+    echo "  --filter-only         Run only user Message Filters without AI analysis\n";
     echo "  --dry-run             Simulate analysis without moving or writing messages\n";
     exit(0);
 }
 
-$cli_user   = isset($options['user']) ? trim($options['user']) : '';
-$cli_pass   = isset($options['password']) ? trim($options['password']) : (isset($options['pass']) ? trim($options['pass']) : '');
-$scan_limit = isset($options['limit']) ? intval($options['limit']) : ($cron_scan_limit ?: 20);
-$dry_run    = isset($options['dry-run']);
+$cli_user    = isset($options['user']) ? trim($options['user']) : '';
+$cli_pass    = isset($options['password']) ? trim($options['password']) : (isset($options['pass']) ? trim($options['pass']) : '');
+$scan_limit  = isset($options['limit']) ? intval($options['limit']) : ($cron_scan_limit ?: 20);
+$dry_run     = isset($options['dry-run']);
+$filter_only = isset($options['filter-only']);
 
 // Handle --set-pass command: save credentials from CLI and exit
 if (!empty($options['set-pass'])) {
@@ -186,14 +197,15 @@ function cron_assign_message_label($user, $mailbox, $uid, $category) {
     }
 }
 
-cron_log("=== SquirrelMail AI Agent Cron Started (Gemini Model: $gemini_model) ===");
+cron_log("=== SquirrelMail Background Automation & AI Cron Started (Gemini Model: $gemini_model) ===");
 if ($dry_run) cron_log("[INFO] Running in DRY-RUN mode. No emails will be moved or modified.");
+if ($filter_only) cron_log("[INFO] Running in FILTER-ONLY mode. AI analysis will be skipped.");
 
 // Initialize Gemini Client
 $gemini = new SquirrelMailGeminiClient();
-if (empty($gemini->getApiKey())) {
-    cron_log("[ERROR] Gemini API Key is missing! Please configure \$gemini_api_key in plugins/ai_agent/config.php or Options.");
-    exit(1);
+$has_gemini = !empty($gemini->getApiKey()) && !$filter_only;
+if (!$has_gemini && !$filter_only) {
+    cron_log("[NOTICE] Gemini API Key is not configured. AI processing will be skipped, but user Message Filters will run.");
 }
 
 // Determine target accounts across all sources
@@ -327,6 +339,40 @@ foreach ($accounts_to_process as $acc) {
         continue;
     }
 
+    // --- 0. BACKGROUND USER MESSAGE FILTERS ---
+    $stat_filtered = 0;
+    if (function_exists('user_filters')) {
+        global $username, $data_dir, $AllowSpamFilters;
+        $username = $user;
+        $user_rules = load_filters();
+        if (!empty($user_rules)) {
+            cron_log("  -> [FILTERS] Evaluating " . count($user_rules) . " message filter rule(s) for $user...");
+            if (!$dry_run) {
+                $stat_filtered = user_filters($imap_stream);
+            } else {
+                cron_log("     [DRY-RUN] Simulating message filter evaluation.");
+            }
+            if ($stat_filtered > 0) {
+                cron_log("     [FILTERS ACTION] Moved $stat_filtered message(s) from INBOX to destination folders.");
+            } else {
+                cron_log("     [FILTERS] No messages matched user filter criteria.");
+            }
+        }
+
+        // Also run DNS-based spam filters if enabled
+        if (!empty($AllowSpamFilters) && function_exists('spam_filters') && !$dry_run) {
+            spam_filters($imap_stream);
+        }
+    }
+
+    // If --filter-only or no Gemini AI configured, wrap up account processing
+    if ($filter_only || !$has_gemini) {
+        sqimap_mailbox_expunge($imap_stream, 'INBOX');
+        sqimap_logout($imap_stream);
+        cron_log("Summary for $user: $stat_filtered Message(s) filtered by rules.");
+        continue;
+    }
+
     // Search for UNSEEN messages
     $unseen_ids = sqimap_run_command($imap_stream, 'SEARCH UNSEEN', true, $response, $message, true);
     $msg_ids = [];
@@ -342,8 +388,9 @@ foreach ($accounts_to_process as $acc) {
     }
 
     if (empty($msg_ids)) {
-        cron_log("[INFO] No new/unseen messages in INBOX for $user.");
+        cron_log("[INFO] No further new/unseen messages in INBOX for $user.");
         sqimap_logout($imap_stream);
+        cron_log("Summary for $user: $stat_filtered Message(s) filtered by rules, 0 Spam filtered, 0 Categorized, 0 Drafts created.");
         continue;
     }
 
@@ -485,7 +532,7 @@ foreach ($accounts_to_process as $acc) {
     sqimap_mailbox_expunge($imap_stream, 'INBOX');
     sqimap_logout($imap_stream);
 
-    cron_log("Summary for $user: $stat_scam Spam filtered, $stat_labeled Categorized, $stat_drafts Drafts created.");
+    cron_log("Summary for $user: $stat_filtered Message(s) filtered by rules, $stat_scam Spam filtered, $stat_labeled Categorized, $stat_drafts Drafts created.");
 }
 
 // Save updated state

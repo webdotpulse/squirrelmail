@@ -1000,6 +1000,7 @@ $plugins[] = 'templates';
 $plugins[] = 'squirrelspell';
 $plugins[] = 'message_details';
 $plugins[] = 'info';
+$plugins[] = 'filters';
 
 
 /**

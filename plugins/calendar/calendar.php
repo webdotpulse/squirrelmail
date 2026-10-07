@@ -11,6 +11,9 @@
  */
 
 require('../../include/init.php');
+include_once(SM_PATH . 'functions/imap.php');
+include_once(SM_PATH . 'functions/imap_mailbox.php');
+include_once(SM_PATH . 'functions/mime.php');
 include_once(SM_PATH . 'functions/page_header.php');
 include_once(SM_PATH . 'plugins/calendar/calendar_data.php');
 
@@ -43,52 +46,61 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['ics_file']) && $_FIL
 if (isset($_GET['action']) && $_GET['action'] === 'import_email' && !empty($_GET['passed_id'])) {
     $pId = $_GET['passed_id'];
     $mBox = isset($_GET['mailbox']) ? $_GET['mailbox'] : 'INBOX';
-    $eId = isset($_GET['ent_id']) && !empty($_GET['ent_id']) ? $_GET['ent_id'] : null;
+    $eId = (isset($_GET['ent_id']) && $_GET['ent_id'] !== '') ? $_GET['ent_id'] : null;
 
     global $imapServerAddress, $imapPort, $username, $imap_stream_options;
-    $imapConn = sqimap_login($username, false, $imapServerAddress, $imapPort, 0, $imap_stream_options);
-    if ($imapConn) {
-        sqimap_mailbox_select($imapConn, $mBox);
-        $msgObj = sqimap_get_message($imapConn, $pId, $mBox);
-        $vcalContent = calendar_extract_vcalendar_from_message($imapConn, $pId, $mBox, $msgObj, $eId);
-        sqimap_logout($imapConn);
+    try {
+        $imapConn = sqimap_login($username, false, $imapServerAddress, $imapPort, 2, $imap_stream_options);
+        if ($imapConn) {
+            sqimap_mailbox_select($imapConn, $mBox, false);
+            $msgObj = sqimap_get_message($imapConn, $pId, $mBox, 2);
+            $vcalContent = calendar_extract_vcalendar_from_message($imapConn, $pId, $mBox, $msgObj, $eId);
+            sqimap_logout($imapConn);
 
-        if (!empty($vcalContent)) {
-            $importedEvents = array();
-            $cnt = calendar_import_ics($vcalContent, $importedEvents);
-            if ($cnt > 0) {
-                $firstEv = reset($importedEvents);
-                $highlightEventId = $firstEv['id'] ?? null;
-                $importMsg = sprintf(_("Successfully added appointment '%s' (%s) to your calendar."), $firstEv['title'], $firstEv['date']);
-                if (!empty($firstEv['date']) && preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $firstEv['date'], $dm)) {
-                    $_GET['year'] = intval($dm[1]);
-                    $_GET['month'] = intval($dm[2]);
-                    $_GET['day'] = intval($dm[3]);
+            if (!empty($vcalContent)) {
+                $importedEvents = array();
+                $cnt = calendar_import_ics($vcalContent, $importedEvents);
+                if ($cnt > 0) {
+                    $firstEv = reset($importedEvents);
+                    $highlightEventId = $firstEv['id'] ?? null;
+                    $importMsg = sprintf(_("Successfully added appointment '%s' (%s) to your calendar."), $firstEv['title'], $firstEv['date']);
+                    if (!empty($firstEv['date']) && preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $firstEv['date'], $dm)) {
+                        $_GET['year'] = intval($dm[1]);
+                        $_GET['month'] = intval($dm[2]);
+                        $_GET['day'] = intval($dm[3]);
+                    }
+                } else {
+                    $importMsg = _("Could not find any appointments to import in the calendar data.");
                 }
             } else {
-                $importMsg = _("Could not find any appointments to import in the calendar data.");
+                // Fallback: If no raw VCALENDAR, prefill event creation modal with email details
+                $subj = '';
+                if (is_object($msgObj) && isset($msgObj->rfc822_header) && isset($msgObj->rfc822_header->subject)) {
+                    $subj = decodeHeader($msgObj->rfc822_header->subject);
+                }
+                $sender = '';
+                if (is_object($msgObj) && isset($msgObj->rfc822_header)) {
+                    $sender = $msgObj->rfc822_header->getAddr_s('from');
+                }
+                $autoOpenModal = true;
+                $autoEventData = array(
+                    'title'       => $subj ? $subj : _("Email Appointment"),
+                    'date'        => date('Y-m-d'),
+                    'time'        => '09:00',
+                    'end_time'    => '10:00',
+                    'category'    => 'work',
+                    'location'    => '',
+                    'description' => ($sender ? "From: $sender\n" : "") . ($subj ? "Subject: $subj\n" : "")
+                );
             }
         } else {
-            // Fallback: If no raw VCALENDAR, prefill event creation modal with email details
-            $subj = '';
-            if (isset($msgObj) && isset($msgObj->rfc822_header) && isset($msgObj->rfc822_header->subject)) {
-                $subj = decodeHeader($msgObj->rfc822_header->subject);
-            }
-            $sender = '';
-            if (isset($msgObj) && isset($msgObj->rfc822_header)) {
-                $sender = $msgObj->rfc822_header->getAddr_s('from');
-            }
-            $autoOpenModal = true;
-            $autoEventData = array(
-                'title'       => $subj ? $subj : _("Email Appointment"),
-                'date'        => date('Y-m-d'),
-                'time'        => '09:00',
-                'end_time'    => '10:00',
-                'category'    => 'work',
-                'location'    => '',
-                'description' => ($sender ? "From: $sender\n" : "") . ($subj ? "Subject: $subj\n" : "")
-            );
+            $importMsg = _("Could not connect to mail server to import appointment.");
         }
+    } catch (\Throwable $e) {
+        if (isset($imapConn) && $imapConn) {
+            @sqimap_logout($imapConn);
+        }
+        $importMsg = _("Failed to import appointment from email: ") . htmlspecialchars($e->getMessage());
     }
 } elseif (isset($_GET['action']) && $_GET['action'] === 'new') {
     $autoOpenModal = true;

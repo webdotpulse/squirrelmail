@@ -7,3 +7,16 @@
 [2026-10-07 02:57:34] === SquirrelMail AI Agent Cron Started (Gemini Model: gemini-3.8-flash) ===
 [2026-10-07 02:57:34] [INFO] Running in DRY-RUN mode. No emails will be moved or modified.
 [2026-10-07 02:57:34] [ERROR] Gemini API Key is missing! Please configure $gemini_api_key in plugins/ai_agent/config.php or Options.
+[2026-10-07 04:13:21] === SquirrelMail Background Automation & AI Cron Started (Gemini Model: gemini-3.8-flash) ===
+[2026-10-07 04:13:21] [INFO] Running in DRY-RUN mode. No emails will be moved or modified.
+[2026-10-07 04:13:21] [NOTICE] Gemini API Key is not configured. AI processing will be skipped, but user Message Filters will run.
+[2026-10-07 04:13:34] === SquirrelMail Background Automation & AI Cron Started (Gemini Model: gemini-3.8-flash) ===
+[2026-10-07 04:13:34] [INFO] Running in DRY-RUN mode. No emails will be moved or modified.
+[2026-10-07 04:13:34] [NOTICE] Gemini API Key is not configured. AI processing will be skipped, but user Message Filters will run.
+[2026-10-07 04:13:34] [NOTICE] No configured AI Agent accounts found.
+[2026-10-07 04:13:34] To monitor mailboxes, configure credentials in Options -> AI Agent, via 'php cron.php --user=<email> --set-pass="<pass>"', or in $cron_accounts.
+[2026-10-07 04:14:24] === SquirrelMail Background Automation & AI Cron Started (Gemini Model: gemini-3.8-flash) ===
+[2026-10-07 04:14:24] [INFO] Running in DRY-RUN mode. No emails will be moved or modified.
+[2026-10-07 04:14:24] [NOTICE] Gemini API Key is not configured. AI processing will be skipped, but user Message Filters will run.
+[2026-10-07 04:14:24] [NOTICE] No configured AI Agent accounts found.
+[2026-10-07 04:14:24] To monitor mailboxes, configure credentials in Options -> AI Agent, via 'php cron.php --user=<email> --set-pass="<pass>"', or in $cron_accounts.

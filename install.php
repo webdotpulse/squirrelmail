@@ -13,7 +13,7 @@
  */
 
 define('SM_PATH', './');
-define('INSTALLER_VERSION', '1.5.28');
+define('INSTALLER_VERSION', '1.5.31');
 
 // Ensure core constants (such as SM_DEBUG_MODE_OFF) are loaded before config.php
 if (file_exists(SM_PATH . 'include/constants.php')) {
@@ -1605,6 +1605,13 @@ if ($is_already_installed) {
                             <div>
                                 <strong>info</strong>
                                 <div class="field-desc">Displays IMAP server information in administration.</div>
+                            </div>
+                        </label>
+                        <label class="plugin-check">
+                            <input type="checkbox" name="plugins[]" value="filters" checked>
+                            <div>
+                                <strong>filters</strong>
+                                <div class="field-desc">Automated message sorting into folders based on criteria and background cron processing.</div>
                             </div>
                         </label>
                     </div>

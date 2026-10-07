@@ -163,6 +163,10 @@ class Message {
          if (!is_object($header)) {
               return '';
          }
+         $ext = strtolower($header->type1 ?? '');
+         if ($ext === 'calendar' || $ext === 'x-vcalendar') {
+             $ext = 'ics';
+         }
          if (is_object($header->disposition)) {
               $filename = $header->disposition->getProperty('filename');
               if (trim($filename) == '') {
@@ -171,9 +175,13 @@ class Message {
                       $name = $header->getParameter('name');
                       if(!trim($name)) {
                           if (!trim( $header->id )) {
-                              $filename = 'untitled-[' . $this->entity_id . ']' . '.' . strtolower($header->type1);
+                              if ($ext === 'ics') {
+                                  $filename = 'invite.ics';
+                              } else {
+                                  $filename = 'untitled-[' . $this->entity_id . ']' . '.' . $ext;
+                              }
                           } else {
-                              $filename = 'cid: ' . $header->id . '.' . strtolower($header->type1);
+                              $filename = 'cid: ' . $header->id . '.' . $ext;
                           }
                       } else {
                           $filename = $name;
@@ -188,12 +196,19 @@ class Message {
                   $filename = $header->getParameter('name');
                   if (!trim($filename)) {
                       if (!trim( $header->id )) {
-                          $filename = 'untitled-[' . $this->entity_id . ']' . '.' . strtolower($header->type1);
+                          if ($ext === 'ics') {
+                              $filename = 'invite.ics';
+                          } else {
+                              $filename = 'untitled-[' . $this->entity_id . ']' . '.' . $ext;
+                          }
                       } else {
-                          $filename = 'cid: ' . $header->id . '.' . strtolower($header->type1);
+                          $filename = 'cid: ' . $header->id . '.' . $ext;
                       }
                   }
               }
+         }
+         if (substr(strtolower($filename), -9) === '.calendar') {
+             $filename = substr($filename, 0, -9) . '.ics';
          }
          return $filename;
     }
@@ -1108,7 +1123,7 @@ TODO: Is the order of the returned ID list any indication of preference?
         }
         if(!$strict && !$found) {
             if ($this->type0 == 'text'
-             && in_array($this->type1, array('plain', 'html', 'message'))
+             && in_array($this->type1, array('plain', 'html', 'message', 'calendar', 'x-vcalendar'))
              && isset($this->entity_id)
              && count($this->entities) == 0
              && (!is_object($this->header->disposition)
@@ -1272,6 +1287,21 @@ TODO: Is the order of the returned ID list any indication of preference?
                     if ($entity->type0 == 'multipart') {
                         $result = $entity->getAttachments($exclude_id, $result);
                     } else if ($entity->type0 != 'multipart') {
+                        if (strtolower($this->type1 ?? '') === 'alternative') {
+                            $has_excluded_sibling = false;
+                            foreach ($this->entities as $sib) {
+                                if (in_array($sib->entity_id, $exclude_id, true)) {
+                                    $has_excluded_sibling = true;
+                                    break;
+                                }
+                            }
+                            if ($has_excluded_sibling && in_array(strtolower($entity->type1 ?? ''), array('plain', 'html'), true)) {
+                                $disp = (is_object($entity->header) && is_object($entity->header->disposition)) ? strtolower($entity->header->disposition->name ?? '') : '';
+                                if ($disp !== 'attachment') {
+                                    continue;
+                                }
+                            }
+                        }
                         $result[] = $entity;
                     }
                 }

@@ -1,4 +1,4 @@
-# SquirrelMail 1.5.28
+# SquirrelMail 1.5.31
 
 A modernized, responsive edition of SquirrelMail engineered for PHP 7.0 through 8.2+ with a Single-Page Application (SPA) interface, modern UI styling, and extensive feature enhancements.
 
@@ -22,8 +22,9 @@ A modernized, responsive edition of SquirrelMail engineered for PHP 7.0 through 
   - Full HTML & plaintext signature support configurable per identity in Personal Options.
 - **Message Labels & Categorization** (`plugins/message_labels`):
   - Gmail-style color-coded tags, customizable labels, and sidebar badge integration.
-- **Automated Message Filters** (`plugins/filters`):
+- **Automated Message Filters & Background Cron** (`plugins/filters`):
   - Automatic routing of incoming emails to specific folders based on customizable criteria (Sender, Recipient, Subject, Headers, Body text).
+  - Continuous background server-side execution via shared cronjob (`plugins/ai_agent/cron.php`) ensuring emails are organized even when logged out.
 - **Compose Improvements**:
   - Live contact autocomplete suggestions for `To:`, `Cc:`, and `Bcc:` fields.
   - Modal-based template insertion and rich-text synchronization.
@@ -46,6 +47,33 @@ This repository includes an [AGENTS.md](file:///home/koen/Git/squirrelmail/AGENT
 ---
 
 ## 📝 Changelog
+
+### Version 1.5.31
+- **iCalendar (.ics) / .calendar MIME Recognition & Parsing Overhaul**:
+  - **Extension & Filename Normalization**: Fixed issue where emails with `.ics` meeting invites (e.g. from Microsoft Outlook, Exchange, Google Calendar) were assigned `.calendar` extensions (`untitled-[id].calendar`), causing operating systems and mail clients to fail to associate the file with calendar applications. Updated `class/mime/Message.class.php`, `src/download.php`, and `functions/mime.php` (`buildAttachmentArray`) to always resolve `text/calendar` and `application/ics` parts to `.ics` and default untitled parts to `invite.ics`.
+  - **VEVENT Strict Block Isolation (VTIMEZONE Pollution Elimination)**: Fixed critical parsing bug where `calendar_parse_ics()` in `plugins/calendar/calendar_data.php` split blocks incorrectly, causing Outlook/Exchange `VTIMEZONE` definitions (`DTSTART:16011028T030000`) to be captured instead of the event's actual `DTSTART`, setting meeting dates to year **1601**. Implemented strict `BEGIN:VEVENT...END:VEVENT` regex isolation and helper `calendar_parse_dt()` handling UTC conversion, TZID, and all-day events.
+  - **Organizer vs Attendee Extraction**: Fixed regex capture in `calendar_parse_ics()` where attendee names (`ATTENDEE;CN="Koen"`) were wrongly captured as the meeting organizer. Enforced strict property-line parsing for `ORGANIZER;CN=...`.
+  - **Missing Calendar Plugin Hooks Registration**: Added missing hooks `template_construct_read_message_body.tpl`, `read_body_top`, `attachment text/calendar`, `attachment application/ics`, and `attachment */*` into `config/plugin_hooks.php` and `plugins/calendar/setup.php`, enabling the interactive meeting invitation banner card and inline `📅 Add to Calendar` actions on emails with calendar attachments.
+  - **Reading View Fallback & Structured Presentation**: Fixed issue in `src/read_body.php` where users with plain text preference (`show_html_default=0`) received blank email bodies on HTML/calendar-only invites. Added fallback in `findDisplayEntity()` and modernized `functions/mime.php` (`formatBody`) and `src/view_text.php` to render structured meeting appointment cards with one-click "Add to Calendar" and collapsible raw ICS source viewing.
+- **Version Bump**: Incremented version from `1.5.30` to `1.5.31`.
+
+### Version 1.5.30
+- **Calendar Email Appointment Import HTTP 500 Fix**:
+  - **Undefined IMAP & MIME Function Resolution**: Fixed fatal errors (`Call to undefined function sqimap_login()`, `sqimap_get_message()`, `sqimap_mailbox_select()`, `mime_fetch_body()`, `decodeBody()`, and `decodeHeader()`) in `plugins/calendar/ajax.php`, `plugins/calendar/calendar.php`, and `plugins/calendar/calendar_data.php`. Added explicit includes for `functions/imap.php`, `functions/imap_mailbox.php`, and `functions/mime.php`.
+  - **Non-Fatal IMAP Error Handling**: Updated `sqimap_login()` and `sqimap_get_message()` calls in `ajax.php` and `calendar.php` to pass `$hide = 2`, preventing SquirrelMail from terminating script execution with HTML error boxes on AJAX calls and instead returning structured error handling.
+  - **Robust Exception Handling**: Wrapped appointment extraction and parsing in `ajax.php` and `calendar.php` with `try { ... } catch (\Throwable $e)` to cleanly catch unexpected exceptions, safely release IMAP stream sockets, and deliver structured JSON error responses with `success: false` rather than HTTP 500 crashes.
+  - **iCalendar Extraction Resilience**: Enhanced `calendar_collect_ics_entities()` with null-safety and exception guards around `$msg->getFilename()`, and added automatic mailbox selection and regex-delimited `BEGIN:VCALENDAR...END:VCALENDAR` extraction in `calendar_extract_vcalendar_from_message()`.
+- **Version Bump**: Incremented version from `1.5.29` to `1.5.30`.
+
+### Version 1.5.29
+- **Message Filters Options Visibility & Background Cron Automation**:
+  - **Options Page Visibility**: Fixed Message Filters missing from Options (`src/options.php`). Registered `filters_optpage_register_block` hook in `config/plugin_hooks.php`, added `filters` to `config/config_default.php`, enabled explicit global scope binding for `$optpage_blocks` in `src/options.php`, and added `filters_optpage_register_block()` directly into `plugins/filters/setup.php` to ensure the block is immediately available without requiring the full filter processing engine to load.
+  - **Installer Integration**: Added the `filters` plugin to the installer's recommended plugin checkbox grid and default plugins array in `install.php`, ensuring installation and configuration updates never omit filter hooks.
+  - **Background Filtering via AI Cron**: Integrated user message filtering directly into the server cron automation script (`plugins/ai_agent/cron.php`). When the cron runs every 5 minutes (or on demand), it connects to each user's IMAP mailbox and evaluates their saved message filter rules, automatically moving matched emails from `INBOX` to destination folders even when the user is completely logged out.
+  - **Non-Fatal AI Dependency**: Updated `plugins/ai_agent/cron.php` so that absence of a Gemini API key no longer aborts the cron script. The cron gracefully continues processing user Message Filters across all accounts, and added a `--filter-only` CLI option.
+  - **Cron Automation Card in Filter Options**: Added an interactive Background Automation status card to `plugins/filters/options.php` displaying the shared crontab command, continuous filtering status badge, and the timestamp and excerpt of the most recent background cron execution.
+  - **Plugin Requirement Fix**: Resolved an unhandled fatal error in `cron.php` (`Call to undefined function do_hook()`) by ensuring `functions/plugin.php` and `config/plugin_hooks.php` are properly loaded.
+- **Version Bump**: Incremented version from `1.5.28` to `1.5.29`.
 
 ### Version 1.5.28
 - **Conditional Unified Inbox Display (Multi-Account)**:

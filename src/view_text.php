@@ -72,6 +72,47 @@ if ($type1 == 'html' || (isset($override_type1) &&  $override_type1 == 'html')) 
         $body = charset_decode($charset,$body,false,true);
     }
     $body = MagicHTML( $body, $passed_id, $message, $mailbox);
+} else if ($type1 == 'calendar' || $type1 == 'x-vcalendar' || $type1 == 'ics' || stripos($body, 'BEGIN:VCALENDAR') !== false) {
+    $ishtml = TRUE;
+    $rawBody = $body;
+    $cardHtml = '';
+    if (file_exists(SM_PATH . 'plugins/calendar/calendar_data.php')) {
+        include_once(SM_PATH . 'plugins/calendar/calendar_data.php');
+        $events = calendar_parse_ics($body);
+        if (!empty($events)) {
+            $ev = reset($events);
+            $baseUri = function_exists('sqm_baseuri') ? sqm_baseuri() : (defined('SM_PATH') ? SM_PATH : '../');
+            $importUrl = $baseUri . 'plugins/calendar/calendar.php?action=import_email&passed_id=' . urlencode($passed_id) . '&mailbox=' . urlencode($mailbox) . '&ent_id=' . urlencode($ent_id);
+            $calViewUrl = $baseUri . 'plugins/calendar/calendar.php';
+            $title = !empty($ev['title']) ? htmlspecialchars($ev['title']) : _("Meeting Invitation");
+            $dateStr = !empty($ev['date']) ? $ev['date'] : '';
+            $dt = strtotime($dateStr);
+            $formattedDate = $dt ? date('D, M j, Y', $dt) : $dateStr;
+            $timeStr = !empty($ev['all_day']) ? _("All Day") : ((!empty($ev['time']) ? $ev['time'] : '') . (!empty($ev['end_time']) ? ' – ' . $ev['end_time'] : ''));
+            $loc = !empty($ev['location']) ? htmlspecialchars($ev['location']) : '';
+            $org = !empty($ev['organizer']) ? htmlspecialchars($ev['organizer']) : '';
+            $desc = !empty($ev['description']) ? nl2br(htmlspecialchars($ev['description'])) : '';
+
+            $cardHtml = '<div style="margin: 0 0 20px 0; padding: 20px 24px; background: linear-gradient(135deg, #f8fafd 0%, #edf2fa 100%); border: 1px solid #c2e7ff; border-left: 5px solid #1a73e8; border-radius: 10px; font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, sans-serif;">'
+                      . '<div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap;">'
+                      . '<div style="flex: 1; min-width: 240px;">'
+                      . '<div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #004a77; background: #c2e7ff; display: inline-block; padding: 2px 8px; border-radius: 10px; margin-bottom: 8px;">📅 ' . _("Calendar Appointment") . '</div>'
+                      . '<h2 style="margin: 0 0 10px 0; font-size: 18px; color: #202124;">' . $title . '</h2>'
+                      . '<div style="font-size: 14px; color: #3c4043; line-height: 1.6;">'
+                      . '<div><strong>🕒 ' . _("When:") . '</strong> ' . htmlspecialchars($formattedDate) . ($timeStr ? ' • ' . htmlspecialchars($timeStr) : '') . '</div>'
+                      . ($loc ? '<div><strong>📍 ' . _("Where:") . '</strong> ' . $loc . '</div>' : '')
+                      . ($org ? '<div><strong>👤 ' . _("Organizer:") . '</strong> ' . $org . '</div>' : '')
+                      . '</div>'
+                      . ($desc ? '<div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid #e0e0e0; font-size: 13px; color: #444;">' . $desc . '</div>' : '')
+                      . '</div>'
+                      . '<div style="display: flex; gap: 8px; align-self: center;">'
+                      . '<a href="' . htmlspecialchars($importUrl) . '" class="sm-btn" style="padding: 8px 16px; background: #1a73e8; color: #fff; border-radius: 6px; text-decoration: none; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">📅 ' . _("Add to Calendar") . '</a>'
+                      . '<a href="' . htmlspecialchars($calViewUrl) . '" class="sm-btn" style="padding: 8px 14px; background: #fff; color: #3c4043; border: 1px solid #dadce0; border-radius: 6px; text-decoration: none; font-size: 13px; font-weight: 500;">' . _("View Calendar") . '</a>'
+                      . '</div>'
+                      . '</div></div>';
+        }
+    }
+    $body = $cardHtml . '<details style="margin-top: 10px;"><summary style="cursor: pointer; color: #5f6368; font-size: 13px; font-family: monospace;">' . _("View Raw iCalendar (.ics) Source") . '</summary><pre style="background: #f1f3f4; padding: 12px; border-radius: 6px; overflow: auto; font-size: 12px; margin-top: 8px;">' . htmlspecialchars($rawBody) . '</pre></details>';
 } else {
     $ishtml = FALSE;
     translateText($body, $wrap_at, $charset);
