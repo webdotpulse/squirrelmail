@@ -655,8 +655,13 @@ img[src$=".svg"],
 }
 
 @keyframes sm-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .sm-spin {
@@ -667,6 +672,7 @@ img[src$=".svg"],
   .sm-folder-refresh-btn span {
     display: none;
   }
+
   .sm-folder-refresh-btn {
     width: 24px;
     padding: 0;
@@ -1104,7 +1110,7 @@ input[type="submit"][name="do_delete"]:hover {
   font-size: 11px;
   font-weight: 600;
   margin-right: 6px;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .ml-star-icon {
@@ -1178,8 +1184,8 @@ input[type="submit"][name="do_delete"]:hover {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
+  /*width: 30px;*/
+  /*height: 30px;*/
   border-radius: var(--sm-radius-sm);
   border: 1px solid var(--sm-border);
   background: var(--sm-bg-surface);
@@ -1688,7 +1694,7 @@ table.table1 input[type="submit"]:hover {
   border-top: 1px solid var(--sm-border);
 }
 
-.dialogbox table.wrapper tr:first-child + tr td.header2 {
+.dialogbox table.wrapper tr:first-child+tr td.header2 {
   border-top: none;
 }
 
@@ -2078,7 +2084,7 @@ table.table1 input[type="submit"]:hover {
   margin: 12px 14px;
   padding: 16px 20px;
   border-radius: var(--sm-radius-md, 8px);
-  box-shadow: var(--sm-shadow-sm, 0 1px 3px rgba(0,0,0,0.06));
+  box-shadow: var(--sm-shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.06));
   font-family: inherit;
   display: none;
   position: relative;
@@ -2086,8 +2092,15 @@ table.table1 input[type="submit"]:hover {
 }
 
 @keyframes aiCardSlide {
-  from { opacity: 0; transform: translateY(-8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .ai-summary-card {
