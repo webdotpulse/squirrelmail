@@ -1300,25 +1300,37 @@ function encodeHeaderBase64($string,$charset) {
 
 /* This function trys to locate the entity_id of a specific mime element */
 function find_ent_id($id, $message) {
-    $clean_id = trim($id, '<>');
-    for ($i = 0, $ret = ''; $ret == '' && $i < count($message->entities); $i++) {
-        if ($message->entities[$i]->header->type0 == 'multipart')  {
-            $ret = find_ent_id($id, $message->entities[$i]);
+    if (empty($id) || !is_string($id) || !is_object($message) || !isset($message->entities) || !is_array($message->entities)) {
+        return '';
+    }
+    $clean_id = trim($id, "<> \t\n\r");
+    if ($clean_id === '') {
+        return '';
+    }
+    for ($i = 0, $ret = ''; $ret === '' && $i < count($message->entities); $i++) {
+        if (!is_object($message->entities[$i])) {
+            continue;
+        }
+        $ent = $message->entities[$i];
+        if (isset($ent->header) && is_object($ent->header) && isset($ent->header->type0) && $ent->header->type0 === 'multipart') {
+            $ret = find_ent_id($id, $ent);
         } else {
-            $hdr_id = trim($message->entities[$i]->header->id, '<>');
-            if (strcasecmp($hdr_id, $clean_id) == 0) {
+            $hdr_id = (isset($ent->header) && is_object($ent->header) && !empty($ent->header->id))
+                ? trim((string)$ent->header->id, "<> \t\n\r")
+                : '';
+            if ($hdr_id !== '' && strcasecmp($hdr_id, $clean_id) === 0) {
 //                if (sq_check_save_extension($message->entities[$i])) {
-                return $message->entities[$i]->entity_id;
+                return $ent->entity_id ?? '';
 //                }
-            } elseif (!empty($message->entities[$i]->header->parameters['name'])) {
+            } elseif (isset($ent->header) && is_object($ent->header) && !empty($ent->header->parameters['name'])) {
                 /**
                  * This is part of a fix for Outlook Express 6.x generating
                  * cid URLs without creating content-id headers
                  * @@JA - 20050207
                  */
-                if (strcasecmp($message->entities[$i]->header->parameters['name'], $clean_id) == 0 ||
-                    strcasecmp($message->entities[$i]->header->parameters['name'], $id) == 0) {
-                    return $message->entities[$i]->entity_id;
+                $pName = (string)$ent->header->parameters['name'];
+                if (strcasecmp($pName, $clean_id) === 0 || strcasecmp($pName, $id) === 0) {
+                    return $ent->entity_id ?? '';
                 }
             }
         }
@@ -2018,15 +2030,17 @@ function sq_fixatts($tagname,
  * @param  $attvalue        String with attribute value to filter
  * @param  $message         message object
  * @param  $id               message id
- * @param  $mailbox         mailbox
  * @param  $sQuote          quoting characters around url's
  */
-function sq_fix_url($attname, &$attvalue, $message, $id, $mailbox,$sQuote = '"') {
+function sq_fix_url($attname, &$attvalue, $message, $id, $mailbox, $sQuote = '"') {
+    if (!is_string($attvalue)) {
+        $attvalue = (string)$attvalue;
+    }
     $attvalue = trim($attvalue);
-    if ($attvalue && ($attvalue[0] =='"'|| $attvalue[0] == "'")) {
-        // remove the double quotes
+    if ($attvalue !== '' && ($attvalue[0] === '"' || $attvalue[0] === "'")) {
+        // remove the quotes
         $sQuote = $attvalue[0];
-        $attvalue = trim(substr($attvalue,1,-1));
+        $attvalue = trim(substr($attvalue, 1, -1));
     }
 
     // If there's no "view_unsafe_images" variable in the URL, turn unsafe
@@ -2035,159 +2049,90 @@ function sq_fix_url($attname, &$attvalue, $message, $id, $mailbox,$sQuote = '"')
 
     global $use_transparent_security_image;
     $baseUri = function_exists('sqm_baseuri') ? sqm_baseuri() : (defined('SM_PATH') ? SM_PATH : '../');
-    if ($use_transparent_security_image) $secremoveimg = $baseUri . 'images/spacer.png';
-    else $secremoveimg = $baseUri . 'images/' . _("sec_remove_eng.png");
+    $secremoveimg = $use_transparent_security_image ? ($baseUri . 'images/spacer.png') : ($baseUri . 'images/' . _("sec_remove_eng.png"));
     $blank_img = $baseUri . 'images/blank.png';
 
     /**
      * Replace empty src tags with the blank image.  src is only used
-     * for frames, images, and image inputs.  Doing a replace should
-     * not affect them working as should be, however it will stop
-     * IE from being kicked off when src for img tags are not set
+     * for frames, images, and image inputs.
      */
-    if ($attvalue == '') {
-        $attvalue = '"' . $blank_img . '"';
-    } else {
-        // first, disallow 8 bit characters and control characters
-        if (preg_match('/[\0-\37\200-\377]+/',$attvalue)) {
-            switch ($attname) {
-                case 'href':
-                    $attvalue = $sQuote . 'http://invalid-stuff-detected.example.com' . $sQuote;
-                    break;
-                default:
-                    $attvalue = $sQuote . $blank_img . $sQuote;
-                    break;
-            }
+    if ($attvalue === '') {
+        $attvalue = $sQuote . $blank_img . $sQuote;
+        return;
+    }
+
+    // Disallow 8 bit characters and control characters
+    if (preg_match('/[\0-\37\200-\377]+/', $attvalue)) {
+        switch ($attname) {
+            case 'href':
+                $attvalue = $sQuote . 'http://invalid-stuff-detected.example.com' . $sQuote;
+                break;
+            default:
+                $attvalue = $sQuote . $blank_img . $sQuote;
+                break;
+        }
+        return;
+    }
+
+    // Safe embedded raster image data URIs (PNG, JPEG, GIF, WEBP, BMP, ICO)
+    if (stripos($attvalue, 'data:image/') === 0) {
+        if ($attname !== 'href' && $attname !== 'action' && $attname !== 'formaction' &&
+            preg_match('/^data:image\/(png|jpeg|jpg|gif|webp|bmp|x-icon|vnd\.microsoft\.icon)(?:;[a-zA-Z0-9\-_=]+)*;base64,[a-zA-Z0-9+\/=\s]+$/i', $attvalue)) {
+            $attvalue = $sQuote . $attvalue . $sQuote;
+            return;
         } else {
-            // Safe embedded raster image data URIs (PNG, JPEG, GIF, WEBP, BMP, ICO)
-            if (stripos($attvalue, 'data:image/') === 0) {
-                if ($attname != 'href' && $attname != 'action' && $attname != 'formaction' &&
+            $attvalue = $sQuote . $blank_img . $sQuote;
+            return;
+        }
+    }
+
+    // Protocol-relative URLs (e.g. //example.com/image.png)
+    if (substr($attvalue, 0, 2) === '//') {
+        $attvalue = 'https:' . $attvalue;
+    }
+
+    $aUrl = parse_url($attvalue);
+    if (is_array($aUrl) && isset($aUrl['scheme'])) {
+        switch(strtolower($aUrl['scheme'])) {
+            case 'mailto':
+            case 'http':
+            case 'https':
+            case 'ftp':
+                if ($attname !== 'href') {
+                    if (!$view_unsafe_images) {
+                        $attvalue = $sQuote . $secremoveimg . $sQuote;
+                    } else {
+                        $attvalue = $sQuote . $attvalue . $sQuote;
+                    }
+                } else {
+                    $attvalue = $sQuote . $attvalue . $sQuote;
+                }
+                break;
+            case 'data':
+                if ($attname !== 'href' && $attname !== 'action' && $attname !== 'formaction' &&
                     preg_match('/^data:image\/(png|jpeg|jpg|gif|webp|bmp|x-icon|vnd\.microsoft\.icon)(?:;[a-zA-Z0-9\-_=]+)*;base64,[a-zA-Z0-9+\/=\s]+$/i', $attvalue)) {
                     $attvalue = $sQuote . $attvalue . $sQuote;
-                    return;
                 } else {
                     $attvalue = $sQuote . $blank_img . $sQuote;
-                    return;
                 }
-            }
-
-            // Protocol-relative URLs (e.g. //example.com/image.png)
-            if (substr($attvalue, 0, 2) === '//') {
-                $attvalue = 'https:' . $attvalue;
-            }
-
-            $aUrl = parse_url($attvalue);
-            if (isset($aUrl['scheme'])) {
-                switch(strtolower($aUrl['scheme'])) {
-                    case 'mailto':
-                    case 'http':
-                    case 'https':
-                    case 'ftp':
-                        if ($attname != 'href') {
-                            if ($view_unsafe_images == false) {
-                                $attvalue = $sQuote . $secremoveimg . $sQuote;
-                            } else {
-                                if (isset($aUrl['path'])) {
-
-                                    // No one has been able to show that image URIs
-                                    // can be exploited, so for now, no restrictions
-                                    // are made at all.  If this proves to be a problem,
-                                    // the commented-out code below can be of help.
-                                    // (One consideration is that I see nothing in this
-                                    // function that specifically says that we will
-                                    // only ever arrive here when inspecting an image
-                                    // tag, although that does seem to be the end
-                                    // result - e.g., <script src="..."> where malicious
-                                    // image URIs are in fact a problem are already
-                                    // filtered out elsewhere.
-                                    /* ---------------------------------
-                                    // validate image extension.
-                                    $ext = strtolower(substr($aUrl['path'],strrpos($aUrl['path'],'.')));
-                                    if (!in_array($ext,array('.jpeg','.jpg','xjpeg','.gif','.bmp','.jpe','.png','.xbm'))) {
-                                        // If URI is to something other than
-                                        // a regular image file, get the contents
-                                        // and try to see if it is an image.
-                                        // Don't use Fileinfo (finfo_file()) because
-                                        // we'd need to make the admin configure the
-                                        // location of the magic.mime file (FIXME: add finfo_file() support later?)
-                                        //
-                                        $mime_type = '';
-                                        if (function_exists('mime_content_type')
-                                         && ($FILE = @fopen($attvalue, 'rb', FALSE))) {
-
-                                            // fetch file
-                                            //
-                                            $file_contents = '';
-                                            while (!feof($FILE)) {
-                                                $file_contents .= fread($FILE, 8192);
-                                            }
-                                            fclose($FILE);
-
-                                            // store file locally
-                                            //
-                                            global $attachment_dir, $username;
-                                            $hashed_attachment_dir = getHashedDir($username, $attachment_dir);
-                                            $localfilename = GenerateRandomString(32, '', 7);
-                                            $full_localfilename = "$hashed_attachment_dir/$localfilename";
-                                            while (file_exists($full_localfilename)) {
-                                                $localfilename = GenerateRandomString(32, '', 7);
-                                                $full_localfilename = "$hashed_attachment_dir/$localfilename";
-                                            }
-                                            $FILE = fopen("$hashed_attachment_dir/$localfilename", 'wb');
-                                            fwrite($FILE, $file_contents);
-                                            fclose($FILE);
-
-                                            // get mime type and remove file
-                                            //
-                                            $mime_type = mime_content_type("$hashed_attachment_dir/$localfilename");
-                                            unlink("$hashed_attachment_dir/$localfilename");
-                                        }
-                                        // debug: echo "$attvalue FILE TYPE IS $mime_type<HR>";
-                                        if (substr(strtolower($mime_type), 0, 5) != 'image') {
-                                            $attvalue = $sQuote . SM_PATH . 'images/blank.png'. $sQuote;
-                                        }
-                                    }
-                                    --------------------------------- */
-                                } else {
-                                    $attvalue = $sQuote . $blank_img . $sQuote;
-                                }
-                            }
-                        } else {
-                            $attvalue = $sQuote . $attvalue . $sQuote;
-                        }
-                        break;
-                    case 'data':
-                        if ($attname != 'href' && $attname != 'action' && $attname != 'formaction' &&
-                            preg_match('/^data:image\/(png|jpeg|jpg|gif|webp|bmp|x-icon|vnd\.microsoft\.icon)(?:;[a-zA-Z0-9\-_=]+)*;base64,[a-zA-Z0-9+\/=\s]+$/i', $attvalue)) {
-                            $attvalue = $sQuote . $attvalue . $sQuote;
-                        } else {
-                            $attvalue = $sQuote . $blank_img . $sQuote;
-                        }
-                        break;
-                    case 'outbind':
-                        /**
-                         * "Hack" fix for Outlook using propriatary outbind:// protocol in img tags.
-                         * One day MS might actually make it match something useful, for now, falling
-                         * back to using cid2http, so we can grab the blank.png.
-                         */
-                        $attvalue = $sQuote . sq_cid2http($message, $id, $attvalue, $mailbox) . $sQuote;
-                        break;
-                    case 'cid':
-                        /**
-                            * Turn cid: urls into http-friendly ones.
-                            */
-                        $attvalue = $sQuote . sq_cid2http($message, $id, $attvalue, $mailbox) . $sQuote;
-                        break;
-                    default:
-                        $attvalue = $sQuote . $blank_img . $sQuote;
-                        break;
-                }
-            } else {
-                if (!isset($aUrl['path']) || $aUrl['path'] != $secremoveimg) {
-                    // parse_url did not lead to satisfying result
-                    $attvalue = $sQuote . $blank_img . $sQuote;
-                }
-            }
+                break;
+            case 'outbind':
+            case 'cid':
+                $attvalue = $sQuote . sq_cid2http($message, $id, $attvalue, $mailbox) . $sQuote;
+                break;
+            default:
+                $attvalue = $sQuote . $blank_img . $sQuote;
+                break;
+        }
+    } else {
+        $cleanPath = is_array($aUrl) && isset($aUrl['path']) ? $aUrl['path'] : $attvalue;
+        $baseFile = basename($cleanPath);
+        if ($cleanPath === $secremoveimg || $cleanPath === $blank_img || 
+            $baseFile === 'sec_remove_eng.png' || $baseFile === 'spacer.png' || $baseFile === 'blank.png' ||
+            strpos($baseFile, 'sec_remove_') === 0) {
+            $attvalue = $sQuote . $cleanPath . $sQuote;
+        } else {
+            $attvalue = $sQuote . $blank_img . $sQuote;
         }
     }
 }
@@ -2287,8 +2232,8 @@ function sq_fixstyle($body, $pos, $message, $id, $mailbox){
     $content = str_replace('.bodyclass body', '.bodyclass', $content);
 
     global $use_transparent_security_image;
-    if ($use_transparent_security_image) $secremoveimg = '../images/spacer.png';
-    else $secremoveimg = '../images/' . _("sec_remove_eng.png");
+    $baseUri = function_exists('sqm_baseuri') ? sqm_baseuri() : (defined('SM_PATH') ? SM_PATH : '../');
+    $secremoveimg = $use_transparent_security_image ? ($baseUri . 'images/spacer.png') : ($baseUri . 'images/' . _("sec_remove_eng.png"));
 
     /**
     * Fix url('blah') declarations.
@@ -2374,51 +2319,46 @@ function sq_cid2http($message, $id, $cidurl, $mailbox){
     /**
      * Get rid of quotes.
      */
-    $quotchar = substr($cidurl, 0, 1);
-    if ($quotchar == '"' || $quotchar == "'"){
-        $cidurl = str_replace($quotchar, "", $cidurl);
+    $quotchar = '';
+    if (is_string($cidurl) && strlen($cidurl) > 0) {
+        $firstChar = $cidurl[0];
+        if ($firstChar === '"' || $firstChar === "'") {
+            $quotchar = $firstChar;
+            $cidurl = trim($cidurl, $quotchar);
+        }
     } else {
-        $quotchar = '';
+        $cidurl = '';
     }
-    $cidurl = trim(substr(trim($cidurl), 4), '<>');
+
+    if (stripos($cidurl, 'cid:') === 0) {
+        $cidurl = substr($cidurl, 4);
+    } elseif (stripos($cidurl, 'outbind://') === 0) {
+        $cidurl = substr($cidurl, 10);
+    }
+    $cidurl = trim((string)$cidurl, "<> \t\n\r");
 
     $match_str = '/\{.*?\}\//';
     $str_rep = '';
     $cidurl = preg_replace($match_str, $str_rep, $cidurl);
 
-    $linkurl = find_ent_id($cidurl, $message);
-    /* in case of non-safe cid links $httpurl should be replaced by a sort of
-       unsafe link image */
-    $httpurl = '';
-
-    /**
-     * This is part of a fix for Outlook Express 6.x generating
-     * cid URLs without creating content-id headers. These images are
-     * not part of the multipart/related html mail. The html contains
-     * <img src="cid:{some_id}/image_filename.ext"> references to
-     * attached images with as goal to render them inline although
-     * the attachment disposition property is not inline.
-     */
-
-    if (empty($linkurl)) {
-        if (preg_match('/{.*}\//', $cidurl)) {
-            $cidurl = preg_replace('/{.*}\//','', $cidurl);
+    $linkurl = '';
+    if (!empty($cidurl) && is_object($message)) {
+        $linkurl = find_ent_id($cidurl, $message);
+        if (empty($linkurl) && preg_match('/\{.*\}\//', $cidurl)) {
+            $cidurl = preg_replace('/\{.*\}\//', '', $cidurl);
             if (!empty($cidurl)) {
                 $linkurl = find_ent_id($cidurl, $message);
             }
         }
     }
 
+    $baseUri = function_exists('sqm_baseuri') ? sqm_baseuri() : (defined('SM_PATH') ? SM_PATH : '../');
     if (!empty($linkurl)) {
-        $httpurl = $quotchar . sqm_baseuri() . 'src/download.php?absolute_dl=true&amp;' .
-            "passed_id=$id&amp;mailbox=" . urlencode($mailbox) .
-            '&amp;ent_id=' . $linkurl . $quotchar;
+        $httpurl = $quotchar . $baseUri . 'src/download.php?absolute_dl=true&amp;' .
+            "passed_id=" . urlencode($id) . "&amp;mailbox=" . urlencode($mailbox) .
+            '&amp;ent_id=' . urlencode($linkurl) . $quotchar;
     } else {
-        /**
-         * If we couldn't generate a proper img url, drop in a blank image
-         * instead of sending back empty, otherwise it causes unusual behaviour
-         */
-        $blank_img = (function_exists('sqm_baseuri') ? sqm_baseuri() : (defined('SM_PATH') ? SM_PATH : '../')) . 'images/blank.png';
+        $blank_img = $baseUri . 'images/blank.png';
         $httpurl = $quotchar . $blank_img . $quotchar;
     }
 
@@ -2447,7 +2387,11 @@ function sq_body2div($attary, $mailbox, $message, $id){
             $attvalue = str_replace($quotchar, "", $attvalue);
             switch ($attname){
                 case 'background':
-                    $attvalue = sq_cid2http($message, $id, $attvalue, $mailbox);
+                    if (stripos($attvalue, 'cid:') === 0 || stripos($attvalue, 'outbind:') === 0) {
+                        $attvalue = sq_cid2http($message, $id, $attvalue, $mailbox);
+                    } else {
+                        sq_fix_url('background', $attvalue, $message, $id, $mailbox, "'");
+                    }
                     $styledef .= "background-image: url('$attvalue'); ";
                     break;
                 case 'bgcolor':
@@ -2815,8 +2759,8 @@ function magicHTML($body, $id, $message, $mailbox = 'INBOX', $take_mailto_links 
             );
 
     global $use_transparent_security_image;
-    if ($use_transparent_security_image) $secremoveimg = '../images/spacer.png';
-    else $secremoveimg = '../images/' . _("sec_remove_eng.png");
+    $baseUri = function_exists('sqm_baseuri') ? sqm_baseuri() : (defined('SM_PATH') ? SM_PATH : '../');
+    $secremoveimg = $use_transparent_security_image ? ($baseUri . 'images/spacer.png') : ($baseUri . 'images/' . _("sec_remove_eng.png"));
 
     $bad_attvals = Array(
             "/.*/" =>
@@ -2907,7 +2851,7 @@ function magicHTML($body, $id, $message, $mailbox = 'INBOX', $take_mailto_links 
         array_push($bad_attvals['/.*/']['/^style/i'][0],
                 '/url\([\'\"]?(?:https?:|\/\/)[^\)]*[\'\"]?\)/si');
         array_push($bad_attvals['/.*/']['/^style/i'][1],
-                "url(\\1$secremoveimg\\1)");
+                "url(\"$secremoveimg\")");
     }
 
     $add_attr_to_tag = Array(
@@ -2934,7 +2878,7 @@ function magicHTML($body, $id, $message, $mailbox = 'INBOX', $take_mailto_links 
             $has_unsafe_images = true;
        }
     }
-    if (strpos($trusted,$secremoveimg)){
+    if (strpos($trusted, $secremoveimg) !== false || strpos($trusted, 'sec_remove_') !== false || strpos($trusted, 'spacer.png') !== false){
         $has_unsafe_images = true;
     }
 

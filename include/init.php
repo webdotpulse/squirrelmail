@@ -27,13 +27,33 @@ define('SM_INITIALIZED', true);
 // Global fatal shutdown handler for error diagnostic capture
 register_shutdown_function(function() {
     $err = error_get_last();
-    if ($err && in_array($err['type'], array(E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR))) {
+    if ($err && in_array($err['type'], array(E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR, E_RECOVERABLE_ERROR))) {
         if (!empty($GLOBALS['data_dir']) && is_dir($GLOBALS['data_dir'])) {
             @file_put_contents($GLOBALS['data_dir'] . 'squirrelmail_fatal.log', 
                 '[' . date('Y-m-d H:i:s') . '] ' . $err['message'] . ' in ' . $err['file'] . ':' . $err['line'] . "\n", 
                 FILE_APPEND);
         }
+        if (!headers_sent()) {
+            @header('X-SM-Fatal-Error: ' . rawurlencode(substr($err['message'] . ' in ' . basename($err['file']) . ':' . $err['line'], 0, 250)));
+        }
     }
+});
+
+// Global uncaught exception and error handler
+set_exception_handler(function($e) {
+    if (!empty($GLOBALS['data_dir']) && is_dir($GLOBALS['data_dir'])) {
+        @file_put_contents($GLOBALS['data_dir'] . 'squirrelmail_fatal.log', 
+            '[' . date('Y-m-d H:i:s') . '] Uncaught ' . get_class($e) . ': ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine() . "\n" . $e->getTraceAsString() . "\n", 
+            FILE_APPEND);
+    }
+    if (!headers_sent()) {
+        http_response_code(500);
+        @header('X-SM-Fatal-Error: ' . rawurlencode(substr($e->getMessage() . ' in ' . basename($e->getFile()) . ':' . $e->getLine(), 0, 250)));
+    }
+    echo '<div style="margin:20px;padding:15px;background:#fde8e8;border:1px solid #f98080;border-radius:8px;color:#9b1c1c;font-family:-apple-system,BlinkMacSystemFont,sans-serif;">';
+    echo '<h3 style="margin:0 0 10px 0;">SquirrelMail Error</h3>';
+    echo '<p style="margin:0;"><strong>' . htmlspecialchars(get_class($e)) . ':</strong> ' . htmlspecialchars($e->getMessage()) . '</p>';
+    echo '</div>';
 });
 
 /**

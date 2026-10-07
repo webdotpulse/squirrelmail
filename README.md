@@ -1,4 +1,4 @@
-# SquirrelMail 1.5.48
+# SquirrelMail 1.5.49
 
 A modernized, responsive edition of SquirrelMail engineered for PHP 7.0 through 8.2+ with a Single-Page Application (SPA) interface, modern UI styling, and extensive feature enhancements.
 
@@ -57,6 +57,17 @@ This repository includes an [AGENTS.md](file:///home/koen/Git/squirrelmail/AGENT
 ---
 
 ## 📝 Changelog
+
+### Version 1.5.49
+- **MIME Image Sanitization & Message Body Rendering Fix**:
+  - Resolved HTTP 500 error in `src/read_body.php` and hardened MIME parsing against type errors in PHP 8.1+:
+    - **Defensive Entity Resolution (`find_ent_id`)**: Added strict type guarding to `find_ent_id()` in `functions/mime.php` against null/non-string IDs, uninitialized entity arrays, and missing headers, eliminating fatal `TypeError: count()` and `trim()` deprecations.
+    - **Safe CID & Background URL Handling (`sq_cid2http`, `sq_body2div`)**: Hardened `sq_cid2http()` against empty IDs and malformed protocols, and updated `sq_body2div()` to route remote HTTP/HTTPS backgrounds through `sq_fix_url()` rather than improperly coercing them into CID lookups.
+    - **Security Remove Image Alignment**: Aligned security placeholder paths across `sq_fix_url()`, `sq_fixstyle()`, and `magicHTML()` using `sqm_baseuri()`. Resolved defect where security images (`sec_remove_eng.png` / `spacer.png`) were mistakenly categorized as invalid relative URLs and wiped into `images/blank.png`.
+    - **Remote Image Quote Preservation**: Fixed quote handling in `sq_fix_url()` when viewing unsafe images (`view_unsafe_images=1`), ensuring external HTTPS image sources (e.g., CDN links, newsletter tracking pixels) are properly quoted and render reliably without HTML corruption.
+    - **Unsafe Image Action Banner Trigger**: Corrected detection of unsafe image tokens in `magicHTML()`, ensuring the "View Unsafe Images" action banner reliably appears when external remote graphics are present.
+    - **Diagnostic Fatal Error & Exception Capture**: Enhanced `include/init.php` shutdown handler and added global exception handler to emit `X-SM-Fatal-Error` response headers and log backtraces to `data/squirrelmail_fatal.log`.
+- **Version Bump**: Incremented version from `1.5.48` to `1.5.49`.
 
 ### Version 1.5.48
 - **Embedded Base64 Data URI & Protocol-Relative Images Fix**:
