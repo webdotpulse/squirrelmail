@@ -155,7 +155,9 @@ function tpl_compose_close()
     <script>
     (function() {
         var composeSession = <?php echo intval($session ?? 0); ?>;
-        var ajaxUrl = '<?php echo $ajaxUrl; ?>';
+        var ajaxUrl = (typeof window.sqmApp !== 'undefined' && window.sqmApp.getBaseUri)
+            ? window.sqmApp.getBaseUri() + 'plugins/templates/ajax.php'
+            : '<?php echo $ajaxUrl; ?>';
 
         window.tplOpenModal = function() {
             var backdrop = document.getElementById('tpl-modal-backdrop');
@@ -246,10 +248,25 @@ function tpl_compose_close()
             .then(r => r.json())
             .then(data => {
                 if (data.success) {
-                    // Update body
+                    // Update body textarea
                     if (bodyInput) {
                         bodyInput.value = data.body;
                     }
+
+                    // Update WYSIWYG editor if rich text mode is active
+                    var wysiwyg = document.getElementById('html-mail-wysiwyg');
+                    if (wysiwyg) {
+                        if (/<[a-z][\s\S]*>/i.test(data.body)) {
+                            wysiwyg.innerHTML = data.body;
+                        } else {
+                            var paras = data.body.split("\n\n");
+                            wysiwyg.innerHTML = paras.map(p => '<p>' + p.replace(/\n/g, '<br>') + '</p>').join('');
+                        }
+                        if (typeof window.htmlMailUpdateStats === 'function') {
+                            window.htmlMailUpdateStats();
+                        }
+                    }
+
                     // Update subject if current subject was empty
                     if (subjInput && (!subjInput.value || subjInput.value.trim() === '') && data.subject) {
                         subjInput.value = data.subject;
@@ -260,7 +277,6 @@ function tpl_compose_close()
                     var alertMsg = '📋 Template applied successfully!';
                     if (data.attached_count > 0) {
                         alertMsg += '\n📎 ' + data.attached_count + ' attachment(s) from template were attached to this email!';
-                        // Trigger submit of attachment form or prompt user so attachment table refreshes
                         alert(alertMsg);
                         // Submit form to refresh attachments in SquirrelMail
                         var attachForm = document.querySelector('form[name="composeForm"]');
@@ -293,7 +309,10 @@ function tpl_compose_close()
     </script>
     <?php
     $output = ob_get_clean();
-    return array('compose_form_close' => $output);
+    return array(
+        'compose_bottom'     => $output,
+        'compose_form_close' => $output
+    );
 }
 
 function tpl_optpage_register_block()

@@ -61,7 +61,7 @@ $src_base = sqm_baseuri() . 'src/';
         <a href="<?php echo $src_base; ?>webmail.php<?php echo !empty($mailbox) ? '?mailbox=' . urlencode($mailbox) : ''; ?>" class="sm-icon-btn" title="<?php echo _("Refresh"); ?>" aria-label="<?php echo _("Refresh"); ?>">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
         </a>
-        <a href="<?php echo $src_base; ?>addrbook_search.php" class="sm-icon-btn" title="<?php echo _("Addresses"); ?>" aria-label="<?php echo _("Addresses"); ?>">
+        <a href="<?php echo $src_base; ?>addressbook.php" class="sm-icon-btn" title="<?php echo _("Addresses"); ?>" aria-label="<?php echo _("Addresses"); ?>">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
         </a>
         <a href="<?php echo $src_base; ?>options.php" class="sm-icon-btn" title="<?php echo _("Options"); ?>" aria-label="<?php echo _("Options"); ?>">

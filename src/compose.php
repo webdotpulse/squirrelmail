@@ -1410,6 +1410,33 @@ function showInputForm ($session, $values=false) {
     $oTemplate->assign('accesskey_compose_bcc', $accesskey_compose_bcc);
     $oTemplate->assign('accesskey_compose_subject', $accesskey_compose_subject);
 
+    // Pre-seed local addressbook contacts for instant compose recipient autofill
+    require_once(SM_PATH . 'functions/addressbook.php');
+    $abook = addressbook_init(false, true);
+    $raw_abook = $abook->list_addr();
+    $abook_contacts = array();
+    if (!empty($raw_abook) && is_array($raw_abook)) {
+        foreach ($raw_abook as $c) {
+            $email = !empty($c['email']) ? trim($c['email']) : '';
+            if (empty($email)) continue;
+            $name = !empty($c['name']) ? trim($c['name']) : '';
+            if (empty($name)) {
+                $first = !empty($c['firstname']) ? trim($c['firstname']) : '';
+                $last = !empty($c['lastname']) ? trim($c['lastname']) : '';
+                $name = trim($first . ' ' . $last);
+            }
+            $clean_name = str_replace(array('"', '<', '>'), '', $name);
+            $formatted = !empty($clean_name) ? '"' . $clean_name . '" <' . $email . '>' : $email;
+            $abook_contacts[] = array(
+                'name'      => $clean_name,
+                'email'     => $email,
+                'nick'      => !empty($c['nickname']) ? trim($c['nickname']) : '',
+                'formatted' => $formatted
+            );
+        }
+    }
+    $oTemplate->assign('abook_contacts', $abook_contacts);
+
     $oTemplate->display('compose_header.tpl');
 
     if ($location_of_buttons == 'between') {

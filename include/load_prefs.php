@@ -520,7 +520,8 @@ $oTemplate = Template::construct_template($sTemplateID);
 $chosen_theme_path = preg_replace("/(\.\.\/){1,}/", SM_PATH, $chosen_theme_path);
 $found_theme = false;
 foreach ($user_themes as $data) {
-    if ($data['PATH'] == $chosen_theme_path) {
+    $norm_path = preg_replace("/(\.\.\/){1,}/", SM_PATH, $data['PATH']);
+    if ($data['PATH'] == $chosen_theme_path || $norm_path == $chosen_theme_path) {
         $found_theme = true;
         break;
     }

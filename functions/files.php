@@ -182,24 +182,31 @@ function list_files($directory_path, $extensions='', $return_filenames_only=TRUE
     $files = array();
     $directories = array();
 
-
-    // make sure requested path is under SM_PATH if needed
-    //
-    if ($only_sm) {
-        if (strpos(realpath($directory_path), realpath(SM_PATH)) !== 0) {
-            //plain_error_message(_("Illegal filesystem access was requested"));
-            echo _("Illegal filesystem access was requested");
-            exit;
+    // If the path doesn't exist relative to current working directory, try relative to SM_PATH
+    if (!empty($directory_path) && !is_dir($directory_path) && defined('SM_PATH')) {
+        $candidate = SM_PATH . preg_replace("/^(\.\.\/)+/", '', $directory_path);
+        if (is_dir($candidate)) {
+            $directory_path = $candidate;
         }
     }
-
 
     // validate given directory
     //
     if (empty($directory_path)
      || !is_dir($directory_path)
-     || !($DIR = opendir($directory_path))) {
+     || !($DIR = @opendir($directory_path))) {
         return $files;
+    }
+
+    // make sure requested path is under SM_PATH if needed
+    //
+    if ($only_sm && defined('SM_PATH')) {
+        $real_dir = realpath($directory_path);
+        $real_sm  = realpath(SM_PATH);
+        if ($real_dir && $real_sm && strpos($real_dir, $real_sm) !== 0) {
+            echo _("Illegal filesystem access was requested");
+            exit;
+        }
     }
 
 

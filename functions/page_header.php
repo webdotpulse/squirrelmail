@@ -114,12 +114,18 @@ function displayHtmlHeader( $title = 'SquirrelMail', $xtra = '', $do_hook = TRUE
 
     $used_fontset = (!empty($chosen_fontset) ? $chosen_fontset : $default_fontset);
     $used_fontsize = (!empty($chosen_fontsize) ? $chosen_fontsize : $default_fontsize);
-    if (!empty($chosen_theme) && is_dir($chosen_theme) && is_readable($chosen_theme))
+    if (!empty($chosen_theme_path) && is_dir($chosen_theme_path) && is_readable($chosen_theme_path))
         $used_theme = $chosen_theme_path;
-    else if ($user_theme_default != 'none')
+    else if (!empty($chosen_theme) && is_dir($chosen_theme) && is_readable($chosen_theme))
+        $used_theme = $chosen_theme;
+    else if ($user_theme_default != 'none' && isset($user_themes[$user_theme_default]['PATH']))
         $used_theme = $user_themes[$user_theme_default]['PATH'];
     else
         $used_theme = 'none';
+
+    if ($used_theme != 'none' && defined('SM_PATH')) {
+        $used_theme = preg_replace("/^(\.\.\/)+/", SM_PATH, $used_theme);
+    }
 
     
     /**
@@ -140,8 +146,7 @@ function displayHtmlHeader( $title = 'SquirrelMail', $xtra = '', $do_hook = TRUE
     $aUserStyles = array();
 
     // 2. Option user-defined stylesheet from preferences.
-    if ($used_theme != 'none') {
-//FIXME: rid ourselves of "none" strings!  I didn't do it here because I think the problem is that the theme itself should never be "none" (? well, what else would it be?  if "none" theme is actually OK, then is there a constant to use below instead of a hard-coded string?)
+    if ($used_theme != 'none' && is_dir($used_theme)) {
         /**
          * All styles (except "none" - ugh) just point to a directory,
          * so we need to include all .css files in that directory.
