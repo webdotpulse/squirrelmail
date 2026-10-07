@@ -1435,6 +1435,13 @@ function showInputForm ($session, $values=false) {
             );
         }
     }
+    global $default_use_priority, $mailprio;
+    $prio = (isset($mailprio) && !empty($mailprio)) ? intval($mailprio) : 3;
+    $oTemplate->assign('mailprio', $prio);
+    $oTemplate->assign('current_priority', $prio);
+    $oTemplate->assign('allow_priority', !empty($default_use_priority));
+    $oTemplate->assign('mailprio_in_header', true);
+
     $oTemplate->assign('abook_contacts', $abook_contacts);
 
     $oTemplate->display('compose_header.tpl');
@@ -1623,7 +1630,7 @@ function showComposeButtonRow() {
         $addr_book = addSubmit(_("Addresses"), 'html_addr_search', $address_book_button_attribs);
     }
 
-    $oTemplate->assign('allow_priority', $default_use_priority==1);
+    $oTemplate->assign('allow_priority', !empty($default_use_priority));
     $oTemplate->assign('priority_list', $priorities);
     $oTemplate->assign('current_priority', $priority);
 

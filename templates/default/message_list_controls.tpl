@@ -52,6 +52,9 @@ if (count($aFormElements)) {
         default: break;
         }
     }
+    if (!empty($plugin_output['message_list_controls_buttons'])) {
+        echo $plugin_output['message_list_controls_buttons'];
+    }
 ?>
     </div>
 

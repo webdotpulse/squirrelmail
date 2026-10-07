@@ -91,8 +91,11 @@ function buildMailboxTree ($box, $settings, $icon_theme_path, $indent_factor=0) 
     if ($settings['unreadNotificationEnabled'])   {
         // We only display the unread count if we on the Inbox or we are told
         // to display it on all folders AND there is more than 1 unread message
+        $mbxLower = strtolower($box['MailboxFullName']);
+        $delimiter = $_SESSION['delimiter'] ?? '';
+        $isInboxOrSub = ($mbxLower === 'inbox' || str_starts_with($mbxLower, 'inbox.') || str_starts_with($mbxLower, 'inbox/') || (!empty($delimiter) && str_starts_with($mbxLower, 'inbox' . $delimiter)));
         if ( $settings['unreadNotificationAllFolders'] ||
-             (!$settings['unreadNotificationAllFolders'] && strtolower($box['MailboxFullName'])=='inbox')
+             (!$settings['unreadNotificationAllFolders'] && $isInboxOrSub)
            )  {
             $unseen = $settings['unreadNotificationCummulative'] ?
                             $box['CummulativeUnreadCount'] :
@@ -198,7 +201,7 @@ function buildMailboxTree ($box, $settings, $icon_theme_path, $indent_factor=0) 
         // Print unread info
         if ($box['MessageCount'] > 0 || count($box['ChildBoxes'])) {
             if (!empty($unseen_str)) {
-                $end .= '&nbsp;<small>('.$unseen_str.')</small>';
+                $end .= '&nbsp;<span class="sm-unread-badge-wrap">' . $unseen_str . '</span>';
             }
             $end .= "\n<small>" .
                     '&nbsp;&nbsp;[<a href="' . sqm_baseuri() . 'src/empty_trash.php?smtoken=' . sm_generate_security_token() . '">'. _("Purge").'</a>]' .
@@ -219,7 +222,7 @@ function buildMailboxTree ($box, $settings, $icon_theme_path, $indent_factor=0) 
 
         // Display unread info...
         if (!empty($unseen_str)) {
-            $end .= '&nbsp;<small>('.$unseen_str.')</small>';
+            $end .= '&nbsp;<span class="sm-unread-badge-wrap">' . $unseen_str . '</span>';
         }
     }
 

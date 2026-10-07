@@ -1,4 +1,4 @@
-# SquirrelMail 1.5.3
+# SquirrelMail 1.5.4
 
 A modernized, responsive edition of SquirrelMail engineered for PHP 7.0 through 8.2+ with a Single-Page Application (SPA) interface, modern UI styling, and extensive feature enhancements.
 
@@ -43,6 +43,13 @@ This repository includes an [AGENTS.md](file:///home/koen/Git/squirrelmail/AGENT
 ---
 
 ## 📝 Changelog
+
+### Version 1.5.4
+- **Sidebar Compose Button**: Fixed oversized styling and eliminated nested inner button rendering (`.sm-btn-compose-main span`), delivering a compact, sleek primary action button.
+- **Mailbox Toolbar Labels Dropdown**: Integrated a "🏷️ Labels ▼" dropdown button into the mailbox toolbar (`templates/default/message_list_controls.tpl` & `plugins/message_labels`), enabling one-click labeling, tag removal, and direct navigation to label management for selected emails.
+- **Compose Message Priority**: Added a clean priority selector directly on the Compose Subject row (🔴 High, ⚪ Normal, 🔵 Low) with full RFC 822 priority header generation (`X-Priority`, `Priority`, `Importance`).
+- **INBOX Subfolder Unread Badges**: Enabled unread message count badges for all subfolders under `INBOX` in the sidebar folder tree (`functions/imap_mailbox.php` and `templates/default/left_main.tpl`) and removed archaic parentheses around badges.
+- **Version Bump**: Incremented version from `1.5.3` to `1.5.4`.
 
 ### Version 1.5.3
 - **Sidebar**: Fixed Unified Inbox header layout to ensure the title and unread badge always stay strictly on one line without wrapping.

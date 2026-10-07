@@ -21,6 +21,9 @@ function squirrelmail_plugin_init_message_labels()
     $squirrelmail_plugin_hooks['template_construct_message_list.tpl']['message_labels']
         = 'ml_message_list';
 
+    $squirrelmail_plugin_hooks['template_construct_message_list_controls.tpl']['message_labels']
+        = 'ml_message_list_controls';
+
     $squirrelmail_plugin_hooks['read_body_header_right']['message_labels']
         = 'ml_read_body_header_right';
 
@@ -234,31 +237,140 @@ function ml_read_body_header_right(&$links)
 /**
  * Message List Hook: Filter messages by label, prepend chips to subjects, and provide batch labeling controls
  */
+function ml_message_list_controls($args = null)
+{
+    global $oTemplate;
+    $tpl = (is_array($args) && isset($args[1]) && is_object($args[1])) ? $args[1] : $oTemplate;
+    include_once(SM_PATH . 'plugins/message_labels/labels.php');
+    $data = ml_load_data();
+    $tplVars = ($tpl && method_exists($tpl, 'get_template_vars')) ? $tpl->get_template_vars() : array();
+    $mailbox = $tplVars['mailbox'] ?? ($_GET['mailbox'] ?? 'INBOX');
+
+    ob_start();
+    ?>
+    <div style="position: relative; display: inline-block;">
+        <button type="button" class="sm-btn sm-btn-secondary sm-btn-sm" onclick="mlToggleBatchDropdown(event)" style="display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; font-size: 12px; font-weight: 600; border-radius: 4px; border: 1px solid var(--sm-border, #dadce0); background: var(--sm-bg-surface, #ffffff); color: var(--sm-text-primary, #3c4043); cursor: pointer;" title="<?php echo _("Label Selected Messages"); ?>">
+            <span>🏷️</span>
+            <span><?php echo _("Labels"); ?></span>
+            <span style="font-size: 9px; opacity: 0.7;">▼</span>
+        </button>
+        <div id="ml-batch-dropdown" class="ml-dropdown-menu" style="left: 0; right: auto; min-width: 190px; display: none;">
+            <div style="padding: 6px 12px 4px; font-size: 11px; font-weight: 700; color: #5f6368; text-transform: uppercase;">
+                <?php echo _("Label Selected Messages"); ?>
+            </div>
+            <?php foreach ($data['labels'] as $lid => $lDef): ?>
+            <div class="ml-dropdown-item" onclick="mlApplyBatchLabel('<?php echo htmlspecialchars($mailbox, ENT_QUOTES); ?>', '<?php echo $lid; ?>')">
+                <span style="width: 10px; height: 10px; border-radius: 50%; background: <?php echo htmlspecialchars($lDef['color']); ?>; flex-shrink: 0;"></span>
+                <span><?php echo htmlspecialchars($lDef['name']); ?></span>
+            </div>
+            <?php endforeach; ?>
+            <div style="border-top: 1px solid #dadce0; margin-top: 4px; padding: 6px 12px 2px;">
+                <a href="<?php echo SM_PATH; ?>plugins/message_labels/options.php" style="font-size: 11.5px; color: #1a73e8; text-decoration: none;">⚙️ <?php echo _("Manage labels..."); ?></a>
+            </div>
+        </div>
+    </div>
+    <script>
+    if (typeof window.mlToggleBatchDropdown !== 'function') {
+        window.mlToggleBatchDropdown = function(e) {
+            if (e) e.stopPropagation();
+            var menu = document.getElementById('ml-batch-dropdown');
+            if (menu) {
+                menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
+            }
+        };
+        document.addEventListener('click', function(e) {
+            var menu = document.getElementById('ml-batch-dropdown');
+            if (menu && !menu.parentElement.contains(e.target)) {
+                menu.style.display = 'none';
+            }
+        });
+        window.mlApplyBatchLabel = function(mailbox, labelId) {
+            var menu = document.getElementById('ml-batch-dropdown');
+            if (menu) menu.style.display = 'none';
+
+            var checkedBoxes = document.querySelectorAll('form[name="messageListForm"] input[type="checkbox"][name^="msg"]:checked, form#message_list input[type="checkbox"][name^="msg"]:checked, input[type="checkbox"][name^="msg"]:checked');
+            var uids = [];
+            checkedBoxes.forEach(function(cb) {
+                if (cb.value && cb.value !== 'on' && !isNaN(cb.value)) {
+                    uids.push(cb.value);
+                }
+            });
+            if (uids.length === 0) {
+                alert("<?php echo _("Please select one or more messages using the checkboxes first."); ?>");
+                return;
+            }
+
+            var formData = new FormData();
+            formData.append('action', 'batch_toggle_label');
+            formData.append('mailbox', mailbox);
+            formData.append('label_id', labelId);
+            formData.append('uids', uids.join(','));
+
+            var ajaxUrl = (typeof window.sqmApp !== 'undefined' && window.sqmApp.getBaseUri)
+                ? window.sqmApp.getBaseUri() + 'plugins/message_labels/ajax.php'
+                : '<?php echo SM_PATH; ?>plugins/message_labels/ajax.php';
+
+            fetch(ajaxUrl, {
+                method: 'POST',
+                body: formData
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    if (typeof window.sqmApp !== 'undefined' && typeof window.sqmApp.navigate === 'function') {
+                        window.sqmApp.navigate(window.location.href, false);
+                        window.sqmApp.refreshFolders();
+                    } else {
+                        window.location.reload();
+                    }
+                } else {
+                    alert(data.error || 'Failed to apply label');
+                }
+            })
+            .catch(function(err) {
+                window.location.reload();
+            });
+        };
+    }
+    </script>
+    <?php
+    $btn = ob_get_clean();
+    return array('message_list_controls_buttons' => $btn);
+}
+
+/**
+ * Message List Hook: Filter messages by label and prepend chips to subjects
+ */
 function ml_message_list($args = null)
 {
     global $oTemplate;
     $tpl = (is_array($args) && isset($args[1]) && is_object($args[1])) ? $args[1] : $oTemplate;
-    if (!$tpl || !isset($tpl->template_vars)) {
+    if (!$tpl) {
+        return array();
+    }
+    $tplVars = method_exists($tpl, 'get_template_vars') ? $tpl->get_template_vars() : (isset($tpl->values) ? $tpl->values : array());
+    if (empty($tplVars)) {
         return array();
     }
 
     include_once(SM_PATH . 'plugins/message_labels/labels.php');
     $data = ml_load_data();
-    $mailbox = isset($tpl->template_vars['mailbox']) ? $tpl->template_vars['mailbox'] : 'INBOX';
+    $mailbox = isset($tplVars['mailbox']) ? $tplVars['mailbox'] : 'INBOX';
     $labelFilter = isset($_GET['label_filter']) ? trim($_GET['label_filter']) : '';
     $output = array();
 
     // 1. If filtering by label, filter messages in the template
     if (!empty($labelFilter) && isset($data['labels'][$labelFilter])) {
-        if (!empty($tpl->template_vars['aMessages']) && is_array($tpl->template_vars['aMessages'])) {
+        if (!empty($tplVars['aMessages']) && is_array($tplVars['aMessages'])) {
             $filtered = array();
-            foreach ($tpl->template_vars['aMessages'] as $uid => $msg) {
+            foreach ($tplVars['aMessages'] as $uid => $msg) {
                 $key = ml_get_message_key($mailbox, $uid);
                 if (isset($data['messages'][$key]) && in_array($labelFilter, $data['messages'][$key])) {
                     $filtered[$uid] = $msg;
                 }
             }
-            $tpl->template_vars['aMessages'] = $filtered;
+            $tpl->assign('aMessages', $filtered);
+            $tplVars['aMessages'] = $filtered;
         }
 
         $lDef = $data['labels'][$labelFilter];
@@ -274,8 +386,9 @@ function ml_message_list($args = null)
     }
 
     // 2. Prepend colorful label badges to message subjects in message list
-    if (!empty($tpl->template_vars['aMessages']) && is_array($tpl->template_vars['aMessages'])) {
-        foreach ($tpl->template_vars['aMessages'] as $uid => &$msg) {
+    if (!empty($tplVars['aMessages']) && is_array($tplVars['aMessages'])) {
+        $msgs = $tplVars['aMessages'];
+        foreach ($msgs as $uid => &$msg) {
             $msgLabels = ml_get_message_labels($mailbox, $uid);
             if (!empty($msgLabels) && isset($msg['columns'][SQM_COL_SUBJ]['value'])) {
                 $chips = '';
@@ -289,101 +402,8 @@ function ml_message_list($args = null)
             }
         }
         unset($msg);
+        $tpl->assign('aMessages', $msgs);
     }
-
-    // 3. Batch labeling dropdown in mailbox_form_before
-    ob_start();
-    ?>
-    <div class="sm-ml-batch-toolbar" style="display: flex; align-items: center; gap: 8px; margin: 4px 0 10px; flex-wrap: wrap;">
-        <div style="position: relative; display: inline-block;">
-            <button type="button" class="sm-btn sm-btn-secondary sm-btn-sm" onclick="mlToggleBatchDropdown(event)" style="display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; font-size: 12px; font-weight: 600; border-radius: 6px; border: 1px solid var(--sm-border, #dadce0); background: var(--sm-bg-surface, #ffffff); color: var(--sm-text-primary, #3c4043); cursor: pointer; transition: all 0.15s ease;">
-                <span>🏷️</span>
-                <span><?php echo _("Labels"); ?></span>
-                <span style="font-size: 10px; opacity: 0.7;">▼</span>
-            </button>
-            <div id="ml-batch-dropdown" class="ml-dropdown-menu" style="left: 0; right: auto; min-width: 200px; display: none;">
-                <div style="padding: 6px 14px 4px; font-size: 11px; font-weight: 700; color: #5f6368; text-transform: uppercase;">
-                    <?php echo _("Label Selected Messages"); ?>
-                </div>
-                <?php foreach ($data['labels'] as $lid => $lDef): ?>
-                <div class="ml-dropdown-item" onclick="mlApplyBatchLabel('<?php echo htmlspecialchars($mailbox, ENT_QUOTES); ?>', '<?php echo $lid; ?>')">
-                    <span style="width: 10px; height: 10px; border-radius: 50%; background: <?php echo htmlspecialchars($lDef['color']); ?>; flex-shrink: 0;"></span>
-                    <span><?php echo htmlspecialchars($lDef['name']); ?></span>
-                </div>
-                <?php endforeach; ?>
-                <div style="border-top: 1px solid #dadce0; margin-top: 6px; padding: 6px 14px 2px;">
-                    <a href="<?php echo SM_PATH; ?>plugins/message_labels/options.php" style="font-size: 12px; color: #1a73e8; text-decoration: none;">⚙️ <?php echo _("Manage labels..."); ?></a>
-                </div>
-            </div>
-        </div>
-        <span style="font-size: 12px; color: var(--sm-text-muted, #5f6368);"><?php echo _("(Select messages to apply or remove labels)"); ?></span>
-    </div>
-
-    <script>
-    function mlToggleBatchDropdown(e) {
-        if (e) e.stopPropagation();
-        var menu = document.getElementById('ml-batch-dropdown');
-        if (menu) {
-            menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
-        }
-    }
-    document.addEventListener('click', function(e) {
-        var menu = document.getElementById('ml-batch-dropdown');
-        if (menu && !menu.parentElement.contains(e.target)) {
-            menu.style.display = 'none';
-        }
-    });
-    function mlApplyBatchLabel(mailbox, labelId) {
-        var menu = document.getElementById('ml-batch-dropdown');
-        if (menu) menu.style.display = 'none';
-
-        var checkedBoxes = document.querySelectorAll('form[name="messageListForm"] input[type="checkbox"][name^="msg"]:checked, form#message_list input[type="checkbox"][name^="msg"]:checked, input[type="checkbox"][name^="msg"]:checked');
-        var uids = [];
-        checkedBoxes.forEach(function(cb) {
-            if (cb.value && cb.value !== 'on' && !isNaN(cb.value)) {
-                uids.push(cb.value);
-            }
-        });
-        if (uids.length === 0) {
-            alert("<?php echo _("Please select one or more messages using the checkboxes first."); ?>");
-            return;
-        }
-        var formData = new FormData();
-        formData.append('action', 'batch_toggle_label');
-        formData.append('mailbox', mailbox);
-        formData.append('label_id', labelId);
-        formData.append('uids', uids.join(','));
-
-        var ajaxUrl = (typeof window.sqmApp !== 'undefined' && window.sqmApp.getBaseUri)
-            ? window.sqmApp.getBaseUri() + 'plugins/message_labels/ajax.php'
-            : '../plugins/message_labels/ajax.php';
-
-        fetch(ajaxUrl, {
-            method: 'POST',
-            body: formData
-        })
-        .then(function(r) { return r.json(); })
-        .then(function(data) {
-            if (data.success) {
-                if (typeof window.sqmApp !== 'undefined' && typeof window.sqmApp.navigate === 'function') {
-                    window.sqmApp.navigate(window.location.href, false);
-                    window.sqmApp.refreshFolders();
-                } else {
-                    window.location.reload();
-                }
-            } else {
-                alert(data.error || 'Failed to update labels');
-            }
-        })
-        .catch(function(err) {
-            console.error(err);
-            window.location.reload();
-        });
-    }
-    </script>
-    <?php
-    $batchToolbar = ob_get_clean();
-    $output['mailbox_form_before'] = $batchToolbar;
 
     return $output;
 }

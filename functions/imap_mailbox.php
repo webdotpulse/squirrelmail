@@ -1424,30 +1424,28 @@ function sqimap_get_status_mbx_tree($imap_stream,&$mbx_tree) {
            }
            unset($oMbx->tag);
         }
-    } else if ($unseen_notify == 2) { // INBOX only
+    } else if ($unseen_notify == 2) { // INBOX and its subfolders
+        $delimiter = '';
+        sqgetGlobalVar('delimiter', $delimiter, SQ_SESSION);
         $cnt = count($aMbxs);
         for($i=0;$i<$cnt;++$i) {
             $oMbx =& $aMbxs[$i];
-            if (strtoupper($oMbx->mailboxname_full) == 'INBOX' ||
-               ($move_to_trash && $oMbx->mailboxname_full == $trash_folder)) {
+            $mbxUpper = strtoupper($oMbx->mailboxname_full);
+            $isInbox = ($mbxUpper === 'INBOX');
+            $isInboxSubfolder = (str_starts_with($mbxUpper, 'INBOX.') || str_starts_with($mbxUpper, 'INBOX/') || (!empty($delimiter) && str_starts_with($mbxUpper, 'INBOX' . $delimiter)));
+            $isInboxOrSub = ($isInbox || $isInboxSubfolder);
+            if (!$oMbx->is_noselect && ($isInboxOrSub ||
+               ($move_to_trash && $oMbx->mailboxname_full == $trash_folder))) {
                  if ($unseen_type == 2 ||
                    ($oMbx->mailboxname_full == $trash_folder && $move_to_trash)) {
                     $aStatus = sqimap_status_messages($imap_stream,$oMbx->mailboxname_full);
-                    $oMbx->unseen = $aStatus['UNSEEN'];
-                    $oMbx->total  = $aStatus['MESSAGES'];
-                    $oMbx->recent = $aStatus['RECENT'];
+                    $oMbx->unseen = isset($aStatus['UNSEEN']) ? $aStatus['UNSEEN'] : 0;
+                    $oMbx->total  = isset($aStatus['MESSAGES']) ? $aStatus['MESSAGES'] : 0;
+                    $oMbx->recent = isset($aStatus['RECENT']) ? $aStatus['RECENT'] : 0;
                 } else {
                     $oMbx->unseen = sqimap_unseen_messages($imap_stream,$oMbx->mailboxname_full);
                 }
                 $aMbxs[$i] =& $oMbx;
-                if (!$move_to_trash && $trash_folder) {
-                    break;
-                } else {
-                   // trash comes after INBOX
-                   if ($oMbx->mailboxname_full == $trash_folder) {
-                      break;
-                   }
-                }
             }
         }
     }

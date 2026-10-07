@@ -16,7 +16,7 @@ extract($t);
   <section class="sm-compose-toolbar" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--sm-border); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;">
     <!-- Options: Priority, Receipts -->
     <div class="sm-compose-meta-options" style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
-      <?php if ($allow_priority): ?>
+      <?php if ($allow_priority && empty($mailprio_in_header)): ?>
       <div style="display: flex; align-items: center; gap: 6px;">
         <label for="mailprio" style="font-size: 13px; color: var(--sm-text-muted);"><?php echo _("Priority"); ?>:</label>
         <select name="mailprio" id="mailprio" class="sm-compose-select" <?php if ($accesskey_compose_priority != 'NONE') echo ' accesskey="' . $accesskey_compose_priority . '"'; ?>>
