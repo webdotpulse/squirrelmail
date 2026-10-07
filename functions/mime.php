@@ -1300,11 +1300,13 @@ function encodeHeaderBase64($string,$charset) {
 
 /* This function trys to locate the entity_id of a specific mime element */
 function find_ent_id($id, $message) {
+    $clean_id = trim($id, '<>');
     for ($i = 0, $ret = ''; $ret == '' && $i < count($message->entities); $i++) {
         if ($message->entities[$i]->header->type0 == 'multipart')  {
             $ret = find_ent_id($id, $message->entities[$i]);
         } else {
-            if (strcasecmp($message->entities[$i]->header->id, $id) == 0) {
+            $hdr_id = trim($message->entities[$i]->header->id, '<>');
+            if (strcasecmp($hdr_id, $clean_id) == 0) {
 //                if (sq_check_save_extension($message->entities[$i])) {
                 return $message->entities[$i]->entity_id;
 //                }
@@ -1314,7 +1316,8 @@ function find_ent_id($id, $message) {
                  * cid URLs without creating content-id headers
                  * @@JA - 20050207
                  */
-                if (strcasecmp($message->entities[$i]->header->parameters['name'], $id) == 0) {
+                if (strcasecmp($message->entities[$i]->header->parameters['name'], $clean_id) == 0 ||
+                    strcasecmp($message->entities[$i]->header->parameters['name'], $id) == 0) {
                     return $message->entities[$i]->entity_id;
                 }
             }
@@ -2056,6 +2059,23 @@ function sq_fix_url($attname, &$attvalue, $message, $id, $mailbox,$sQuote = '"')
                     break;
             }
         } else {
+            // Safe embedded raster image data URIs (PNG, JPEG, GIF, WEBP, BMP, ICO)
+            if (stripos($attvalue, 'data:image/') === 0) {
+                if ($attname != 'href' && $attname != 'action' && $attname != 'formaction' &&
+                    preg_match('/^data:image\/(png|jpeg|jpg|gif|webp|bmp|x-icon|vnd\.microsoft\.icon)(?:;[a-zA-Z0-9\-_=]+)*;base64,[a-zA-Z0-9+\/=\s]+$/i', $attvalue)) {
+                    $attvalue = $sQuote . $attvalue . $sQuote;
+                    return;
+                } else {
+                    $attvalue = $sQuote . $blank_img . $sQuote;
+                    return;
+                }
+            }
+
+            // Protocol-relative URLs (e.g. //example.com/image.png)
+            if (substr($attvalue, 0, 2) === '//') {
+                $attvalue = 'https:' . $attvalue;
+            }
+
             $aUrl = parse_url($attvalue);
             if (isset($aUrl['scheme'])) {
                 switch(strtolower($aUrl['scheme'])) {
@@ -2134,6 +2154,14 @@ function sq_fix_url($attname, &$attvalue, $message, $id, $mailbox,$sQuote = '"')
                             }
                         } else {
                             $attvalue = $sQuote . $attvalue . $sQuote;
+                        }
+                        break;
+                    case 'data':
+                        if ($attname != 'href' && $attname != 'action' && $attname != 'formaction' &&
+                            preg_match('/^data:image\/(png|jpeg|jpg|gif|webp|bmp|x-icon|vnd\.microsoft\.icon)(?:;[a-zA-Z0-9\-_=]+)*;base64,[a-zA-Z0-9+\/=\s]+$/i', $attvalue)) {
+                            $attvalue = $sQuote . $attvalue . $sQuote;
+                        } else {
+                            $attvalue = $sQuote . $blank_img . $sQuote;
                         }
                         break;
                     case 'outbind':
@@ -2352,7 +2380,7 @@ function sq_cid2http($message, $id, $cidurl, $mailbox){
     } else {
         $quotchar = '';
     }
-    $cidurl = substr(trim($cidurl), 4);
+    $cidurl = trim(substr(trim($cidurl), 4), '<>');
 
     $match_str = '/\{.*?\}\//';
     $str_rep = '';
@@ -2869,15 +2897,15 @@ function magicHTML($body, $id, $message, $mailbox = 'INBOX', $take_mailto_links 
 
     if (!$view_unsafe_images){
         /**
-         * Remove any references to http/https if view_unsafe_images set
+         * Remove any references to http/https or protocol-relative // if view_unsafe_images set
          * to false.
          */
         array_push($bad_attvals['/.*/']['/^src|background/i'][0],
-                '/^([\'\"])\s*https*:.*([\'\"])/si');
+                '/^([\'\"])\s*(?:https*:|\/\/).*([\'\"])/si');
         array_push($bad_attvals['/.*/']['/^src|background/i'][1],
                 "\\1$secremoveimg\\1");
         array_push($bad_attvals['/.*/']['/^style/i'][0],
-                '/url\([\'\"]?https?:[^\)]*[\'\"]?\)/si');
+                '/url\([\'\"]?(?:https?:|\/\/)[^\)]*[\'\"]?\)/si');
         array_push($bad_attvals['/.*/']['/^style/i'][1],
                 "url(\\1$secremoveimg\\1)");
     }

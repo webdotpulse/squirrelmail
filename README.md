@@ -1,4 +1,4 @@
-# SquirrelMail 1.5.47
+# SquirrelMail 1.5.48
 
 A modernized, responsive edition of SquirrelMail engineered for PHP 7.0 through 8.2+ with a Single-Page Application (SPA) interface, modern UI styling, and extensive feature enhancements.
 
@@ -57,6 +57,15 @@ This repository includes an [AGENTS.md](file:///home/koen/Git/squirrelmail/AGENT
 ---
 
 ## 📝 Changelog
+
+### Version 1.5.48
+- **Embedded Base64 Data URI & Protocol-Relative Images Fix**:
+  - Resolved issue where images in HTML emails were replaced with `images/blank.png` (`https://webmail.thechargegrid.com/images/blank.png`) instead of rendering:
+    - Added safe raster Data URI support (`data:image/(png|jpeg|jpg|gif|webp|bmp|ico);base64,...`) to `sq_fix_url()` in `functions/mime.php`, enabling embedded base64 images to display natively without external network tracking or missing image placeholders.
+    - Restricted Data URIs strictly to image sources and inline styles while disallowing dangerous executable types (such as `image/svg+xml`) and forbidding Data URIs on navigational link targets (`href`) or form actions.
+    - Added normalization for protocol-relative URLs (`//cdn.example.com/...` -> `https://...`) in `sq_fix_url()` and updated `magicHTML()` security patterns to properly honor the user's unsafe remote image preferences.
+  - Enhanced inline CID attachment discovery in `find_ent_id()` and `sq_cid2http()` by normalizing angle brackets (`<id>`), ensuring embedded email attachments render reliably across diverse mail clients (Outlook, Thunderbird, Apple Mail).
+- **Version Bump**: Incremented version from `1.5.47` to `1.5.48`.
 
 ### Version 1.5.47
 - **HTML Signature Rich-Text WYSIWYG & Dual-Mode Formatting Toolbar**:
