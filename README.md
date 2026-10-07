@@ -1,21 +1,58 @@
-# SqirrelMail 1.5.2
+# SquirrelMail 1.5.3
 
-A version of SquirrelMail for PHP 7.0 and above with additional changes for compatibility or security reasons.
+A modernized, responsive edition of SquirrelMail engineered for PHP 7.0 through 8.2+ with a Single-Page Application (SPA) interface, modern UI styling, and extensive feature enhancements.
 
+---
 
-This version contains the following changes:
-  * Legacy constructors replaced with `__construct`.
-  * While/List/Each are now `ForEach`.
-  * Instances of `mt_rand` are now cryptographically secure, using `random_int`.
-  * Message IDs are generated differently.
-    * The ID is now a Version 5 UUID based off 64 cryptographically secure random bytes.
-    * The domain now matches the value of the username variable, if it contains an "@". Otherwise, it falls back to the SERVER_NAME variable like normal.
-  * Instances of `SizeOf` are now `StrLen` because PHP is not C.
-  * Instances of `create_function` are now inline functions.
-  * The `X-Frame-Options: SAMEORIGIN` header has been replaced with CSP's `frame-ancestors` header. This is set based on the `provider_uri` preference, and accepts any http or https domains or subdomains that match.
-    * A new variable in the config will be added at a later point.
-  * SCRAM support for SMTP and IMAP logins, supporting any hash algorithm PHP supports (with checks against HMAC list on 7.2+).
-  * Optional parameters corrected for PHP 8.0.
+## 🚀 Key Features & Enhancements
 
-Additionally, some minor fixes that would cause warnings or strange failures have also been resolved.
-Changes to the official source code are tracked in the `trunk` branch and merged with `master` as soon as possible. I'm looking into a way to automate this process.
+- **Modern Single-Page Application (SPA) Interface**:
+  - Dynamic client-side routing via `assets/js/app.js` with instant workspace navigation, preserving session state and CSRF tokens.
+  - Curated modern design system in `assets/css/app.css` with CSS custom properties (`--sm-*`).
+  - Native Light and Dark mode toggle with persistent preferences.
+  - Crisp, modern SVG iconography throughout the application.
+- **Unified Inbox & Multi-Account Support** (`plugins/multi_account`):
+  - Aggregate emails across primary and secondary accounts into a single unified stream.
+  - Real-time unread badges and single-line status display in the sidebar.
+- **Email Templates & Attachments** (`plugins/templates`):
+  - Pre-defined and custom canned responses with dynamic variable tags (`{name}`, `{date}`, `{my_name}`, etc.).
+  - Automatic file attachment capability (brochures, PDFs, intake forms) directly from templates into Compose.
+- **Rich HTML Signatures** (`plugins/html_mail`):
+  - Full HTML & plaintext signature support configurable per identity in Personal Options.
+- **Message Labels & Categorization** (`plugins/message_labels`):
+  - Gmail-style color-coded tags, customizable labels, and sidebar badge integration.
+- **Compose Improvements**:
+  - Live contact autocomplete suggestions for `To:`, `Cc:`, and `Bcc:` fields.
+  - Modal-based template insertion and rich-text synchronization.
+- **Core PHP 8.2+ & Security Upgrades**:
+  - Legacy constructors migrated to `__construct`.
+  - Deprecated `each()`, `create_function()`, and `mt_rand()` replaced with modern language constructs and cryptographically secure `random_int()`.
+  - Cryptographically secure UUIDv5 Message-ID generation.
+  - SCRAM authentication support for SMTP and IMAP logins.
+  - Modern Content-Security-Policy (CSP) headers.
+
+---
+
+## 🤖 AI Agent Workflow & Protocol
+
+This repository includes an [AGENTS.md](file:///home/koen/Git/squirrelmail/AGENTS.md) rules file. AI coding assistants operating on this codebase must follow mandatory protocols:
+1. **Update `README.md` on every update**: Every commit or pull request must document new features or bug fixes.
+2. **Increment `SM_VERSION` on every update**: Update `SM_VERSION` in `include/constants.php` and `install.php`.
+3. **Syntax Validation**: Run `php -l` on all modified files to ensure strict PHP compatibility.
+
+---
+
+## 📝 Changelog
+
+### Version 1.5.3
+- **Sidebar**: Fixed Unified Inbox header layout to ensure the title and unread badge always stay strictly on one line without wrapping.
+- **Templates**: Fixed "File not found." error on template Edit and Delete actions by enforcing absolute root-relative URLs and updating SPA router relative resolution.
+- **SPA Router**: Enhanced `app.js` to properly resolve plugin-relative paths and smoothly scroll to hash anchors (such as `#template-form`).
+- **AI Agent Rules**: Added `AGENTS.md` and `.agents/AGENTS.md` specifying repository conventions, versioning rules, and update protocols.
+- **Version Bump**: Incremented version from `1.5.2` to `1.5.3`.
+
+### Version 1.5.2
+- Initial PHP 7.0–8.2 compatibility migration.
+- Modernized constructor and loop implementations.
+- SCRAM authentication mechanism.
+- CSP frame-ancestors support.

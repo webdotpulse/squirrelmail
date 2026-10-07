@@ -8,12 +8,12 @@
  *
  * @copyright 2026 The SquirrelMail Project Team
  * @license http://opensource.org/licenses/gpl-license.php GNU Public License
- * @version 1.5.2
+ * @version 1.5.3
  * @package squirrelmail
  */
 
 define('SM_PATH', './');
-define('INSTALLER_VERSION', '1.5.2');
+define('INSTALLER_VERSION', '1.5.3');
 
 // Ensure core constants (such as SM_DEBUG_MODE_OFF) are loaded before config.php
 if (file_exists(SM_PATH . 'include/constants.php')) {
