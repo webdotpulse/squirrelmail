@@ -15,6 +15,9 @@ function squirrelmail_plugin_init_spam_buttons()
     $squirrelmail_plugin_hooks['read_body_header_right']['spam_buttons']
         = 'sb_read_body_header_right';
 
+    $squirrelmail_plugin_hooks['template_construct_read_menubar_buttons.tpl']['spam_buttons']
+        = 'sb_read_menubar_buttons';
+
     $squirrelmail_plugin_hooks['template_construct_message_list_controls.tpl']['spam_buttons']
         = 'sb_message_list_controls';
 
@@ -40,6 +43,47 @@ function spam_buttons_version()
     return $info['version'];
 }
 
+function sb_read_menubar_buttons()
+{
+    global $mailbox, $passed_id;
+
+    $uid = intval($passed_id);
+    if ($uid <= 0) {
+        return array();
+    }
+
+    $isJunkFolder = (stripos($mailbox, 'junk') !== false || stripos($mailbox, 'spam') !== false);
+    $token = function_exists('sm_generate_security_token') ? sm_generate_security_token() : '';
+    $actionUrl = sqm_baseuri() . 'plugins/spam_buttons/action.php';
+
+    ob_start();
+    ?>
+    &nbsp;&nbsp;|&nbsp;&nbsp;
+    <form name="spamMessageForm" action="<?php echo $actionUrl; ?>" method="post" style="display: inline-flex; align-items: center; gap: 4px; margin: 0;">
+        <input type="hidden" name="smtoken" value="<?php echo htmlspecialchars($token, ENT_QUOTES); ?>" />
+        <input type="hidden" name="mailbox" value="<?php echo htmlspecialchars($mailbox, ENT_QUOTES); ?>" />
+        <input type="hidden" name="passed_id" value="<?php echo $uid; ?>" />
+        <?php if ($isJunkFolder): ?>
+            <input type="hidden" name="type" value="ham" />
+            <button type="submit" class="sm-btn sm-btn-secondary sm-btn-sm sm-btn-ham" onclick="return confirm('<?php echo addslashes(_("Restore this email to Inbox and train AI that it is legitimate?")); ?>');" title="<?php echo sm_encode_html_special_chars(_("Mark as Not Spam and restore to Inbox")); ?>" style="cursor: pointer; font-weight: 500; display: inline-flex; align-items: center; gap: 4px;">
+                <span>✅</span> <span><?php echo _("Not Spam"); ?></span>
+            </button>
+        <?php else: ?>
+            <input type="hidden" name="type" value="spam" />
+            <button type="submit" class="sm-btn sm-btn-secondary sm-btn-sm sm-btn-spam" onclick="return confirm('<?php echo addslashes(_("Move this email to Junk and train AI spam model?")); ?>');" title="<?php echo sm_encode_html_special_chars(_("Report as Spam and move to Junk")); ?>" style="cursor: pointer; font-weight: 500; display: inline-flex; align-items: center; gap: 4px;">
+                <span>🚫</span> <span><?php echo _("Spam"); ?></span>
+            </button>
+        <?php endif; ?>
+    </form>
+    <?php
+    $btnHtml = ob_get_clean();
+
+    return array(
+        'read_body_menu_buttons_top' => $btnHtml,
+        'read_body_menu_buttons_bottom' => $btnHtml
+    );
+}
+
 function sb_read_body_header_right(&$links)
 {
     global $passed_id, $mailbox;
@@ -51,25 +95,31 @@ function sb_read_body_header_right(&$links)
     if ($isJunkFolder) {
         $confirmHam = sm_encode_html_special_chars(_("Restore this email to Inbox and train AI that it is legitimate?"));
         $url = sqm_baseuri() . 'plugins/spam_buttons/action.php?type=ham&mailbox=' . urlencode($mailbox) . '&passed_id=' . $uid . ($token ? '&smtoken=' . urlencode($token) : '');
-        $btn = '<a href="' . $url . '" class="sm-btn sm-btn-secondary sm-btn-sm" '
+        $btn = '<a href="' . $url . '" class="sm-btn sm-btn-secondary sm-btn-sm sm-btn-ham" '
              . 'onclick="return confirm(\'' . addslashes($confirmHam) . '\')" '
              . 'title="' . sm_encode_html_special_chars(_("Mark as Not Spam and train AI model")) . '" '
-             . 'style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; font-size: 12px; font-weight: 500; border-radius: 4px; text-decoration: none; background: #e6f4ea; color: #137333; border: 1px solid #ceead6;">'
+             . 'style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; font-size: 12px; font-weight: 500; border-radius: 4px; text-decoration: none;">'
              . '<span>✅</span> <span>' . _("Not Spam") . '</span>'
              . '</a>';
+        $text = '✅ ' . _("Not Spam");
     } else {
         $confirmSpam = sm_encode_html_special_chars(_("Move this email to Junk and train AI spam model?"));
         $url = sqm_baseuri() . 'plugins/spam_buttons/action.php?type=spam&mailbox=' . urlencode($mailbox) . '&passed_id=' . $uid . ($token ? '&smtoken=' . urlencode($token) : '');
-        $btn = '<a href="' . $url . '" class="sm-btn sm-btn-secondary sm-btn-sm" '
+        $btn = '<a href="' . $url . '" class="sm-btn sm-btn-secondary sm-btn-sm sm-btn-spam" '
              . 'onclick="return confirm(\'' . addslashes($confirmSpam) . '\')" '
              . 'title="' . sm_encode_html_special_chars(_("Report as Spam and train AI model")) . '" '
-             . 'style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; font-size: 12px; font-weight: 500; border-radius: 4px; text-decoration: none; background: #fce8e6; color: #c5221f; border: 1px solid #fad2cf;">'
+             . 'style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; font-size: 12px; font-weight: 500; border-radius: 4px; text-decoration: none;">'
              . '<span>🚫</span> <span>' . _("Report Spam") . '</span>'
              . '</a>';
+        $text = '🚫 ' . _("Report Spam");
     }
 
     if (is_array($links)) {
-        $links[] = $btn;
+        $links[] = array(
+            'URL'   => $url,
+            'Text'  => $text,
+            'html'  => $btn
+        );
     }
     return $links;
 }

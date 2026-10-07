@@ -29,15 +29,30 @@ extract($t);
 ?>
 <small>
  <?php
+    $totalLinks = count($links);
+    $idx = 0;
     foreach ($links as $count=>$link) {
-        # Skip empty links
-        if (empty($link['Text']))
+        $idx++;
+        if (is_string($link)) {
+            if (empty(trim($link))) continue;
+            echo $link;
+            if ($idx < $totalLinks) {
+                echo '&nbsp;|&nbsp;';
+            }
             continue;
-            
+        }
+
+        if (empty($link['Text']) && empty($link['html']))
+            continue;
+
+        if (!empty($link['html'])) {
+            echo $link['html'];
+        } else {
             ?><a href="<?php echo $link['URL']; ?>"<?php echo (empty($link['Target'])?'':' target="' . $link['Target'] . '"')?> style="white-space: nowrap;"><?php echo $link['Text']; ?></a><?php
-        
+        }
+
         # Spit out a divider between each element
-        if ($count < count($links)-1) {
+        if ($idx < $totalLinks) {
             ?>&nbsp;|
             <?php
         }

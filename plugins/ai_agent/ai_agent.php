@@ -520,20 +520,20 @@ function ai_agent_read_toolbar_do(&$links)
     global $ai_enable_summarize, $ai_enable_translate, $ai_enable_scam_check;
 
     $links[] = array(
-        'URL'  => 'javascript:if(window.aiAgentSummarize) window.aiAgentSummarize();',
+        'URL'  => 'javascript:void(window.aiAgentSummarize?window.aiAgentSummarize():0);',
         'Text' => '✨ AI Summarize'
     );
 
     if ($ai_enable_scam_check) {
         $links[] = array(
-            'URL'  => 'javascript:if(window.aiAgentScamCheck) window.aiAgentScamCheck();',
+            'URL'  => 'javascript:void(window.aiAgentScamCheck?window.aiAgentScamCheck():0);',
             'Text' => '🛡️ Scam Check'
         );
     }
 
     if ($ai_enable_translate) {
         $links[] = array(
-            'URL'  => 'javascript:if(window.aiAgentTranslatePrompt) window.aiAgentTranslatePrompt();',
+            'URL'  => 'javascript:void(window.aiAgentTranslatePrompt?window.aiAgentTranslatePrompt():0);',
             'Text' => '🌐 Translate'
         );
     }
@@ -550,7 +550,7 @@ function ai_agent_read_top_do()
             margin: 12px 14px;
             padding: 16px 20px;
             border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+            box-shadow: var(--sm-shadow-sm, 0 1px 3px rgba(0,0,0,0.06));
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             display: none;
             position: relative;
@@ -586,52 +586,137 @@ function ai_agent_read_top_do()
             right: 12px;
             border: none;
             background: none;
-            font-size: 16px;
+            font-size: 18px;
+            line-height: 1;
             cursor: pointer;
             opacity: 0.6;
+            color: inherit;
         }
         .ai-read-close:hover { opacity: 1; }
+
+        [data-theme="dark"] .ai-summary-card {
+            background: linear-gradient(135deg, #1e2638 0%, #201a35 100%);
+            border-color: #3b82f6;
+            color: #f1f5f9;
+        }
+        [data-theme="dark"] .ai-summary-card span[style*="color:#0b57d0"] {
+            color: #93c5fd !important;
+        }
+        [data-theme="dark"] .ai-summary-card div[style*="color:#0b57d0"] {
+            color: #93c5fd !important;
+        }
+        [data-theme="dark"] .ai-scam-card-safe {
+            background: #132e1f;
+            border-color: #15803d;
+            color: #86efac;
+        }
+        [data-theme="dark"] .ai-scam-card-warning {
+            background: #382c13;
+            border-color: #a16207;
+            color: #fde047;
+        }
+        [data-theme="dark"] .ai-scam-card-danger {
+            background: #3b1818;
+            border-color: #b91c1c;
+            color: #fca5a5;
+        }
     </style>
 
-    <div id="ai-read-banner" class="ai-read-card">
-        <button type="button" class="ai-read-close" onclick="document.getElementById('ai-read-banner').style.display='none';">&times;</button>
+    <div id="ai-read-banner" class="ai-read-card" style="display: none;">
+        <button type="button" class="ai-read-close" onclick="document.getElementById('ai-read-banner').style.display='none';" aria-label="Close">&times;</button>
         <div id="ai-read-banner-content"></div>
     </div>
 
     <script>
     (function() {
         function getEmailBodyText() {
-            // Locate message body element in SquirrelMail read_body
-            const textContainers = document.querySelectorAll('td.readBody, .message-body, pre, table.table1 td');
+            // 1. Inspect open Shadow DOM host if present
+            const shadowHost = document.getElementById('sm-email-shadow-host') || document.querySelector('.sm-email-shadow-container');
+            if (shadowHost && shadowHost.shadowRoot) {
+                const clone = shadowHost.shadowRoot.cloneNode(true);
+                const unwanted = clone.querySelectorAll('style, script, noscript');
+                unwanted.forEach(el => el.remove());
+                const text = (clone.innerText || clone.textContent || '').trim();
+                if (text) return text;
+            }
+
+            // 2. Inspect raw template if Shadow DOM not yet mounted
+            const rawTemplate = document.querySelector('.sm-email-raw-template');
+            if (rawTemplate) {
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = rawTemplate.innerHTML || rawTemplate.textContent || '';
+                const unwanted = tempDiv.querySelectorAll('style, script, noscript');
+                unwanted.forEach(el => el.remove());
+                const text = (tempDiv.innerText || tempDiv.textContent || '').trim();
+                if (text) return text;
+            }
+
+            // 3. Inspect standard read-body containers
+            const containers = document.querySelectorAll('.sm-read-body-wrapper, div.readBody, .readBody, .message-body, pre, td.readBody');
             let content = '';
-            for (let el of textContainers) {
-                const t = el.innerText || el.textContent;
-                if (t && t.length > content.length) {
+            for (let el of containers) {
+                const clone = el.cloneNode(true);
+                const unwanted = clone.querySelectorAll('style, script, noscript, #ai-read-banner, .ai-read-card');
+                unwanted.forEach(e => e.remove());
+                const t = (clone.innerText || clone.textContent || '').trim();
+                if (t.length > content.length) {
                     content = t;
                 }
             }
-            return content.trim();
+            if (content) return content;
+
+            // 4. Fallback: inspect pre tags in workspace
+            const workspace = document.getElementById('sm-workspace');
+            if (workspace) {
+                const pre = workspace.querySelector('pre');
+                if (pre) return (pre.innerText || pre.textContent || '').trim();
+            }
+
+            return '';
         }
 
         function getEmailSubject() {
-            const h = document.querySelector('td.readHeaderValue, h2, title');
-            return h ? h.innerText.trim() : '';
+            const h = document.querySelector('.sm-email-header-row.field_Subject .fieldValue, .field_Subject .fieldValue, td.readHeaderValue, h2, title');
+            return h ? (h.innerText || h.textContent || '').trim() : '';
+        }
+
+        function getEmailFrom() {
+            const f = document.querySelector('.sm-email-header-row.field_From .fieldValue, .field_From .fieldValue');
+            return f ? (f.innerText || f.textContent || '').trim() : '';
+        }
+
+        function getEmailHeaders() {
+            const rows = document.querySelectorAll('.sm-email-header-row');
+            const lines = [];
+            rows.forEach(r => {
+                const name = r.querySelector('.fieldName');
+                const val = r.querySelector('.fieldValue');
+                if (name && val) {
+                    lines.push(name.textContent.trim() + ' ' + val.textContent.trim());
+                }
+            });
+            return lines.join('\n');
         }
 
         function showBanner(html, cardClass) {
             const b = document.getElementById('ai-read-banner');
             const c = document.getElementById('ai-read-banner-content');
+            if (!b || !c) return;
             b.className = 'ai-read-card ' + cardClass;
             c.innerHTML = html;
             b.style.display = 'block';
             b.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
 
+        const ajaxEndpoint = '<?php echo sqm_baseuri(); ?>plugins/ai_agent/ajax.php';
+
         window.aiAgentSummarize = function() {
             const body = getEmailBodyText();
             const subject = getEmailSubject();
+            const from = getEmailFrom();
+
             if (!body) {
-                alert('Could not extract email body to summarize.');
+                showBanner('⚠️ Could not extract email body to summarize. Please ensure the message content has loaded.', 'ai-scam-card-warning');
                 return;
             }
 
@@ -640,9 +725,10 @@ function ai_agent_read_top_do()
             const fd = new FormData();
             fd.append('action', 'summarize');
             fd.append('subject', subject);
+            fd.append('from', from);
             fd.append('body', body);
 
-            fetch('<?php echo SM_PATH; ?>plugins/ai_agent/ajax.php', { method: 'POST', body: fd })
+            fetch(ajaxEndpoint, { method: 'POST', body: fd })
                 .then(r => r.json())
                 .then(data => {
                     if (data.success && data.data) {
@@ -667,7 +753,12 @@ function ai_agent_read_top_do()
 
                         showBanner(out, 'ai-summary-card');
                     } else {
-                        showBanner('❌ AI Error: ' + (data.error || 'Failed to summarize.'), 'ai-scam-card-danger');
+                        let err = data.error || 'Failed to summarize.';
+                        let errHtml = '❌ AI Error: ' + err;
+                        if (err.indexOf('Gemini API key is not configured') !== -1 || err.indexOf('API key') !== -1) {
+                            errHtml += '<div style="margin-top:8px;"><a href="<?php echo sqm_baseuri(); ?>plugins/ai_agent/options.php" class="sm-btn sm-btn-primary sm-btn-sm" style="display:inline-block; text-decoration:none;">⚙️ Set Gemini API Key in Options</a></div>';
+                        }
+                        showBanner(errHtml, 'ai-scam-card-danger');
                     }
                 })
                 .catch(err => {
@@ -678,15 +769,19 @@ function ai_agent_read_top_do()
         window.aiAgentScamCheck = function() {
             const body = getEmailBodyText();
             const subject = getEmailSubject();
+            const from = getEmailFrom();
+            const headers = getEmailHeaders();
 
             showBanner('<div style="display:flex;align-items:center;gap:8px;"><span>🛡️</span> <em>Scanning headers and content for phishing, impersonation, and scams...</em></div>', 'ai-summary-card');
 
             const fd = new FormData();
             fd.append('action', 'scam_check');
             fd.append('subject', subject);
+            fd.append('sender', from);
+            fd.append('headers', headers);
             fd.append('body', body);
 
-            fetch('<?php echo SM_PATH; ?>plugins/ai_agent/ajax.php', { method: 'POST', body: fd })
+            fetch(ajaxEndpoint, { method: 'POST', body: fd })
                 .then(r => r.json())
                 .then(data => {
                     if (data.success && data.data) {
@@ -694,10 +789,10 @@ function ai_agent_read_top_do()
                         let cardClass = 'ai-scam-card-safe';
                         let icon = '🛡️';
 
-                        if (d.risk_score >= 60 || d.risk_level.toLowerCase().indexOf('danger') !== -1) {
+                        if (d.risk_score >= 60 || (d.risk_level && d.risk_level.toLowerCase().indexOf('danger') !== -1)) {
                             cardClass = 'ai-scam-card-danger';
                             icon = '🚨';
-                        } else if (d.risk_score >= 30 || d.risk_level.toLowerCase().indexOf('suspicious') !== -1) {
+                        } else if (d.risk_score >= 30 || (d.risk_level && d.risk_level.toLowerCase().indexOf('suspicious') !== -1)) {
                             cardClass = 'ai-scam-card-warning';
                             icon = '⚠️';
                         }
@@ -719,7 +814,12 @@ function ai_agent_read_top_do()
 
                         showBanner(out, cardClass);
                     } else {
-                        showBanner('❌ Scan Error: ' + (data.error || 'Failed to complete security check.'), 'ai-scam-card-danger');
+                        let err = data.error || 'Failed to complete security check.';
+                        let errHtml = '❌ Scan Error: ' + err;
+                        if (err.indexOf('Gemini API key is not configured') !== -1 || err.indexOf('API key') !== -1) {
+                            errHtml += '<div style="margin-top:8px;"><a href="<?php echo sqm_baseuri(); ?>plugins/ai_agent/options.php" class="sm-btn sm-btn-primary sm-btn-sm" style="display:inline-block; text-decoration:none;">⚙️ Set Gemini API Key in Options</a></div>';
+                        }
+                        showBanner(errHtml, 'ai-scam-card-danger');
                     }
                 })
                 .catch(err => {
@@ -732,6 +832,11 @@ function ai_agent_read_top_do()
             if (!lang) return;
 
             const body = getEmailBodyText();
+            if (!body) {
+                showBanner('⚠️ Could not extract email body to translate.', 'ai-scam-card-warning');
+                return;
+            }
+
             showBanner('<div style="display:flex;align-items:center;gap:8px;"><span>🌐</span> <em>Translating email to ' + lang + ' with Gemini 3.8...</em></div>', 'ai-summary-card');
 
             const fd = new FormData();
@@ -739,14 +844,14 @@ function ai_agent_read_top_do()
             fd.append('body', body);
             fd.append('target_lang', lang);
 
-            fetch('<?php echo SM_PATH; ?>plugins/ai_agent/ajax.php', { method: 'POST', body: fd })
+            fetch(ajaxEndpoint, { method: 'POST', body: fd })
                 .then(r => r.json())
                 .then(data => {
                     if (data.success && data.translation) {
                         const out = '<div style="font-weight:700;margin-bottom:6px;font-size:14px;color:#0b57d0;">'
                                   + '<span>🌐</span> Translated to ' + lang
                                   + '</div>'
-                                  + '<div style="white-space:pre-wrap;font-size:13px;line-height:1.5;background:#ffffff;padding:12px;border-radius:6px;border:1px solid #dadce0;">'
+                                  + '<div style="white-space:pre-wrap;font-size:13px;line-height:1.5;background:var(--sm-bg-surface,#ffffff);color:var(--sm-text-primary,#1e293b);padding:12px;border-radius:6px;border:1px solid var(--sm-border,#dadce0);">'
                                   + data.translation
                                   + '</div>';
                         showBanner(out, 'ai-summary-card');
@@ -758,6 +863,15 @@ function ai_agent_read_top_do()
                     showBanner('❌ Network error: ' + err, 'ai-scam-card-danger');
                 });
         };
+
+        // Event delegation listener for any AI Summarize buttons
+        document.addEventListener('click', function(e) {
+            const btn = e.target.closest('.sm-btn-ai-summarize, [data-ai-action="summarize"]');
+            if (btn) {
+                e.preventDefault();
+                window.aiAgentSummarize();
+            }
+        });
     })();
     </script>
     <?php

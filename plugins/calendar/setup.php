@@ -63,7 +63,11 @@ function calendar_read_body_header_right(&$links)
           . '</a>';
 
     if (is_array($links)) {
-        $links[] = $link;
+        $links[] = array(
+            'URL'   => $url,
+            'Text'  => '📅 ' . _("Add to Calendar"),
+            'html'  => $link
+        );
     }
     return $links;
 }

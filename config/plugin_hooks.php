@@ -32,6 +32,7 @@ $squirrelmail_plugin_hooks['read_body_header_right']['ai_agent'] = 'ai_agent_rea
 $squirrelmail_plugin_hooks['read_body_header_right']['calendar'] = 'calendar_read_body_header_right';
 $squirrelmail_plugin_hooks['read_body_header_right']['message_labels'] = 'ml_read_body_header_right';
 $squirrelmail_plugin_hooks['read_body_header_right']['spam_buttons'] = 'sb_read_body_header_right';
+$squirrelmail_plugin_hooks['template_construct_read_menubar_buttons.tpl']['spam_buttons'] = 'sb_read_menubar_buttons';
 $squirrelmail_plugin_hooks['read_body_header_right']['message_details'] = 'show_message_details';
 $squirrelmail_plugin_hooks['read_body_top']['ai_agent'] = 'ai_agent_read_top';
 $squirrelmail_plugin_hooks['read_body_top']['message_labels'] = 'ml_read_body_top';

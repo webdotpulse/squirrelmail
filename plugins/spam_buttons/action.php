@@ -15,7 +15,7 @@ require_once(SM_PATH . 'functions/imap_messages.php');
 require_once(SM_PATH . 'functions/mime.php');
 include_once(SM_PATH . 'plugins/spam_buttons/spam_learn.php');
 
-$isAjax = (isset($_REQUEST['ajax']) && $_REQUEST['ajax'] == 1);
+$isAjax = (isset($_REQUEST['ajax']) && $_REQUEST['ajax'] == 1) || (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest');
 $type = isset($_REQUEST['type']) ? $_REQUEST['type'] : 'spam'; // 'spam' or 'ham'
 $mailbox = isset($_REQUEST['mailbox']) ? trim($_REQUEST['mailbox']) : 'INBOX';
 $passed_id = isset($_REQUEST['passed_id']) ? $_REQUEST['passed_id'] : '';
@@ -32,7 +32,7 @@ if (empty($uids)) {
     if ($isAjax) {
         if (ob_get_length()) ob_clean();
         header('Content-Type: application/json; charset=utf-8');
-        echo json_encode(array('success' => false, 'error' => _("No message specified.")));
+        echo json_encode(array('success' => false, 'error' => _("No message specified."), 'redirect' => sqm_baseuri() . 'src/right_main.php?mailbox=' . urlencode($mailbox)));
         exit;
     }
     header('Location: ' . sqm_baseuri() . 'src/right_main.php?mailbox=' . urlencode($mailbox));
@@ -45,7 +45,7 @@ if (!empty($token) && function_exists('sm_validate_security_token')) {
         if ($isAjax) {
             if (ob_get_length()) ob_clean();
             header('Content-Type: application/json; charset=utf-8');
-            echo json_encode(array('success' => false, 'error' => _("Invalid security token.")));
+            echo json_encode(array('success' => false, 'error' => _("Invalid security token."), 'redirect' => sqm_baseuri() . 'src/right_main.php?mailbox=' . urlencode($mailbox)));
             exit;
         }
     }
@@ -60,7 +60,7 @@ try {
         if ($isAjax) {
             if (ob_get_length()) ob_clean();
             header('Content-Type: application/json; charset=utf-8');
-            echo json_encode(array('success' => false, 'error' => $err));
+            echo json_encode(array('success' => false, 'error' => $err, 'redirect' => sqm_baseuri() . 'src/right_main.php?mailbox=' . urlencode($mailbox)));
             exit;
         }
         header('Location: ' . sqm_baseuri() . 'src/right_main.php?mailbox=' . urlencode($mailbox));
@@ -150,6 +150,7 @@ try {
             'type'      => $type,
             'count'     => $processed,
             'target'    => $targetBox,
+            'redirect'  => sqm_baseuri() . 'src/right_main.php?mailbox=' . urlencode($mailbox),
             'message'   => ($type === 'spam')
                 ? sprintf(_("%d email(s) moved to %s. AI model trained!"), $processed, $targetBox)
                 : sprintf(_("%d email(s) restored to INBOX. Sender whitelisted in AI model!"), $processed)
@@ -167,7 +168,7 @@ try {
     if ($isAjax) {
         if (ob_get_length()) ob_clean();
         header('Content-Type: application/json; charset=utf-8');
-        echo json_encode(array('success' => false, 'error' => $e->getMessage()));
+        echo json_encode(array('success' => false, 'error' => $e->getMessage(), 'redirect' => sqm_baseuri() . 'src/right_main.php?mailbox=' . urlencode($mailbox)));
         exit;
     }
     header('Location: ' . sqm_baseuri() . 'src/right_main.php?mailbox=' . urlencode($mailbox));

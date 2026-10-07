@@ -654,11 +654,22 @@
         // Asynchronous Form Submissions (Preserving CSRF Tokens)
         // -------------------------------------------------------------------------
         setupFormInterception() {
+            let lastClickedSubmitter = null;
+            document.addEventListener('click', (e) => {
+                const btn = e.target.closest('button[type="submit"], input[type="submit"], button:not([type])');
+                if (btn) {
+                    lastClickedSubmitter = btn;
+                }
+            }, true);
+
             document.addEventListener('submit', async (e) => {
                 const form = e.target;
                 if (!form || form.getAttribute('target') === '_blank') return;
 
-                let action = (e.submitter && e.submitter.formAction) || form.getAttribute('action') || form.action || window.location.href;
+                const submitter = e.submitter || lastClickedSubmitter;
+                // Important: Do NOT use submitter.formAction because HTML standard returns document.baseURI
+                // when the formaction content attribute is not present. Use getAttribute('formaction')!
+                let action = (submitter && submitter.getAttribute('formaction')) || form.getAttribute('action') || form.action || window.location.href;
                 if (action) action = action.replace(/&amp;/g, '&');
                 // If relative action, resolve against base + 'src/'
                 const currentContextUrl = this.state.currentUrl || window.location.href;
@@ -693,20 +704,23 @@
                 const method = (form.method || 'POST').toUpperCase();
                 let formData;
                 try {
-                    formData = e.submitter ? new FormData(form, e.submitter) : new FormData(form);
+                    formData = submitter ? new FormData(form, submitter) : new FormData(form);
                 } catch (err) {
                     formData = new FormData(form);
                 }
-                if (e.submitter && e.submitter.name && !formData.has(e.submitter.name)) {
-                    formData.append(e.submitter.name, e.submitter.value || '');
+                if (submitter && submitter.name && !formData.has(submitter.name)) {
+                    formData.append(submitter.name, submitter.value || '');
                 }
 
                 try {
                     let response;
                     if (method === 'GET') {
-                        const params = new URLSearchParams(formData).toString();
-                        const targetUrl = action.split('?')[0] + (params ? '?' + params : '');
-                        return this.navigate(targetUrl, true);
+                        const urlObj = new URL(action, window.location.origin);
+                        const formParams = new URLSearchParams(formData);
+                        for (const [key, val] of formParams.entries()) {
+                            urlObj.searchParams.set(key, val);
+                        }
+                        return this.navigate(urlObj.href, true);
                     } else {
                         response = await fetch(action, {
                             method: 'POST',
@@ -726,13 +740,18 @@
                         return this.navigate(redirectHeader, true);
                     }
 
-                    // Check for JSON redirect
+                    // Check for JSON redirect or response
                     const contentType = response.headers.get('Content-Type') || '';
                     if (contentType.includes('application/json')) {
                         const data = await response.json();
+                        if (data.message && typeof this.showToast === 'function') {
+                            this.showToast(data.message, data.success ? 'success' : 'error');
+                        }
+                        this.refreshFolders();
                         if (data.redirect) {
                             return this.navigate(data.redirect, true);
                         }
+                        return;
                     }
 
                     const html = await response.text();

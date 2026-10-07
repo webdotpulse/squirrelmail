@@ -86,25 +86,25 @@ if ($nav_on_top) {
     <?php } ?>
 
     <?php if ($can_resume_draft) { ?>
-    <button type="submit" name="smaction" value="draft" class="sm-btn sm-btn-secondary sm-btn-sm" title="<?php echo _("Resume Draft"); ?>">
+    <button type="submit" name="smaction" value="draft" formaction="<?php echo sqm_baseuri(); ?>src/compose.php" class="sm-btn sm-btn-secondary sm-btn-sm" title="<?php echo _("Resume Draft"); ?>">
       <?php echo _("Resume Draft"); ?>
     </button>
     <?php } elseif ($can_edit_as_new) { ?>
-    <button type="submit" name="smaction" value="edit_as_new" class="sm-btn sm-btn-secondary sm-btn-sm" title="<?php echo _("Edit Message as New"); ?>">
+    <button type="submit" name="smaction" value="edit_as_new" formaction="<?php echo sqm_baseuri(); ?>src/compose.php" class="sm-btn sm-btn-secondary sm-btn-sm" title="<?php echo _("Edit Message as New"); ?>">
       <?php echo _("Edit Message as New"); ?>
     </button>
     <?php } ?>
 
-    <button type="submit" name="smaction" value="reply" class="sm-btn sm-btn-secondary sm-btn-sm" <?php if ($accesskey_read_msg_reply != 'NONE') echo 'accesskey="' . $accesskey_read_msg_reply . '" '; ?>title="<?php echo _("Reply"); ?>">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px; vertical-align: -2px;"><polyline points="9 17 4 12 9 7"></polyline><path d="M20 18v-2a4 4 0 0 0-4-4H4"></path></svg>
+    <button type="submit" name="smaction" value="reply" formaction="<?php echo sqm_baseuri(); ?>src/compose.php" class="sm-btn sm-btn-secondary sm-btn-sm" <?php if ($accesskey_read_msg_reply != 'NONE') echo 'accesskey="' . $accesskey_read_msg_reply . '" '; ?>title="<?php echo _("Reply"); ?>">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px; vertical-align: -2px; pointer-events: none;"><polyline points="9 17 4 12 9 7"></polyline><path d="M20 18v-2a4 4 0 0 0-4-4H4"></path></svg>
       <?php echo _("Reply"); ?>
     </button>
-    <button type="submit" name="smaction" value="reply_all" class="sm-btn sm-btn-secondary sm-btn-sm" <?php if ($accesskey_read_msg_reply_all != 'NONE') echo 'accesskey="' . $accesskey_read_msg_reply_all . '" '; ?>title="<?php echo _("Reply All"); ?>">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px; vertical-align: -2px;"><polyline points="7 17 2 12 7 7"></polyline><polyline points="12 17 7 12 12 7"></polyline><path d="M22 18v-2a4 4 0 0 0-4-4H7"></path></svg>
+    <button type="submit" name="smaction" value="reply_all" formaction="<?php echo sqm_baseuri(); ?>src/compose.php" class="sm-btn sm-btn-secondary sm-btn-sm" <?php if ($accesskey_read_msg_reply_all != 'NONE') echo 'accesskey="' . $accesskey_read_msg_reply_all . '" '; ?>title="<?php echo _("Reply All"); ?>">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px; vertical-align: -2px; pointer-events: none;"><polyline points="7 17 2 12 7 7"></polyline><polyline points="12 17 7 12 12 7"></polyline><path d="M22 18v-2a4 4 0 0 0-4-4H7"></path></svg>
       <?php echo _("Reply All"); ?>
     </button>
-    <button type="submit" name="smaction" value="forward" class="sm-btn sm-btn-secondary sm-btn-sm" <?php if ($accesskey_read_msg_forward != 'NONE') echo 'accesskey="' . $accesskey_read_msg_forward . '" '; ?>title="<?php echo _("Forward"); ?>">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px; vertical-align: -2px;"><polyline points="15 17 20 12 15 7"></polyline><path d="M4 18v-2a4 4 0 0 1 4-4h12"></path></svg>
+    <button type="submit" name="smaction" value="forward" formaction="<?php echo sqm_baseuri(); ?>src/compose.php" class="sm-btn sm-btn-secondary sm-btn-sm" <?php if ($accesskey_read_msg_forward != 'NONE') echo 'accesskey="' . $accesskey_read_msg_forward . '" '; ?>title="<?php echo _("Forward"); ?>">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px; vertical-align: -2px; pointer-events: none;"><polyline points="15 17 20 12 15 7"></polyline><path d="M4 18v-2a4 4 0 0 1 4-4h12"></path></svg>
       <?php echo _("Forward"); ?>
     </button>
     <?php if ($forward_as_attachment_enabled) { ?>
@@ -112,6 +112,11 @@ if ($nav_on_top) {
       <input type="checkbox" name="smaction_attache" id="smaction_attache" value="1" <?php if ($accesskey_read_msg_as_attach != 'NONE') echo 'accesskey="' . $accesskey_read_msg_as_attach . '" '; ?>/>
       <?php echo _("As Attachment"); ?>
     </label>
+    <?php } ?>
+    <?php if (function_exists('ai_agent_info') || !empty($GLOBALS['squirrelmail_plugin_hooks']['read_body_top']['ai_agent'])) { ?>
+    <button type="button" class="sm-btn sm-btn-secondary sm-btn-sm sm-btn-ai-summarize" onclick="if(window.aiAgentSummarize){window.aiAgentSummarize();}else{alert('<?php echo _("AI Summarizer is initializing..."); ?>');}" title="<?php echo _("Summarize message with AI"); ?>" style="display: inline-flex; align-items: center; gap: 4px; font-weight: 500;">
+      <span style="margin-right: 2px; pointer-events: none;">✨</span><?php echo _("AI Summarize"); ?>
+    </button>
     <?php } ?>
    </form>
     &nbsp;&nbsp;|&nbsp;&nbsp;

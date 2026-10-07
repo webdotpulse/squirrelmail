@@ -1,4 +1,4 @@
-# SquirrelMail 1.5.19
+# SquirrelMail 1.5.21
 
 A modernized, responsive edition of SquirrelMail engineered for PHP 7.0 through 8.2+ with a Single-Page Application (SPA) interface, modern UI styling, and extensive feature enhancements.
 
@@ -43,6 +43,33 @@ This repository includes an [AGENTS.md](file:///home/koen/Git/squirrelmail/AGENT
 ---
 
 ## 📝 Changelog
+
+### Version 1.5.21
+- **Message View Reply, Reply All, and Forward Actions Fix**:
+  - Fixed an issue where clicking the Reply, Reply All, or Forward buttons in the email reading view (`read_body.php`) did not navigate to `src/compose.php` and appeared non-functional.
+  - Resolved root cause in `assets/js/app.js`: accessing the DOM property `submitter.formAction` without an explicit `formaction` attribute caused browsers to return `document.baseURI` (`read_body.php?passed_id=...`), which overrode the form's `action="src/compose.php"` attribute and caused GET submissions to reload the current message.
+  - Replaced with `submitter.getAttribute('formaction')`, tracked `lastClickedSubmitter` to reliably capture clicked submit buttons across all browser versions, and merged `URLSearchParams(formData)` directly onto target URL objects for GET forms.
+  - Updated `templates/default/read_menubar_buttons.tpl` to include explicit `formaction` attributes and added `pointer-events: none` on inner SVG icons to prevent target bubbling quirks.
+- **Message View AI Summarize Integration Fix**:
+  - Fixed an issue where clicking "✨ AI Summarize" in the email reading view failed with a JavaScript error or "Could not extract email body to summarize."
+  - Resolved Shadow DOM encapsulation in `plugins/ai_agent/ai_agent.php`: updated `getEmailBodyText()` to inspect `#sm-email-shadow-host`'s open `shadowRoot` (extracting text content stripped of style tags), fallback to `<template class="sm-email-raw-template">`, and fall back to semantic containers (`.sm-read-body-wrapper`, `div.readBody`, `pre`).
+  - Added subject (`.field_Subject .fieldValue`), sender (`.field_From .fieldValue`), and full RFC header extraction for improved Gemini prompt context.
+  - Resolved relative URL mismatch: changed AJAX endpoint URLs from `SM_PATH` (`../`) to `sqm_baseuri() . 'plugins/ai_agent/ajax.php'`, ensuring proper resolution regardless of SPA routing depth.
+  - Added a dedicated, styled **✨ AI Summarize** action button directly in the reading menubar alongside Reply, Reply All, and Forward with `.sm-btn-ai-summarize` styling for both light and dark themes.
+  - Replaced browser alert popups with smooth in-context banner notifications (`#ai-read-banner`), including a direct one-click link to configure the Gemini API key in Options if not yet set.
+- **Version Bump**: Incremented version from `1.5.20` to `1.5.21`.
+
+### Version 1.5.20
+- **AI Agent Banner Close Button Fix in Message View**:
+  - Fixed an issue where the standalone `×` close button (`<button class="ai-read-close">`) was always displayed at the top of emails when viewing messages.
+  - Set inline `style="display: none;"` directly on `<div id="ai-read-banner">` in `plugins/ai_agent/ai_agent.php` so the container remains strictly hidden by default and only appears when an AI action (Summarize, Scam Check, or Translate) is activated.
+  - Integrated full design system styles for `.ai-read-card`, `.ai-read-close`, `.ai-summary-card`, and `.ai-scam-card-*` into `assets/css/app.css` with native dark mode support.
+- **Spam & Not Spam Button Integration in Message View**:
+  - Added dedicated **🚫 Spam** (and **✅ Not Spam** when in Junk/Spam folders) action buttons directly in the message reading action menubar (`templates/default/read_menubar_buttons.tpl`) alongside Delete and Move.
+  - Registered and implemented `template_construct_read_menubar_buttons.tpl` hook (`sb_read_menubar_buttons`) in `plugins/spam_buttons/setup.php` and `config/plugin_hooks.php`.
+  - Enhanced `templates/default/read_toolbar.tpl` to properly support raw HTML button strings and structured items (`html` key), fixing missing buttons in the Options toolbar (both Spam and Calendar actions).
+  - Updated `plugins/spam_buttons/action.php` to include redirect destination in JSON responses, and updated `assets/js/app.js` to smoothly navigate back to the mailbox and refresh unread badges upon reporting spam or ham.
+- **Version Bump**: Incremented version from `1.5.19` to `1.5.20`.
 
 ### Version 1.5.19
 - **Folder Unread Badges Contrast & Text Color Fix**:
