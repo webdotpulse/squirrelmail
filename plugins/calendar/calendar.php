@@ -29,10 +29,78 @@ if (isset($_GET['export']) && $_GET['export'] === 'ics') {
 
 // Handle .ics import
 $importMsg = null;
+$highlightEventId = null;
+$autoOpenModal = false;
+$autoEventData = null;
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['ics_file']) && $_FILES['ics_file']['error'] === UPLOAD_ERR_OK) {
     $content = file_get_contents($_FILES['ics_file']['tmp_name']);
     $cnt = calendar_import_ics($content);
     $importMsg = sprintf(_("Successfully imported %d event(s) from calendar file."), $cnt);
+}
+
+// Handle appointment import from email (e.g. from "Add to Calendar" button in read_body)
+if (isset($_GET['action']) && $_GET['action'] === 'import_email' && !empty($_GET['passed_id'])) {
+    $pId = $_GET['passed_id'];
+    $mBox = isset($_GET['mailbox']) ? $_GET['mailbox'] : 'INBOX';
+    $eId = isset($_GET['ent_id']) && !empty($_GET['ent_id']) ? $_GET['ent_id'] : null;
+
+    global $imapServerAddress, $imapPort, $username, $imap_stream_options;
+    $imapConn = sqimap_login($username, false, $imapServerAddress, $imapPort, 0, $imap_stream_options);
+    if ($imapConn) {
+        sqimap_mailbox_select($imapConn, $mBox);
+        $msgObj = sqimap_get_message($imapConn, $pId, $mBox);
+        $vcalContent = calendar_extract_vcalendar_from_message($imapConn, $pId, $mBox, $msgObj, $eId);
+        sqimap_logout($imapConn);
+
+        if (!empty($vcalContent)) {
+            $importedEvents = array();
+            $cnt = calendar_import_ics($vcalContent, $importedEvents);
+            if ($cnt > 0) {
+                $firstEv = reset($importedEvents);
+                $highlightEventId = $firstEv['id'] ?? null;
+                $importMsg = sprintf(_("Successfully added appointment '%s' (%s) to your calendar."), $firstEv['title'], $firstEv['date']);
+                if (!empty($firstEv['date']) && preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $firstEv['date'], $dm)) {
+                    $_GET['year'] = intval($dm[1]);
+                    $_GET['month'] = intval($dm[2]);
+                    $_GET['day'] = intval($dm[3]);
+                }
+            } else {
+                $importMsg = _("Could not find any appointments to import in the calendar data.");
+            }
+        } else {
+            // Fallback: If no raw VCALENDAR, prefill event creation modal with email details
+            $subj = '';
+            if (isset($msgObj) && isset($msgObj->rfc822_header) && isset($msgObj->rfc822_header->subject)) {
+                $subj = decodeHeader($msgObj->rfc822_header->subject);
+            }
+            $sender = '';
+            if (isset($msgObj) && isset($msgObj->rfc822_header)) {
+                $sender = $msgObj->rfc822_header->getAddr_s('from');
+            }
+            $autoOpenModal = true;
+            $autoEventData = array(
+                'title'       => $subj ? $subj : _("Email Appointment"),
+                'date'        => date('Y-m-d'),
+                'time'        => '09:00',
+                'end_time'    => '10:00',
+                'category'    => 'work',
+                'location'    => '',
+                'description' => ($sender ? "From: $sender\n" : "") . ($subj ? "Subject: $subj\n" : "")
+            );
+        }
+    }
+} elseif (isset($_GET['action']) && $_GET['action'] === 'new') {
+    $autoOpenModal = true;
+    $autoEventData = array(
+        'title'       => isset($_GET['title']) ? trim($_GET['title']) : '',
+        'date'        => date('Y-m-d'),
+        'time'        => '09:00',
+        'end_time'    => '10:00',
+        'category'    => 'work',
+        'location'    => '',
+        'description' => ''
+    );
 }
 
 // Get requested view, month, year, day
@@ -261,6 +329,18 @@ displayPageHeader($color, 'None');
 .cal-event-chip.urgent   { background-color: var(--cat-urgent); }
 .cal-event-chip.reminder { background-color: var(--cat-reminder); }
 
+@keyframes cal-pulse {
+    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(26, 115, 232, 0.7); }
+    50% { transform: scale(1.04); box-shadow: 0 0 0 6px rgba(26, 115, 232, 0); }
+    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(26, 115, 232, 0); }
+}
+.cal-event-highlighted {
+    animation: cal-pulse 1.2s ease-in-out 3;
+    outline: 2px solid #ffffff;
+    box-shadow: 0 0 0 2px #1a73e8, 0 4px 12px rgba(26, 115, 232, 0.35) !important;
+    font-weight: 600;
+}
+
 /* Agenda / List View */
 .cal-agenda-view {
     background: #ffffff;
@@ -460,8 +540,11 @@ displayPageHeader($color, 'None');
                 ?>
                 <div class="cal-agenda-date-group">
                     <div class="cal-agenda-date-title"><?php echo date('l, F j, Y', $timeStr); ?></div>
-                    <?php foreach ($evList as $ev): ?>
-                    <div class="cal-agenda-item" onclick="openEventEdit(<?php echo htmlspecialchars(json_encode($ev)); ?>)">
+                    <?php
+                    foreach ($evList as $ev):
+                        $isHigh = (!empty($highlightEventId) && isset($ev['id']) && $ev['id'] === $highlightEventId);
+                    ?>
+                    <div class="cal-agenda-item<?php echo $isHigh ? ' cal-event-highlighted' : ''; ?>" onclick="openEventEdit(<?php echo htmlspecialchars(json_encode($ev)); ?>)">
                         <span class="cal-event-chip <?php echo htmlspecialchars($ev['category']); ?>" style="padding: 4px 8px;"><?php echo ucfirst(htmlspecialchars($ev['category'])); ?></span>
                         <div class="cal-agenda-time">
                             <?php echo !empty($ev['all_day']) ? _("All Day") : htmlspecialchars($ev['time'] . ' - ' . $ev['end_time']); ?>
@@ -520,8 +603,9 @@ displayPageHeader($color, 'None');
                     foreach ($allEvents as $ev) {
                         if ($ev['date'] === $isoDate) {
                             $cat = htmlspecialchars($ev['category'] ?? 'work');
+                            $isHigh = (!empty($highlightEventId) && isset($ev['id']) && $ev['id'] === $highlightEventId);
                             $evJson = htmlspecialchars(json_encode($ev), ENT_QUOTES, 'UTF-8');
-                            echo '<div class="cal-event-chip ' . $cat . '" onclick="openEventEdit(' . $evJson . ')" title="' . htmlspecialchars($ev['title']) . '">';
+                            echo '<div class="cal-event-chip ' . $cat . ($isHigh ? ' cal-event-highlighted' : '') . '" onclick="openEventEdit(' . $evJson . ')" title="' . htmlspecialchars($ev['title']) . '">';
                             if (empty($ev['all_day']) && !empty($ev['time'])) {
                                 echo '<small>' . htmlspecialchars($ev['time']) . '</small> ';
                             }
@@ -688,6 +772,12 @@ function deleteCalendarEvent() {
         }
     });
 }
+
+<?php if (!empty($autoOpenModal) && !empty($autoEventData)): ?>
+document.addEventListener('DOMContentLoaded', function() {
+    openEventEdit(<?php echo json_encode($autoEventData); ?>);
+});
+<?php endif; ?>
 </script>
 <?php
 echo "</body></html>\n";

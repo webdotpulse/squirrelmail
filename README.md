@@ -1,4 +1,4 @@
-# SquirrelMail 1.5.24
+# SquirrelMail 1.5.25
 
 A modernized, responsive edition of SquirrelMail engineered for PHP 7.0 through 8.2+ with a Single-Page Application (SPA) interface, modern UI styling, and extensive feature enhancements.
 
@@ -43,6 +43,18 @@ This repository includes an [AGENTS.md](file:///home/koen/Git/squirrelmail/AGENT
 ---
 
 ## 📝 Changelog
+
+### Version 1.5.25
+- **VCALENDAR & iCalendar Appointment Adding to Calendar**:
+  - **Toolbar "Add to Calendar" Fix**: Fixed the "Add to Calendar" button in the email reading toolbar (`plugins/calendar/setup.php`), which previously linked to `calendar.php?action=new` without passing email identifiers and without importing the appointment.
+  - **iCalendar / VCALENDAR Parser Enhancements**: Implemented complete RFC 5545/2445 iCalendar (`.ics`/VCALENDAR) appointment parsing in `plugins/calendar/calendar_data.php`, including line unfolding, character unescaping, `DTSTART`/`DTEND`/`DURATION`, categories, locations, organizer extraction, and deterministic UID-based deduplication to prevent duplicate events on repeated clicks.
+  - **Automatic VCALENDAR Discovery & Extraction**: Added `calendar_extract_vcalendar_from_message()` to extract VCALENDAR content from emails, supporting `text/calendar` and `application/ics` MIME parts, `.ics` attachments, and inline `BEGIN:VCALENDAR` blocks.
+  - **Instant Asynchronous & Direct Adding**: Added asynchronous instant-add execution (`sqmAddCalendarAppointment`) via `plugins/calendar/ajax.php?action=import_email` with inline visual status (`✓ Added to Calendar`), toast confirmation notifications, and direct calendar view navigation.
+  - **Interactive Calendar Appointment Card**: Rendered an appointment invitation banner at the top of emails with calendar invites (`template_construct_read_message_body.tpl`), displaying the event date badge, time, location, organizer, and one-click "Add to Calendar" button with Light and Dark mode styling.
+  - **Attachment Actions Integration**: Hooked calendar MIME types in `attachment text/calendar`, `attachment application/ics`, and generic `.ics` attachments, providing an inline `📅 Add to Calendar` action alongside Download and View in the attachments list.
+  - **Calendar Focus & Highlighting**: Added deep integration in `plugins/calendar/calendar.php` to handle `action=import_email`, automatically focus the calendar on the appointment's month/year, display a success banner, and highlight newly added appointments with a glowing pulse animation.
+  - **Message Class Null Safety**: Added null-safety check in `class/mime/Message.class.php` (`Message::getFilename()`) when headers are uninitialized.
+- **Version Bump**: Incremented version from `1.5.24` to `1.5.25`.
 
 ### Version 1.5.24
 - **Topbar Calendar Action Button**:

@@ -160,6 +160,9 @@ class Message {
     function getFilename() {
          $filename = '';
          $header = $this->header;
+         if (!is_object($header)) {
+              return '';
+         }
          if (is_object($header->disposition)) {
               $filename = $header->disposition->getProperty('filename');
               if (trim($filename) == '') {

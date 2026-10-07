@@ -180,35 +180,70 @@ function calendar_escape_ics($text)
 }
 
 /**
- * Parse an iCalendar (.ics) string and import events
+ * Unescape string from ICS
  */
-function calendar_import_ics($icsContent)
+function calendar_unescape_ics($text)
 {
-    $imported = 0;
-    $events = calendar_load_events();
+    $text = str_replace(array('\n', '\N'), "\n", $text);
+    $text = str_replace('\;', ';', $text);
+    $text = str_replace('\,', ',', $text);
+    $text = str_replace('\\\\', '\\', $text);
+    return trim($text);
+}
 
-    $vevents = preg_split('/END:VEVENT/i', $icsContent);
+/**
+ * Parse an iCalendar (.ics) string and return array of event arrays without saving
+ *
+ * @param string $icsContent
+ * @return array
+ */
+function calendar_parse_ics($icsContent)
+{
+    $events = array();
+    if (empty($icsContent) || !is_string($icsContent)) {
+        return $events;
+    }
+
+    // Unfold RFC 5545 / RFC 2445 lines (CRLF or LF followed by a space or tab)
+    $unfolded = preg_replace("/\r\n[ \t]|\r[ \t]|\n[ \t]/", "", $icsContent);
+
+    $vevents = preg_split('/END:VEVENT/i', $unfolded);
     foreach ($vevents as $block) {
-        if (!preg_match('/BEGIN:VEVENT/i', $block)) continue;
+        if (!preg_match('/BEGIN:VEVENT/i', $block)) {
+            continue;
+        }
 
         $title = 'Untitled Event';
-        $date  = date('Y-m-d');
+        $date = date('Y-m-d');
         $endDate = $date;
-        $time  = '09:00';
+        $time = '09:00';
         $endTime = '10:00';
         $allDay = 0;
-        $desc  = '';
-        $loc   = '';
-        $cat   = 'personal';
+        $desc = '';
+        $loc = '';
+        $cat = 'meeting';
+        $uid = '';
+        $organizer = '';
 
         if (preg_match('/SUMMARY(?:;[^:]*)?:(.*)/i', $block, $m)) {
-            $title = trim(stripslashes(str_replace('\n', ' ', $m[1])));
+            $title = calendar_unescape_ics($m[1]);
         }
         if (preg_match('/DESCRIPTION(?:;[^:]*)?:(.*)/i', $block, $m)) {
-            $desc = trim(stripslashes(str_replace('\n', "\n", $m[1])));
+            $desc = calendar_unescape_ics($m[1]);
         }
         if (preg_match('/LOCATION(?:;[^:]*)?:(.*)/i', $block, $m)) {
-            $loc = trim(stripslashes(str_replace('\n', ' ', $m[1])));
+            $loc = calendar_unescape_ics($m[1]);
+        }
+        if (preg_match('/ORGANIZER(?:;[^:]*)?:(.*)/i', $block, $m)) {
+            $organizer = calendar_unescape_ics($m[1]);
+            if (preg_match('/CN="?([^;":]+)"?/i', $block, $cn)) {
+                $organizer = $cn[1] . ' (' . preg_replace('/^mailto:/i', '', $organizer) . ')';
+            } else {
+                $organizer = preg_replace('/^mailto:/i', '', $organizer);
+            }
+        }
+        if (preg_match('/UID(?:;[^:]*)?:(.*)/i', $block, $m)) {
+            $uid = trim($m[1]);
         }
         if (preg_match('/CATEGORIES(?:;[^:]*)?:(.*)/i', $block, $m)) {
             $c = strtolower(trim($m[1]));
@@ -216,28 +251,62 @@ function calendar_import_ics($icsContent)
             elseif (strpos($c, 'meet') !== false) $cat = 'meeting';
             elseif (strpos($c, 'urgent') !== false || strpos($c, 'imp') !== false) $cat = 'urgent';
             elseif (strpos($c, 'remind') !== false) $cat = 'reminder';
+            elseif (strpos($c, 'personal') !== false) $cat = 'personal';
         }
 
-        if (preg_match('/DTSTART(?:;[^:]*)?:(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2}))?/i', $block, $m)) {
-            $date = $m[1] . '-' . $m[2] . '-' . $m[3];
-            if (!empty($m[4])) {
-                $time = $m[4] . ':' . $m[5];
+        // DTSTART: handles 20261015T140000Z, 20261015T1400, or 20261015
+        if (preg_match('/DTSTART(?:;[^:]*)?:([0-9]{8})(?:T([0-9]{2})([0-9]{2}))?/i', $block, $m)) {
+            $date = substr($m[1], 0, 4) . '-' . substr($m[1], 4, 2) . '-' . substr($m[1], 6, 2);
+            if (!empty($m[2]) && isset($m[3])) {
+                $time = $m[2] . ':' . $m[3];
+                $allDay = 0;
             } else {
+                $time = '09:00';
                 $allDay = 1;
             }
         }
 
-        if (preg_match('/DTEND(?:;[^:]*)?:(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2}))?/i', $block, $m)) {
-            $endDate = $m[1] . '-' . $m[2] . '-' . $m[3];
-            if (!empty($m[4])) {
-                $endTime = $m[4] . ':' . $m[5];
+        // DTEND or DURATION
+        if (preg_match('/DTEND(?:;[^:]*)?:([0-9]{8})(?:T([0-9]{2})([0-9]{2}))?/i', $block, $m)) {
+            $endDate = substr($m[1], 0, 4) . '-' . substr($m[1], 4, 2) . '-' . substr($m[1], 6, 2);
+            if (!empty($m[2]) && isset($m[3])) {
+                $endTime = $m[2] . ':' . $m[3];
+            } else {
+                $endTime = '10:00';
+            }
+        } elseif (preg_match('/DURATION(?:;[^:]*)?:P(?:([0-9]+)D)?(?:T(?:([0-9]+)H)?(?:([0-9]+)M)?)?/i', $block, $dm)) {
+            $durDays = !empty($dm[1]) ? intval($dm[1]) : 0;
+            $durHours = !empty($dm[2]) ? intval($dm[2]) : 0;
+            $durMins = !empty($dm[3]) ? intval($dm[3]) : 0;
+            if ($durDays > 0) {
+                $endDate = date('Y-m-d', strtotime("$date +$durDays days"));
+            } else {
+                $endDate = $date;
+            }
+            if ($allDay) {
+                $endTime = '10:00';
+            } else {
+                $startTs = strtotime("$date $time");
+                $endTs = $startTs + ($durHours * 3600) + ($durMins * 60);
+                $endTime = date('H:i', $endTs);
+                $endDate = date('Y-m-d', $endTs);
             }
         } else {
             $endDate = $date;
-            $endTime = date('H:i', strtotime("$time +1 hour"));
+            if ($allDay) {
+                $endTime = '10:00';
+            } else {
+                $endTime = date('H:i', strtotime("$time +1 hour"));
+            }
         }
 
-        $id = 'ics_' . uniqid() . '_' . mt_rand(100, 999);
+        // Deterministic ID based on UID or content hash
+        if (!empty($uid)) {
+            $id = 'ics_' . substr(md5($uid), 0, 16);
+        } else {
+            $id = 'ics_' . substr(md5($title . $date . $time . $loc), 0, 16);
+        }
+
         $events[$id] = array(
             'id'          => $id,
             'title'       => $title,
@@ -249,8 +318,36 @@ function calendar_import_ics($icsContent)
             'category'    => $cat,
             'location'    => $loc,
             'description' => $desc,
+            'organizer'   => $organizer,
+            'uid'         => $uid,
             'reminder'    => 0
         );
+    }
+
+    return $events;
+}
+
+/**
+ * Parse an iCalendar (.ics) string and import events into user store
+ *
+ * @param string $icsContent
+ * @param array &$importedEvents Optional reference to receive imported event arrays
+ * @return int Number of imported events
+ */
+function calendar_import_ics($icsContent, &$importedEvents = array())
+{
+    $parsed = calendar_parse_ics($icsContent);
+    if (empty($parsed)) {
+        return 0;
+    }
+
+    $events = calendar_load_events();
+    $imported = 0;
+    $importedEvents = array();
+
+    foreach ($parsed as $evId => $ev) {
+        $events[$evId] = $ev;
+        $importedEvents[$evId] = $ev;
         $imported++;
     }
 
@@ -259,4 +356,190 @@ function calendar_import_ics($icsContent)
     }
 
     return $imported;
+}
+
+/**
+ * Recursively find all entities in a Message that represent iCalendar (.ics) or VCALENDAR
+ */
+function calendar_collect_ics_entities($msg, &$results)
+{
+    if (!is_object($msg)) return;
+
+    $type0 = strtolower($msg->type0 ?? '');
+    $type1 = strtolower($msg->type1 ?? '');
+    $fn = (is_object($msg) && !empty($msg->header) && method_exists($msg, 'getFilename')) ? strtolower($msg->getFilename()) : '';
+
+    if (($type0 === 'text' && ($type1 === 'calendar' || $type1 === 'x-vcalendar')) ||
+        ($type0 === 'application' && $type1 === 'ics') ||
+        (substr($fn, -4) === '.ics')) {
+        $results[] = $msg;
+    }
+
+    if (!empty($msg->entities) && is_array($msg->entities)) {
+        foreach ($msg->entities as $subEnt) {
+            calendar_collect_ics_entities($subEnt, $results);
+        }
+    }
+}
+
+/**
+ * Find the entity ID of a VCALENDAR / .ics part if present
+ */
+function calendar_find_vcal_entity_id($msg)
+{
+    if (!is_object($msg)) return null;
+
+    $results = array();
+    calendar_collect_ics_entities($msg, $results);
+    if (!empty($results)) {
+        $first = reset($results);
+        return !empty($first->entity_id) ? $first->entity_id : '1';
+    }
+
+    return null;
+}
+
+/**
+ * Extract VCALENDAR content from message via IMAP
+ */
+function calendar_extract_vcalendar_from_message($imapConnection, $passed_id, $mailbox, $message = null, $ent_id = null)
+{
+    if (empty($imapConnection) || empty($passed_id)) {
+        return null;
+    }
+
+    if (!is_object($message)) {
+        $message = sqimap_get_message($imapConnection, $passed_id, $mailbox);
+    }
+
+    if (!is_object($message)) {
+        return null;
+    }
+
+    // 1. If explicit entity ID was specified
+    if (!empty($ent_id)) {
+        $entity = $message->getEntity($ent_id);
+        $raw = mime_fetch_body($imapConnection, $passed_id, $ent_id);
+        $encoding = (is_object($entity) && isset($entity->header) && isset($entity->header->encoding)) ? $entity->header->encoding : '';
+        $body = decodeBody($raw, $encoding);
+        if (stripos($body, 'BEGIN:VCALENDAR') !== false) {
+            return $body;
+        }
+    }
+
+    // 2. Check all discovered ICS entities
+    $icsEntities = array();
+    calendar_collect_ics_entities($message, $icsEntities);
+    foreach ($icsEntities as $ent) {
+        $eid = $ent->entity_id;
+        $raw = mime_fetch_body($imapConnection, $passed_id, $eid);
+        $encoding = (isset($ent->header) && isset($ent->header->encoding)) ? $ent->header->encoding : '';
+        $body = decodeBody($raw, $encoding);
+        if (stripos($body, 'BEGIN:VCALENDAR') !== false) {
+            return $body;
+        }
+    }
+
+    // 3. Check text parts for embedded VCALENDAR
+    if (!empty($message->entities)) {
+        foreach ($message->entities as $ent) {
+            $eid = $ent->entity_id;
+            $raw = mime_fetch_body($imapConnection, $passed_id, $eid);
+            $encoding = (isset($ent->header) && isset($ent->header->encoding)) ? $ent->header->encoding : '';
+            $body = decodeBody($raw, $encoding);
+            if (stripos($body, 'BEGIN:VCALENDAR') !== false) {
+                if (preg_match('/(BEGIN:VCALENDAR.*?END:VCALENDAR)/is', $body, $m)) {
+                    return $m[1];
+                }
+                return $body;
+            }
+        }
+    }
+
+    // 4. Check main message body
+    $raw = mime_fetch_body($imapConnection, $passed_id, 0);
+    if (!empty($raw) && stripos($raw, 'BEGIN:VCALENDAR') !== false) {
+        if (preg_match('/(BEGIN:VCALENDAR.*?END:VCALENDAR)/is', $raw, $m)) {
+            return $m[1];
+        }
+        return $raw;
+    }
+
+    return null;
+}
+
+/**
+ * Request-level cached accessor for message VCALENDAR info
+ */
+function calendar_get_message_vcal($message = null, $imapConnection = null, $passed_id = null, $mailbox = null)
+{
+    static $cache = array();
+
+    if ($passed_id === null && isset($GLOBALS['passed_id'])) {
+        $passed_id = $GLOBALS['passed_id'];
+    }
+    if ($mailbox === null && isset($GLOBALS['mailbox'])) {
+        $mailbox = $GLOBALS['mailbox'];
+    }
+    if ($message === null && isset($GLOBALS['message'])) {
+        $message = $GLOBALS['message'];
+    }
+    if ($imapConnection === null && isset($GLOBALS['imapConnection'])) {
+        $imapConnection = $GLOBALS['imapConnection'];
+    }
+
+    if (empty($passed_id)) {
+        return null;
+    }
+
+    $cacheKey = $mailbox . ':' . $passed_id;
+    if (array_key_exists($cacheKey, $cache)) {
+        return $cache[$cacheKey];
+    }
+
+    if (!is_object($message)) {
+        $cache[$cacheKey] = null;
+        return null;
+    }
+
+    $vcalEntId = calendar_find_vcal_entity_id($message);
+    $hasVcal = ($vcalEntId !== null);
+
+    if (!$hasVcal) {
+        if (!empty($message->body) && stripos($message->body, 'BEGIN:VCALENDAR') !== false) {
+            $hasVcal = true;
+            $vcalEntId = 0;
+        } elseif (!empty($message->decoded_body) && stripos($message->decoded_body, 'BEGIN:VCALENDAR') !== false) {
+            $hasVcal = true;
+            $vcalEntId = 0;
+        }
+    }
+
+    if (!$hasVcal) {
+        $cache[$cacheKey] = null;
+        return null;
+    }
+
+    $vcalContent = null;
+    if (!empty($imapConnection)) {
+        $vcalContent = calendar_extract_vcalendar_from_message($imapConnection, $passed_id, $mailbox, $message, $vcalEntId);
+    }
+
+    $parsedEvents = array();
+    if (!empty($vcalContent)) {
+        $parsedEvents = calendar_parse_ics($vcalContent);
+    }
+
+    $firstEvent = !empty($parsedEvents) ? reset($parsedEvents) : null;
+
+    $res = array(
+        'has_vcal'   => true,
+        'ent_id'     => $vcalEntId,
+        'content'    => $vcalContent,
+        'events'     => $parsedEvents,
+        'first_event'=> $firstEvent
+    );
+
+    $cache[$cacheKey] = $res;
+    return $res;
 }

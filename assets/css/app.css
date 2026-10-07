@@ -1881,3 +1881,38 @@ table.table1 input[type="submit"]:hover {
   border-color: #60a5fa !important;
   box-shadow: 0 1px 4px rgba(59, 130, 246, 0.25);
 }
+
+/* Calendar VCALENDAR Appointment Invitation Card & Buttons */
+.sm-vcal-invite-box {
+  transition: all var(--sm-transition-fast, 0.15s ease);
+}
+
+[data-theme="dark"] .sm-vcal-invite-box {
+  background: linear-gradient(135deg, #1e293b 0%, #172033 100%) !important;
+  border-color: #3b82f6 !important;
+  border-left-color: #60a5fa !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3) !important;
+}
+
+[data-theme="dark"] .sm-vcal-invite-box h3 {
+  color: #f1f5f9 !important;
+}
+
+[data-theme="dark"] .sm-vcal-invite-box strong {
+  color: #e2e8f0 !important;
+}
+
+[data-theme="dark"] .sm-vcal-invite-box span {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .cal-add-btn {
+  background: #1e293b !important;
+  color: #93c5fd !important;
+  border-color: #334155 !important;
+}
+
+[data-theme="dark"] .cal-add-btn:hover {
+  background: #334155 !important;
+  border-color: #475569 !important;
+}
