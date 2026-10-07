@@ -46,9 +46,11 @@ $src_base = sqm_baseuri() . 'src/';
         <select name="mailbox" class="sm-search-mailbox-select" aria-label="<?php echo _("Mailbox"); ?>">
           <option value="<?php echo $cur_mailbox; ?>"><?php echo _("Current Folder"); ?></option>
           <option value="INBOX">INBOX</option>
-          <option value="[ALL]"><?php echo _("All Folders"); ?></option>
+          <option value="All Folders"><?php echo _("All Folders"); ?></option>
         </select>
-        <input type="hidden" name="where" value="BODY" />
+        <input type="hidden" name="where" value="TEXT" />
+        <input type="hidden" name="submit" value="<?php echo _("Search"); ?>" />
+        <input type="hidden" name="smtoken" value="<?php echo sm_generate_security_token(); ?>" />
       </form>
     </div>
 
@@ -63,6 +65,9 @@ $src_base = sqm_baseuri() . 'src/';
         </a>
         <a href="<?php echo $src_base; ?>addressbook.php" class="sm-icon-btn" title="<?php echo _("Addresses"); ?>" aria-label="<?php echo _("Addresses"); ?>">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+        </a>
+        <a href="<?php echo sqm_baseuri(); ?>plugins/calendar/calendar.php" class="sm-icon-btn" title="<?php echo _("Calendar"); ?>" aria-label="<?php echo _("Calendar"); ?>">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
         </a>
         <a href="<?php echo $src_base; ?>folders.php" class="sm-icon-btn" title="<?php echo _("Folders"); ?>" aria-label="<?php echo _("Folders"); ?>">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>

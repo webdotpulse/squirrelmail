@@ -1,4 +1,4 @@
-# SquirrelMail 1.5.22
+# SquirrelMail 1.5.24
 
 A modernized, responsive edition of SquirrelMail engineered for PHP 7.0 through 8.2+ with a Single-Page Application (SPA) interface, modern UI styling, and extensive feature enhancements.
 
@@ -43,6 +43,22 @@ This repository includes an [AGENTS.md](file:///home/koen/Git/squirrelmail/AGENT
 ---
 
 ## 📝 Changelog
+
+### Version 1.5.24
+- **Topbar Calendar Action Button**:
+  - Added a dedicated Calendar SVG icon button in the header toolbar (`templates/default/webmail.tpl`) situated between "Addresses" and "Folders", linking directly to `plugins/calendar/calendar.php` and integrating seamlessly with SPA workspace routing.
+- **Sidebar Header Clean-Up & Action Bar Streamlining**:
+  - Removed the redundant `<div class="sm-sidebar-header-title">` ("Folders") and the duplicate `sm-folder-add-btn` ("Manage Folders" `+` button) from `templates/default/left_main.tpl`.
+  - Polished `.sm-sidebar-header-actions` and `.sm-folder-refresh-btn` styling in `assets/css/app.css` to create a centered, full-width "Check Mail" refresh action bar and refresh timestamp above the folder hierarchy.
+- **Version Bump**: Incremented version from `1.5.23` to `1.5.24`.
+
+### Version 1.5.23
+- **Topbar & Direct URL Mailbox Search CSRF Fix**:
+  - **Untrusted Source Error Resolution**: Fixed an issue where searching from the topbar search bar or navigating directly to `src/search.php` resulted in `ERROR: The current page request appears to have originated from an untrusted source` and forcefully logged the user out.
+  - **Read-Only vs State-Changing Token Validation**: Updated `src/search.php` so that strict CSRF token validation with fatal session exit is only enforced on state-changing operations that modify persistent preferences (such as saving/forgetting recent searches or deleting saved criteria). Idempotent, read-only search queries now execute cleanly without logging the user out when tokens are absent or refreshed.
+  - **Topbar Search Form Enhancements**: Updated `templates/default/webmail.tpl` to include `smtoken` security tokens, normalized the "All Folders" selector to match `src/search.php`, and switched default search scope to `TEXT` (comprehensive search across Subject, From, To, and Body).
+  - **Query & Submitter Handling**: Added support for `submit_display` in `src/search.php` and automated search query triggering when `what` or `where` criteria are provided via GET.
+- **Version Bump**: Incremented version from `1.5.22` to `1.5.23`.
 
 ### Version 1.5.22
 - **AI Agent Background Cron Auto-Draft & Labeling Delivery Fix**:

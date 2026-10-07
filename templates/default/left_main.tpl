@@ -276,13 +276,7 @@ extract($t);
 <div class="sm-sidebar-folders-wrapper">
  <div class="sm-sidebar-folders-header">
   <div class="sm-sidebar-header-main">
-   <div class="sm-sidebar-header-title">
-    <span class="sqm_folderHeader"><?php echo _("Folders"); ?></span>
-   </div>
    <div class="sm-sidebar-header-actions">
-    <a href="<?php echo sqm_baseuri(); ?>src/folders.php" class="sm-sidebar-action-btn sm-folder-add-btn" title="<?php echo _("Manage Folders"); ?>" aria-label="<?php echo _("Manage Folders"); ?>">
-     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-    </a>
     <a href="<?php echo sqm_baseuri(); ?>src/left_main.php" <?php if ($accesskey_folders_refresh != 'NONE') echo 'accesskey="' . $accesskey_folders_refresh . '" '; ?>class="sm-sidebar-action-btn sm-folder-refresh-btn" title="<?php echo _("Check Mail"); ?>" aria-label="<?php echo _("Check Mail"); ?>">
      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
      <span><?php echo _("Check Mail"); ?></span>

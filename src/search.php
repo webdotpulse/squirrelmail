@@ -987,6 +987,8 @@ if ($search_advanced) {
 $searchpressed = false;
 if (sqgetGlobalVar('submit', $temp, SQ_GET)) {
     $submit = strip_tags($temp);
+} elseif (sqgetGlobalVar('submit_display', $temp, SQ_GET)) {
+    $submit = $search_button_text;
 }
 
 /** Searched mailboxes
@@ -1001,6 +1003,7 @@ if (sqGetGlobalVarMultiple('startMessage', $temp, 'paginator_submit', SQ_FORM)) 
 }
 if (empty($mailbox)) sqGetGlobalVar('mailbox', $mailbox, SQ_GET, '');
 if (!empty($mailbox)) {
+    if ($mailbox === '[ALL]') $mailbox = 'All Folders';
     $mailbox_array = $mailbox;
     $targetmailbox = $mailbox;
     if (!is_array($mailbox_array)) {
@@ -1145,9 +1148,12 @@ if (sqgetGlobalVar('search_show_recent', $search_show_recent, SQ_GET)) {
 $search_silent = FALSE;
 
 /*  See how the page was called and fire off correct function  */
-if ((empty($submit)) && (!empty($where_array))) {
+if ((empty($submit)) && (!empty($where_array) || !empty($what_array))) {
     /* This happens when the Enter key is used or called from outside */
     $submit = $search_button_text;
+    if (empty($where_array)) {
+        $where_array = array('TEXT');
+    }
     /* Hack needed to handle coming back from read_body et als */
     if (count($where_array) != count($unop_array)) {
         /**
@@ -1166,8 +1172,20 @@ if (!isset($submit)) {
     $submit = '';
 } else {
 
-    // first validate security token
-    sm_validate_security_token($submitted_token, -1, TRUE);
+    // Only state-changing actions (saving/deleting recent or saved search preferences)
+    // require strict security token enforcement. Read-only search queries must not log users out.
+    $state_changing_actions = array(
+        'save_recent',
+        'forget_recent',
+        'delete_saved',
+        $del_excluded_button_text,
+        $del_all_button_text
+    );
+    if (in_array($submit, $state_changing_actions)) {
+        sm_validate_security_token($submitted_token, -1, TRUE);
+    } elseif (!empty($submitted_token)) {
+        sm_validate_security_token($submitted_token, -1, FALSE);
+    }
 
     switch ($submit) {
       case $search_button_text:

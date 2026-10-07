@@ -585,7 +585,7 @@ img[src$=".svg"],
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  flex-shrink: 0;
+  width: 100%;
 }
 
 .sm-sidebar-action-btn {
@@ -620,9 +620,10 @@ img[src$=".svg"],
   transition: transform var(--sm-transition-base);
 }
 
-.sm-folder-add-btn {
-  width: 24px;
-  padding: 0;
+.sm-folder-refresh-btn {
+  width: 100%;
+  justify-content: center;
+  height: 26px;
 }
 
 .sm-folder-refresh-btn:hover svg {
@@ -632,6 +633,7 @@ img[src$=".svg"],
 .sm-sidebar-refresh-time {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 5px;
   font-size: 10.5px;
   color: var(--sm-text-muted);
