@@ -3264,3 +3264,412 @@ textarea.sm-sig-source-editor {
   background: var(--sm-bg-card);
   color: #60a5fa;
 }
+
+/* =========================================================================
+   Modern Login & Authentication Screen
+   ========================================================================= */
+
+body.sm-login-page {
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--sm-bg-canvas);
+  background-image: 
+    radial-gradient(circle at 15% 15%, rgba(37, 99, 235, 0.08) 0%, transparent 45%),
+    radial-gradient(circle at 85% 85%, rgba(79, 70, 229, 0.08) 0%, transparent 45%);
+  background-attachment: fixed;
+  font-family: var(--sm-font-sans);
+  color: var(--sm-text-primary);
+  overflow-x: hidden;
+  position: relative;
+}
+
+[data-theme="dark"] body.sm-login-page {
+  background-color: #0b0f19;
+  background-image: 
+    radial-gradient(circle at 15% 15%, rgba(37, 99, 235, 0.14) 0%, transparent 50%),
+    radial-gradient(circle at 85% 85%, rgba(99, 102, 241, 0.12) 0%, transparent 50%);
+}
+
+.sm-login-wrapper {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+  position: relative;
+  box-sizing: border-box;
+}
+
+/* Ambient decorative glow orbs */
+.sm-login-glow-1,
+.sm-login-glow-2 {
+  position: fixed;
+  border-radius: 50%;
+  pointer-events: none;
+  filter: blur(90px);
+  z-index: 0;
+  opacity: 0.6;
+}
+
+.sm-login-glow-1 {
+  width: 400px;
+  height: 400px;
+  top: -100px;
+  left: -100px;
+  background: radial-gradient(circle, rgba(37, 99, 235, 0.25), transparent 70%);
+}
+
+.sm-login-glow-2 {
+  width: 450px;
+  height: 450px;
+  bottom: -100px;
+  right: -100px;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.22), transparent 70%);
+}
+
+[data-theme="dark"] .sm-login-glow-1 {
+  background: radial-gradient(circle, rgba(37, 99, 235, 0.2), transparent 70%);
+}
+
+[data-theme="dark"] .sm-login-glow-2 {
+  background: radial-gradient(circle, rgba(79, 70, 229, 0.18), transparent 70%);
+}
+
+/* Top bar with Theme Switcher */
+.sm-login-topbar {
+  position: absolute;
+  top: 20px;
+  right: 24px;
+  z-index: 10;
+}
+
+.sm-login-theme-btn {
+  background: var(--sm-bg-surface);
+  border: 1px solid var(--sm-border);
+  color: var(--sm-text-secondary);
+  border-radius: var(--sm-radius-pill);
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: var(--sm-shadow-sm);
+  transition: all var(--sm-transition-fast);
+}
+
+.sm-login-theme-btn:hover {
+  color: var(--sm-text-primary);
+  border-color: var(--sm-border-hover);
+  background: var(--sm-bg-card);
+  transform: translateY(-1px);
+}
+
+/* Login Card Container */
+.sm-login-container {
+  width: 100%;
+  max-width: 420px;
+  position: relative;
+  z-index: 1;
+}
+
+.sm-login-card {
+  background: var(--sm-bg-surface);
+  border: 1px solid var(--sm-border);
+  border-radius: 20px;
+  padding: 38px 32px 30px 32px;
+  box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.10), 0 0 0 1px rgba(255, 255, 255, 0.4) inset;
+  animation: smLoginCardEntrance 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+  box-sizing: border-box;
+}
+
+[data-theme="dark"] .sm-login-card {
+  background: #111827;
+  border-color: #1f293d;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+}
+
+@keyframes smLoginCardEntrance {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Header */
+.sm-login-header {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.sm-login-logo-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 18px;
+}
+
+.sm-login-logo-wrap img.sqm_loginImage {
+  width: 72px;
+  height: 72px;
+  max-width: 72px;
+  max-height: 72px;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 16px rgba(37, 99, 235, 0.32));
+  border-radius: 18px;
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  display: block;
+}
+
+.sm-login-logo-wrap img.sqm_loginImage:hover {
+  transform: scale(1.06) rotate(-2deg);
+}
+
+.sm-login-fallback-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
+}
+
+.sm-login-title {
+  font-size: 23px;
+  font-weight: 700;
+  color: var(--sm-text-primary);
+  margin: 0 0 6px 0;
+  letter-spacing: -0.4px;
+  line-height: 1.25;
+}
+
+.sm-login-subtitle {
+  font-size: 13.5px;
+  color: var(--sm-text-muted);
+  margin: 0;
+  line-height: 1.45;
+}
+
+/* Form Groups & Inputs */
+.sm-login-form {
+  margin: 0;
+  padding: 0;
+}
+
+.sm-form-group {
+  margin-bottom: 18px;
+  text-align: left;
+}
+
+.sm-form-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--sm-text-secondary);
+  margin-bottom: 7px;
+}
+
+.sm-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.sm-input-icon {
+  position: absolute;
+  left: 14px;
+  color: var(--sm-text-muted);
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color var(--sm-transition-fast);
+}
+
+.sm-input-wrap:focus-within .sm-input-icon {
+  color: var(--sm-primary);
+}
+
+.sm-input {
+  width: 100%;
+  height: 46px;
+  padding: 0 14px 0 42px;
+  font-size: 14px;
+  font-family: var(--sm-font-sans);
+  color: var(--sm-text-primary);
+  background-color: var(--sm-bg-canvas);
+  border: 1.5px solid var(--sm-border);
+  border-radius: var(--sm-radius-md);
+  outline: none;
+  transition: all var(--sm-transition-fast);
+  box-sizing: border-box;
+}
+
+[data-theme="dark"] .sm-input {
+  background-color: #0b0f19;
+  border-color: #26334d;
+}
+
+.sm-input::placeholder {
+  color: var(--sm-text-muted);
+  opacity: 0.7;
+}
+
+.sm-input:focus {
+  background-color: var(--sm-bg-surface);
+  border-color: var(--sm-primary);
+  box-shadow: 0 0 0 3.5px rgba(37, 99, 235, 0.15);
+}
+
+[data-theme="dark"] .sm-input:focus {
+  background-color: #111827;
+  border-color: var(--sm-primary);
+  box-shadow: 0 0 0 3.5px rgba(59, 130, 246, 0.25);
+}
+
+.sm-input-pw {
+  padding-right: 44px;
+}
+
+.sm-pw-toggle {
+  position: absolute;
+  right: 10px;
+  background: transparent;
+  border: none;
+  color: var(--sm-text-muted);
+  cursor: pointer;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--sm-radius-sm);
+  transition: color var(--sm-transition-fast), background-color var(--sm-transition-fast);
+}
+
+.sm-pw-toggle:hover {
+  color: var(--sm-text-primary);
+  background-color: var(--sm-hover-bg);
+}
+
+/* Submit Button */
+.sm-btn-login {
+  width: 100%;
+  height: 48px;
+  margin-top: 8px;
+  background: linear-gradient(135deg, var(--sm-primary), #4f46e5);
+  color: #ffffff !important;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: var(--sm-font-sans);
+  border: none;
+  border-radius: var(--sm-radius-md);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+  transition: all var(--sm-transition-fast);
+}
+
+.sm-btn-login:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.45);
+  filter: brightness(1.05);
+}
+
+.sm-btn-login:active {
+  transform: translateY(0);
+  filter: brightness(0.96);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);
+}
+
+/* Security & Trust Footer */
+.sm-login-footer {
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px solid var(--sm-border-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sm-security-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--sm-text-muted);
+  user-select: none;
+}
+
+.sm-security-badge svg {
+  color: var(--sm-success);
+}
+
+/* Plugin Output Containers */
+.sm-login-plugin-top,
+.sm-login-plugin-form,
+.sm-login-plugin-bottom {
+  margin-bottom: 14px;
+}
+
+/* Neutralize legacy styles for #sqm_login */
+#sqm_login {
+  width: 100%;
+}
+
+/* Error Logout Modern Card */
+.sm-error-logout-wrapper {
+  width: 100%;
+  max-width: 440px;
+}
+
+.sm-error-box {
+  background: var(--sm-danger-light);
+  border: 1px solid var(--sm-danger);
+  border-radius: var(--sm-radius-md);
+  padding: 18px 20px;
+  margin-top: 20px;
+  text-align: left;
+}
+
+.sm-error-box-header {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--sm-danger);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sm-error-box-message {
+  font-size: 13.5px;
+  color: var(--sm-text-primary);
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+
+.sm-error-box-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 13.5px;
+  color: var(--sm-primary) !important;
+  text-decoration: none !important;
+}
+
+.sm-error-box-link:hover {
+  text-decoration: underline !important;
+}

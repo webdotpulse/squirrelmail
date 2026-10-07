@@ -1,4 +1,4 @@
-# SquirrelMail 1.5.58
+# SquirrelMail 1.5.59
 
 A modernized, responsive edition of SquirrelMail engineered for PHP 7.0 through 8.2+ with a Single-Page Application (SPA) interface, modern UI styling, and extensive feature enhancements.
 
@@ -57,6 +57,15 @@ This repository includes an [AGENTS.md](file:///home/koen/Git/squirrelmail/AGENT
 ---
 
 ## 📝 Changelog
+
+### Version 1.5.59
+- **Modern Login Screen & Brand Icon Logo (`templates/default/login.tpl`, `templates/default/error_logout.tpl`, `assets/css/app.css`, `images/sm_logo.png`)**:
+  - **New Modern `sm_logo.png`**: Created a high-DPI 256×256 brand icon asset matching `.sm-brand-icon`, featuring a vibrant blue-to-indigo gradient squircle (`#2563eb` to `#4f46e5`), subtle inner highlight rim, dual-layer soft elevation drop shadows, and a crisp vector envelope icon with rounded line endings.
+  - **Modern Card-Based Login Interface (`templates/default/login.tpl`)**: Replaced archaic table layout with a clean, semantic modern card featuring ambient background glow meshes, modern typography, floating input icons (user / lock), glowing focus rings, and an interactive password visibility toggle (`.sm-pw-toggle`).
+  - **Light/Dark Mode Theme Switcher**: Added an integrated theme toggle pill in the top-right corner of the login screen with persistent preference storage in `localStorage` and `sm_theme` cookie, dynamically switching between light and dark modes.
+  - **Full Security Trust Indicator**: Added an SSL/TLS encrypted session status badge at the card base.
+  - **Matching Error & Logout Screen (`templates/default/error_logout.tpl`)**: Modernized error notification card matching the new login card aesthetics with structured notice callout and primary return button.
+- **Version Bump**: Incremented version from `1.5.58 [SVN]` to `1.5.59 [SVN]`.
 
 ### Version 1.5.58
 - **Remove SquirrelMail Attribution from Login Page (`src/login.php`, `templates/default/login.tpl`, `functions/display_messages.php`, `templates/default/error_logout.tpl`)**:
