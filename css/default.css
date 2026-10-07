@@ -204,6 +204,13 @@ img   {
     text-align:center;
 }
 
+/* Specifically for the login form */
+.sm-login-form input[type="text"],
+#login_form input[type="text"],
+#sqm_login input[type="text"] {
+    padding: 7px 11px 7px 44px;
+}
+
 /* note.tpl defs */
 .sqm_noteWrapper {
     text-align:center;

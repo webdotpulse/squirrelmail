@@ -50,3 +50,10 @@
   --sm-danger-hover: #f87171;
   --sm-danger-light: #3b1219;
 }
+
+/* Specifically for the login form */
+.sm-login-form input[type="text"],
+#login_form input[type="text"],
+#sqm_login input[type="text"] {
+  padding: 7px 11px 7px 44px;
+}

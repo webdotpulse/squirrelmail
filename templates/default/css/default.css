@@ -506,6 +506,13 @@ td.message_count	{
     padding-top: 15px;
 }
 
+/* Specifically for the login form */
+.sm-login-form input[type="text"],
+#login_form input[type="text"],
+#sqm_login input[type="text"] {
+    padding: 7px 11px 7px 44px;
+}
+
 /* addressbook_list.tpl defs */
 #addressList    {
     text-align: center;

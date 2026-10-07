@@ -154,6 +154,13 @@ tr.odd  {
 .sqm_loginOrgName, .sqm_signoutBar {
     background: __COLOR0__;
 }
+
+/* Specifically for the login form */
+.sm-login-form input[type="text"],
+#login_form input[type="text"],
+#sqm_login input[type="text"] {
+    padding: 7px 11px 7px 44px;
+}
 .sqm_motd {
     background: __COLOR9__;
 }

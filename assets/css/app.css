@@ -3570,6 +3570,13 @@ body.sm-login-page {
   box-shadow: 0 0 0 3.5px rgba(59, 130, 246, 0.25);
 }
 
+/* Specifically for the login form */
+.sm-login-form input[type="text"],
+#login_form input[type="text"],
+#sqm_login input[type="text"] {
+  padding: 7px 11px 7px 44px;
+}
+
 .sm-input-pw {
   padding-right: 44px;
 }

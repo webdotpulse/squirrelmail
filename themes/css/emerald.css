@@ -54,3 +54,10 @@
   --sm-success: #10b981;
   --sm-success-light: #062b1e;
 }
+
+/* Specifically for the login form */
+.sm-login-form input[type="text"],
+#login_form input[type="text"],
+#sqm_login input[type="text"] {
+  padding: 7px 11px 7px 44px;
+}

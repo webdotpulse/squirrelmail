@@ -1,4 +1,4 @@
-# SquirrelMail 1.5.61
+# SquirrelMail 1.5.62
 
 A modernized, responsive edition of SquirrelMail engineered for PHP 7.0 through 8.2+ with a Single-Page Application (SPA) interface, modern UI styling, and extensive feature enhancements.
 
@@ -57,6 +57,12 @@ This repository includes an [AGENTS.md](file:///home/koen/Git/squirrelmail/AGENT
 ---
 
 ## 📝 Changelog
+
+### Version 1.5.62
+- **Login Form Text Input Padding on Themes**:
+  - Enforced `padding: 7px 11px 7px 44px;` for `input[type="text"]` specifically scoped to the login form (`.sm-login-form input[type="text"]`, `#login_form input[type="text"]`, `#sqm_login input[type="text"]`) across all theme stylesheets (`css/modern_responsive/default.css`, `css/modern_responsive_dark/default.css`, `css/modern_responsive_emerald/default.css`, and their corresponding alternate template stylesheets in `templates/default/css/alternates/`, `css/gmail/default.css`, `themes/css/*.css`, `css/default.css`, `templates/default/css/default.css`, `themes/color_theme_to_css.php`, and `assets/css/app.css`).
+  - Ensures the 44px left padding properly accommodates the login username field icon while guaranteeing normal form controls and input text padding (`padding: 7px 11px`) on non-login forms (such as Compose, Options, Folders, and Address Book) remain untouched.
+- **Version Bump**: Incremented version from `1.5.61` to `1.5.62`.
 
 ### Version 1.5.61
 - **AI Agent Draft Threading & Conversation View Integration (`plugins/ai_agent/cron.php`, `plugins/conversation_view/functions.php`, `class/deliver/Deliver.class.php`, `class/deliver/Deliver_IMAP.class.php`, `functions/imap_general.php`)**:

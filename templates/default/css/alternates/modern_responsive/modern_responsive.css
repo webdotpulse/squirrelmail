@@ -89,6 +89,13 @@ textarea {
     max-width: 100%;
 }
 
+/* Specifically for the login form */
+.sm-login-form input[type="text"],
+#login_form input[type="text"],
+#sqm_login input[type="text"] {
+    padding: 7px 11px 7px 44px;
+}
+
 input[type="text"]:focus,
 input[type="password"]:focus,
 input[type="email"]:focus,
