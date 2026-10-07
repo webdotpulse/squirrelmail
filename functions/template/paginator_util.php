@@ -26,7 +26,7 @@ include_once(SM_PATH . 'functions/forms.php');
   * @param string  $accesskey The access key for the link, if any
   * @return string
   */
-function get_paginator_link($box, $start_msg, $text, $accesskey='NONE') {
+function get_paginator_link($box, $start_msg, $text, $accesskey='NONE', $class='sm-paginator-page') {
     sqgetGlobalVar('PHP_SELF',$php_self,SQ_SERVER);
     if (strpos($php_self, 'right_main.php') !== false) {
         $php_self = sqm_baseuri() . 'src/webmail.php';
@@ -37,7 +37,7 @@ function get_paginator_link($box, $start_msg, $text, $accesskey='NONE') {
     }
     return create_hyperlink("$php_self?startMessage=$start_msg&amp;mailbox=$box$extra"
                             . (strpos($php_self, 'src/search.php') ? '&amp;smtoken=' . sm_generate_security_token() : ''),
-                            $text, '', '', '', '', '',
+                            $text, '', '', $class, '', '',
                             ($accesskey == 'NONE'
                             ? array()
                             : array('accesskey' => $accesskey)));
@@ -138,54 +138,49 @@ function get_compact_paginator_str($box, $iOffset, $iTotal, $iLimit, $bShowAll, 
     }
 
     /* Put all the pieces of the paginator string together. */
-    /**
-     * Hairy code... But let's leave it like it is since I am not certain
-     * a different approach would be any easier to read. ;)
-     */
     $result = '';
     if ( $prv_str || $nxt_str ) {
 
         /* Compute the 'show all' string. */
         global $accesskey_mailbox_all_paginate;
         $label_extra = !empty($_GET['label_filter']) ? '&amp;label_filter=' . urlencode($_GET['label_filter']) : '';
-        $all_str = create_hyperlink("$php_self?showall=1&amp;startMessage=1&amp;mailbox=$box$label_extra" . (strpos($php_self, 'src/search.php') ? '&amp;smtoken=' . sm_generate_security_token() : ''), _("Show All"), '', '', '', '', '', ($accesskeys_constructed ? array() : array('accesskey' => $accesskey_mailbox_all_paginate)));
+        $all_str = create_hyperlink("$php_self?showall=1&amp;startMessage=1&amp;mailbox=$box$label_extra" . (strpos($php_self, 'src/search.php') ? '&amp;smtoken=' . sm_generate_security_token() : ''), _("Show All"), '', '', 'sm-paginator-btn sm-paginator-all', '', '', ($accesskeys_constructed ? array() : array('accesskey' => $accesskey_mailbox_all_paginate)));
 
-        $result .= '[' . get_paginator_link($box, 1, '<<') . ']';
-        $result .= '[' . $prv_str . ']';
+        $result .= '<div class="sm-paginator-container">';
+        $result .= '<div class="sm-paginator-nav">';
+        $result .= get_paginator_link($box, 1, '&laquo;', 'NONE', 'sm-paginator-btn');
+        $result .= (is_string($prv_str) && strpos($prv_str, '<a') !== false) ? $prv_str : '<span class="sm-paginator-btn disabled">' . $prv_str . '</span>';
+        $result .= (is_string($nxt_str) && strpos($nxt_str, '<a') !== false) ? $nxt_str : '<span class="sm-paginator-btn disabled">' . $nxt_str . '</span>';
+        $result .= get_paginator_link($box, $last_grp, '&raquo;', 'NONE', 'sm-paginator-btn');
+        $result .= '</div>';
 
         $pg_url = $php_self . '?mailbox=' . $box . (!empty($_GET['label_filter']) ? '&label_filter=' . urlencode($_GET['label_filter']) : '') . (strpos($php_self, 'src/search.php') ? '&smtoken=' . sm_generate_security_token() : '');
-
-        $result .= '[' . $nxt_str . ']';
-        $result .= '[' . get_paginator_link($box, $last_grp, '>>') . ']';
 
         if ($page_selector) {
             $options = array();
             for ($p = 0; $p < $tot_pgs; $p++) {
                 $options[(($p*$iLimit)+1) . '_' . $box] = ($p+1) . "/$tot_pgs";
             }
-            $result .= $nbsp . addSelect('startMessage_' . $display_iterations, 
+            $result .= '<div class="sm-paginator-select">' . addSelect('startMessage_' . $display_iterations, 
                                         $options, 
                                         ((($cur_pg-1)*$iLimit)+1), 
                                         TRUE, 
-                                        ($javascript_on ? array('onchange' => 'JavaScript:SubmitOnSelect(this, \'' . $pg_url . '&startMessage=\')') : array()));
+                                        ($javascript_on ? array('onchange' => 'JavaScript:SubmitOnSelect(this, \'' . $pg_url . '&startMessage=\')', 'class' => 'sm-select sm-select-sm') : array('class' => 'sm-select sm-select-sm'))) . '</div>';
 
-            if ($javascript_on) {
-//FIXME: What in the world?  Two issues here: for one, $javascript_on is supposed
-//       to have already detected whether or not JavaScript is available and enabled.
-//       Secondly, we need to rid ourselves of any HTML output in the core.  This
-//       is being removed (but left in case the original author points out why it
-//       should not be) and we'll trust $javascript_on to do the right thing.
-//                $result .= '<noscript language="JavaScript">'
-//                . addSubmit(_("Go"), 'paginator_submit_' . $display_iterations)
-//                . '</noscript>';
-            } else {
-                $result .= addSubmit(_("Go"), 'paginator_submit_' . $display_iterations);
+            if (!$javascript_on) {
+                $result .= addSubmit(_("Go"), 'paginator_submit_' . $display_iterations, array('class' => 'sm-btn sm-btn-secondary sm-btn-sm'));
             }
         }
+
+        if ($all_str != '') {
+            $result .= '<div class="sm-paginator-actions">' . $all_str . '</div>';
+        }
+        $result .= '</div>';
     }
 
-    $result .= ($pg_str  != '' ? '['.$pg_str.']' .  $nbsp : '');
-    $result .= ($all_str != '' ? $nbsp . '['.$all_str.']' . $nbsp . $nbsp : '');
+    if ($pg_str != '') {
+        $result .= '<div class="sm-paginator-actions">' . $pg_str . '</div>';
+    }
 
     /* If the resulting string is blank, return a non-breaking space. */
     if ($result == '') {
@@ -233,10 +228,6 @@ function get_paginator_str($box, $iOffset, $iTotal, $iLimit, $bShowAll,$page_sel
 
     $box = urlencode($box);
 
-    /* Create simple strings that will be creating the paginator. */
-    /* This will be used as a seperator. */
-    $sep = '|';
-
     /* Make sure that our start message number is not too big. */
     $iOffset = min($iOffset, $iTotal);
 
@@ -252,20 +243,24 @@ function get_paginator_str($box, $iOffset, $iTotal, $iLimit, $bShowAll,$page_sel
         if (($next_grp <= $iTotal) && ($prev_grp >= 0)) {
             $prv_str = get_paginator_link($box, $prev_grp, _("Previous"),
                                           ($accesskeys_constructed
-                                          ? 'NONE' : $accesskey_mailbox_previous));
+                                          ? 'NONE' : $accesskey_mailbox_previous),
+                                          'sm-paginator-btn sm-paginator-prev');
             $nxt_str = get_paginator_link($box, $next_grp, _("Next"),
                                           ($accesskeys_constructed
-                                          ? 'NONE' : $accesskey_mailbox_next));
+                                          ? 'NONE' : $accesskey_mailbox_next),
+                                          'sm-paginator-btn sm-paginator-next');
         } else if (($next_grp > $iTotal) && ($prev_grp >= 0)) {
             $prv_str = get_paginator_link($box, $prev_grp, _("Previous"),
                                           ($accesskeys_constructed
-                                          ? 'NONE' : $accesskey_mailbox_previous));
-            $nxt_str = _("Next");
+                                          ? 'NONE' : $accesskey_mailbox_previous),
+                                          'sm-paginator-btn sm-paginator-prev');
+            $nxt_str = '<span class="sm-paginator-btn disabled">' . _("Next") . '</span>';
         } else if (($next_grp <= $iTotal) && ($prev_grp < 0)) {
-            $prv_str = _("Previous");
+            $prv_str = '<span class="sm-paginator-btn disabled">' . _("Previous") . '</span>';
             $nxt_str = get_paginator_link($box, $next_grp, _("Next"),
                                           ($accesskeys_constructed
-                                          ? 'NONE' : $accesskey_mailbox_next));
+                                          ? 'NONE' : $accesskey_mailbox_next),
+                                          'sm-paginator-btn sm-paginator-next');
         }
 
         /* Page selector block. Following code computes page links. */
@@ -288,12 +283,6 @@ function get_paginator_str($box, $iOffset, $iTotal, $iLimit, $bShowAll,$page_sel
 
             /* Otherwise, compute some magic to choose the four quarters. */
             } else {
-                /*
-                * Compute the magic base values. Added together,
-                * these values will always equal to the $pag_pgs.
-                * NOTE: These are DEFAULT values and do not take
-                * the current page into account. That is below.
-                */
                 $q1_pgs = floor($vis_pgs/4);
                 $q2_pgs = round($vis_pgs/4, 0);
                 $q3_pgs = ceil($vis_pgs/4);
@@ -333,53 +322,44 @@ function get_paginator_str($box, $iOffset, $iTotal, $iLimit, $bShowAll,$page_sel
                 }
             }
 
-            /*
-            * I am leaving this debug code here, commented out, because
-            * it is a really nice way to see what the above code is doing.
-            * echo "qts =  $q1_pgs/$q2_pgs/$q3_pgs/$q4_pgs = "
-            *    . ($q1_pgs + $q2_pgs + $q3_pgs + $q4_pgs) . '<br />';
-            */
-
-            /* Print out the page links from the compute page quarters. */
-
             /* Start with the first quarter. */
             if (($q1_pgs == 0) && ($cur_pg > 1)) {
-                $pg_str .= "...$nbsp";
+                $pg_str .= '<span class="sm-paginator-ellipsis">&hellip;</span>';
             } else {
                 for ($pg = 1; $pg <= $q1_pgs; ++$pg) {
                     $start = (($pg-1) * $iLimit) + 1;
-                    $pg_str .= get_paginator_link($box, $start, $pg) . $nbsp;
+                    $pg_str .= get_paginator_link($box, $start, $pg, 'NONE', 'sm-paginator-page');
                 }
                 if ($cur_pg - $q2_pgs - $q1_pgs > 1) {
-                    $pg_str .= "...$nbsp";
+                    $pg_str .= '<span class="sm-paginator-ellipsis">&hellip;</span>';
                 }
             }
 
             /* Continue with the second quarter. */
             for ($pg = $cur_pg - $q2_pgs; $pg < $cur_pg; ++$pg) {
                 $start = (($pg-1) * $iLimit) + 1;
-                $pg_str .= get_paginator_link($box, $start, $pg) . $nbsp;
+                $pg_str .= get_paginator_link($box, $start, $pg, 'NONE', 'sm-paginator-page');
             }
 
-            /* Now print the current page. */
-            $pg_str .= $cur_pg . $nbsp;
+            /* Now print the current page with active styling and proper spacing */
+            $pg_str .= '<span class="sm-paginator-page active">' . $cur_pg . '</span>';
 
             /* Next comes the third quarter. */
             for ($pg = $cur_pg + 1; $pg <= $cur_pg + $q3_pgs; ++$pg) {
                 $start = (($pg-1) * $iLimit) + 1;
-                $pg_str .= get_paginator_link($box, $start, $pg) . $nbsp;
+                $pg_str .= get_paginator_link($box, $start, $pg, 'NONE', 'sm-paginator-page');
             }
 
             /* And last, print the forth quarter page links. */
             if (($q4_pgs == 0) && ($cur_pg < $tot_pgs)) {
-                $pg_str .= "...$nbsp";
+                $pg_str .= '<span class="sm-paginator-ellipsis">&hellip;</span>';
             } else {
                 if (($tot_pgs - $q4_pgs) > ($cur_pg + $q3_pgs)) {
-                    $pg_str .= "...$nbsp";
+                    $pg_str .= '<span class="sm-paginator-ellipsis">&hellip;</span>';
                 }
                 for ($pg = $tot_pgs - $q4_pgs + 1; $pg <= $tot_pgs; ++$pg) {
                     $start = (($pg-1) * $iLimit) + 1;
-                    $pg_str .= get_paginator_link($box, $start,$pg) . $nbsp;
+                    $pg_str .= get_paginator_link($box, $start, $pg, 'NONE', 'sm-paginator-page');
                 }
             }
 
@@ -388,36 +368,35 @@ function get_paginator_str($box, $iOffset, $iTotal, $iLimit, $bShowAll,$page_sel
     } else {
         global $accesskey_mailbox_all_paginate;
         $label_extra = !empty($_GET['label_filter']) ? '&amp;label_filter=' . urlencode($_GET['label_filter']) : '';
-        $pg_str = create_hyperlink("$php_self?showall=0&amp;startMessage=1&amp;mailbox=$box$label_extra" . (strpos($php_self, 'src/search.php') ? '&amp;smtoken=' . sm_generate_security_token() : ''), _("Paginate"), '', '', '', '', '', ($accesskeys_constructed ? array() : array('accesskey' =>
-$accesskey_mailbox_all_paginate)));
+        $pg_str = create_hyperlink("$php_self?showall=0&amp;startMessage=1&amp;mailbox=$box$label_extra" . (strpos($php_self, 'src/search.php') ? '&amp;smtoken=' . sm_generate_security_token() : ''), _("Paginate"), '', '', 'sm-paginator-btn sm-paginator-paginate', '', '', ($accesskeys_constructed ? array() : array('accesskey' => $accesskey_mailbox_all_paginate)));
     }
 
-    /* Put all the pieces of the paginator string together. */
-    /**
-     * Hairy code... But let's leave it like it is since I am not certain
-     * a different approach would be any easier to read. ;)
-     */
-    $result = '';
+    /* Put all the pieces of the paginator string together into modern flex containers */
+    $result = '<div class="sm-paginator-container">';
     if ( $prv_str || $nxt_str ) {
-
         /* Compute the 'show all' string. */
         global $accesskey_mailbox_all_paginate;
         $label_extra = !empty($_GET['label_filter']) ? '&amp;label_filter=' . urlencode($_GET['label_filter']) : '';
-        $all_str = create_hyperlink("$php_self?showall=1&amp;startMessage=1&amp;mailbox=$box$label_extra" . (strpos($php_self, 'src/search.php') ? '&amp;smtoken=' . sm_generate_security_token() : ''), _("Show All"), '', '', '', '', '', ($accesskeys_constructed ? array() : array('accesskey' =>
-$accesskey_mailbox_all_paginate)));
+        $all_str = create_hyperlink("$php_self?showall=1&amp;startMessage=1&amp;mailbox=$box$label_extra" . (strpos($php_self, 'src/search.php') ? '&amp;smtoken=' . sm_generate_security_token() : ''), _("Show All"), '', '', 'sm-paginator-btn sm-paginator-all', '', '', ($accesskeys_constructed ? array() : array('accesskey' => $accesskey_mailbox_all_paginate)));
 
-        $result .= '[';
-        $result .= ($prv_str != '' ? $prv_str . $nbsp . $sep . $nbsp : '');
-        $result .= ($nxt_str != '' ? $nxt_str : '');
-        $result .= ']' . $nbsp ;
+        $result .= '<div class="sm-paginator-nav">';
+        $result .= $prv_str;
+        $result .= $nxt_str;
+        $result .= '</div>';
     }
 
-    $result .= ($pg_str  != '' ? $nbsp . '['.$nbsp.$pg_str.']' .  $nbsp : '');
-    $result .= ($all_str != '' ? $nbsp . '['.$all_str.']' . $nbsp . $nbsp : '');
+    if ($pg_str != '') {
+        $result .= '<div class="sm-paginator-pages">' . $pg_str . '</div>';
+    }
+
+    if ($all_str != '') {
+        $result .= '<div class="sm-paginator-actions">' . $all_str . '</div>';
+    }
+    $result .= '</div>';
 
     /* If the resulting string is blank, return a non-breaking space. */
     if ($result == '') {
-        $result = $nbsp;
+        $result = '&nbsp;';
     }
 
     $accesskeys_constructed = TRUE;

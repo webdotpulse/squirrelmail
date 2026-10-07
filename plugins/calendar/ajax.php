@@ -155,5 +155,18 @@ if ($action === 'import_email') {
     }
 }
 
+if ($action === 'get_share_urls') {
+    $urls = calendar_get_feed_urls();
+    echo json_encode(array('success' => true, 'urls' => $urls));
+    exit;
+}
+
+if ($action === 'reset_share_token') {
+    calendar_reset_share_token();
+    $urls = calendar_get_feed_urls();
+    echo json_encode(array('success' => true, 'urls' => $urls, 'message' => _("Share token reset successfully. Your old calendar links have been invalidated.")));
+    exit;
+}
+
 echo json_encode(array('success' => false, 'error' => 'Unknown action.'));
 exit;

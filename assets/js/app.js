@@ -592,6 +592,9 @@
 
             // 3. Setup message list selection helpers
             this.setupMessageListHelpers(container);
+
+            // 4. Setup HTML Signature Formatting Toolbar & Visual WYSIWYG Editor
+            this.setupHtmlSignatureEditors(container);
         },
 
         mountShadowDomEmails(container) {
@@ -791,6 +794,356 @@
             container.querySelectorAll('.table_messageList tr.sm-message-row, .table_messageList tr.even, .table_messageList tr.odd, tr.sm-message-row').forEach(row => {
                 row.addEventListener('mouseenter', () => row.classList.add('mouse_over'));
                 row.addEventListener('mouseleave', () => row.classList.remove('mouse_over'));
+            });
+        },
+
+        // -------------------------------------------------------------------------
+        // HTML Signature Dual-Mode WYSIWYG & Formatting Toolbar
+        // -------------------------------------------------------------------------
+        setupHtmlSignatureEditors(container) {
+            if (!container) return;
+
+            const textareas = container.querySelectorAll('textarea[name*="html_signature"], textarea[name*="html_sig"]');
+            if (!textareas.length) return;
+
+            const studioUrl = this.getBaseUri() + 'plugins/signature_creator/options.php';
+
+            textareas.forEach(ta => {
+                if (ta.dataset.smSigEditorInit === 'true') return;
+                ta.dataset.smSigEditorInit = 'true';
+
+                // Wrap textarea in rich editor component
+                const wrapper = document.createElement('div');
+                wrapper.className = 'sm-sig-editor-wrapper';
+
+                // Modern formatting toolbar
+                const toolbar = document.createElement('div');
+                toolbar.className = 'sm-sig-toolbar';
+                toolbar.innerHTML = `
+                    <div class="sm-sig-toolbar-group">
+                        <button type="button" class="sm-sig-btn" data-cmd="undo" title="Undo (Ctrl+Z)">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
+                        </button>
+                        <button type="button" class="sm-sig-btn" data-cmd="redo" title="Redo (Ctrl+Y)">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"/></svg>
+                        </button>
+                    </div>
+                    <div class="sm-sig-toolbar-sep"></div>
+                    <div class="sm-sig-toolbar-group">
+                        <select class="sm-sig-select sm-sig-font-family" title="Font Family">
+                            <option value="">Font Family</option>
+                            <option value="Arial, Helvetica, sans-serif">Arial</option>
+                            <option value="'Segoe UI', Roboto, Helvetica, sans-serif">Segoe UI</option>
+                            <option value="Georgia, serif">Georgia</option>
+                            <option value="'Times New Roman', Times, serif">Times New Roman</option>
+                            <option value="'Courier New', Courier, monospace">Courier New</option>
+                            <option value="Verdana, Geneva, sans-serif">Verdana</option>
+                            <option value="'Trebuchet MS', sans-serif">Trebuchet MS</option>
+                        </select>
+                        <select class="sm-sig-select sm-sig-font-size" title="Font Size">
+                            <option value="">Size</option>
+                            <option value="1">Small</option>
+                            <option value="3">Normal</option>
+                            <option value="5">Large</option>
+                            <option value="6">Huge</option>
+                        </select>
+                    </div>
+                    <div class="sm-sig-toolbar-sep"></div>
+                    <div class="sm-sig-toolbar-group">
+                        <button type="button" class="sm-sig-btn" data-cmd="bold" title="Bold (Ctrl+B)"><b>B</b></button>
+                        <button type="button" class="sm-sig-btn" data-cmd="italic" title="Italic (Ctrl+I)"><i style="font-family:serif;">I</i></button>
+                        <button type="button" class="sm-sig-btn" data-cmd="underline" title="Underline (Ctrl+U)"><u>U</u></button>
+                        <button type="button" class="sm-sig-btn" data-cmd="strikeThrough" title="Strikethrough"><s>S</s></button>
+                    </div>
+                    <div class="sm-sig-toolbar-sep"></div>
+                    <div class="sm-sig-toolbar-group">
+                        <label class="sm-sig-btn sm-sig-color-btn" title="Text Color">
+                            <span class="sm-sig-color-label">A</span>
+                            <span class="sm-sig-color-bar sm-sig-text-color-bar"></span>
+                            <input type="color" class="sm-sig-color-input sm-sig-text-color-picker" value="#1e293b">
+                        </label>
+                        <label class="sm-sig-btn sm-sig-color-btn" title="Highlight / Background Color">
+                            <span class="sm-sig-color-label" style="font-size:11px;">🎨</span>
+                            <span class="sm-sig-color-bar sm-sig-bg-color-bar" style="background-color:#ffff00;"></span>
+                            <input type="color" class="sm-sig-color-input sm-sig-bg-color-picker" value="#ffff00">
+                        </label>
+                    </div>
+                    <div class="sm-sig-toolbar-sep"></div>
+                    <div class="sm-sig-toolbar-group">
+                        <button type="button" class="sm-sig-btn" data-cmd="justifyLeft" title="Align Left">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg>
+                        </button>
+                        <button type="button" class="sm-sig-btn" data-cmd="justifyCenter" title="Align Center">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="10" x2="6" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="18" y1="18" x2="6" y2="18"/></svg>
+                        </button>
+                        <button type="button" class="sm-sig-btn" data-cmd="justifyRight" title="Align Right">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="21" y1="10" x2="7" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="21" y1="18" x2="7" y2="18"/></svg>
+                        </button>
+                    </div>
+                    <div class="sm-sig-toolbar-sep"></div>
+                    <div class="sm-sig-toolbar-group">
+                        <button type="button" class="sm-sig-btn" data-cmd="insertUnorderedList" title="Bulleted List">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="9" y1="6" x2="20" y2="6"/><line x1="9" y1="12" x2="20" y2="12"/><line x1="9" y1="18" x2="20" y2="18"/><line x1="4" y1="6" x2="4.01" y2="6"/><line x1="4" y1="12" x2="4.01" y2="12"/><line x1="4" y1="18" x2="4.01" y2="18"/></svg>
+                        </button>
+                        <button type="button" class="sm-sig-btn" data-cmd="insertOrderedList" title="Numbered List">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4"/><path d="M4 10h2"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg>
+                        </button>
+                        <button type="button" class="sm-sig-btn sm-sig-btn-hr" title="Insert Divider Line (HR)">
+                            <span style="font-weight:700; line-height:1;">—</span>
+                        </button>
+                    </div>
+                    <div class="sm-sig-toolbar-sep"></div>
+                    <div class="sm-sig-toolbar-group">
+                        <button type="button" class="sm-sig-btn sm-sig-btn-link" title="Insert / Edit Link">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                        </button>
+                        <button type="button" class="sm-sig-btn sm-sig-btn-img" title="Insert Image / Logo URL">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                        </button>
+                        <button type="button" class="sm-sig-btn" data-cmd="removeFormat" title="Clear Formatting">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/><line x1="2" y1="2" x2="22" y2="22"/></svg>
+                        </button>
+                    </div>
+                    <div class="sm-sig-toolbar-spacer"></div>
+                    <div class="sm-sig-tabs">
+                        <button type="button" class="sm-sig-tab sm-sig-tab-visual active" title="Visual WYSIWYG Mode">👁️ Visual</button>
+                        <button type="button" class="sm-sig-tab sm-sig-tab-source" title="Raw HTML Source Mode">&lt;/&gt; HTML Source</button>
+                    </div>
+                `;
+
+                // Contenteditable Visual Surface
+                const visualEditor = document.createElement('div');
+                visualEditor.className = 'sm-sig-visual-editor';
+                visualEditor.contentEditable = 'true';
+                visualEditor.spellcheck = true;
+                visualEditor.setAttribute('role', 'textbox');
+                visualEditor.setAttribute('aria-multiline', 'true');
+                visualEditor.setAttribute('placeholder', 'Enter or format your rich HTML signature here...');
+                visualEditor.innerHTML = ta.value || '';
+
+                // Live Email Preview Box
+                const previewCard = document.createElement('div');
+                previewCard.className = 'sm-sig-preview-card';
+                previewCard.innerHTML = `
+                    <div class="sm-sig-preview-header">
+                        <div class="sm-sig-preview-title">
+                            <span class="sm-sig-preview-dot"></span>
+                            <span class="sm-sig-preview-label">LIVE SIGNATURE PREVIEW</span>
+                        </div>
+                        <a href="${studioUrl}" class="sm-sig-studio-link" title="Launch Advanced Signature & Template Studio">
+                            ✒️ Signature Studio
+                        </a>
+                    </div>
+                    <div class="sm-sig-preview-body"></div>
+                `;
+
+                const previewBody = previewCard.querySelector('.sm-sig-preview-body');
+
+                // Re-parent elements inside wrapper
+                ta.parentNode.insertBefore(wrapper, ta);
+                wrapper.appendChild(toolbar);
+                wrapper.appendChild(visualEditor);
+                wrapper.appendChild(ta);
+                wrapper.appendChild(previewCard);
+
+                // Configure textarea as source editor
+                ta.classList.add('sm-sig-source-editor');
+                ta.style.display = 'none';
+
+                // Helpers
+                const updatePreview = () => {
+                    const content = (visualEditor.style.display !== 'none' ? visualEditor.innerHTML : ta.value).trim();
+                    if (content && content !== '<br>' && content !== '<p><br></p>') {
+                        previewBody.innerHTML = content;
+                    } else {
+                        previewBody.innerHTML = '<span class="sm-sig-empty-placeholder">(Signature is currently empty)</span>';
+                    }
+                };
+
+                const syncVisualToTextarea = () => {
+                    ta.value = visualEditor.innerHTML;
+                    updatePreview();
+                };
+
+                const syncTextareaToVisual = () => {
+                    visualEditor.innerHTML = ta.value;
+                    updatePreview();
+                };
+
+                // Prevent toolbar buttons from stealing focus from contenteditable
+                toolbar.querySelectorAll('button, .sm-sig-btn').forEach(btn => {
+                    btn.addEventListener('mousedown', (e) => {
+                        if (!btn.classList.contains('sm-sig-tab')) {
+                            e.preventDefault();
+                        }
+                    });
+                });
+
+                // Mode switcher tabs
+                const tabVisual = toolbar.querySelector('.sm-sig-tab-visual');
+                const tabSource = toolbar.querySelector('.sm-sig-tab-source');
+                const visualOnlyControls = toolbar.querySelectorAll('[data-cmd], .sm-sig-select, .sm-sig-color-btn, .sm-sig-btn-hr, .sm-sig-btn-link, .sm-sig-btn-img');
+
+                tabVisual.addEventListener('click', () => {
+                    if (tabVisual.classList.contains('active')) return;
+                    syncTextareaToVisual();
+                    ta.style.display = 'none';
+                    visualEditor.style.display = 'block';
+                    tabVisual.classList.add('active');
+                    tabSource.classList.remove('active');
+                    visualOnlyControls.forEach(c => c.removeAttribute('disabled'));
+                    visualEditor.focus();
+                });
+
+                tabSource.addEventListener('click', () => {
+                    if (tabSource.classList.contains('active')) return;
+                    syncVisualToTextarea();
+                    visualEditor.style.display = 'none';
+                    ta.style.display = 'block';
+                    tabSource.classList.add('active');
+                    tabVisual.classList.remove('active');
+                    visualOnlyControls.forEach(c => c.setAttribute('disabled', 'disabled'));
+                    ta.focus();
+                });
+
+                // Format commands
+                toolbar.querySelectorAll('button[data-cmd]').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const cmd = btn.getAttribute('data-cmd');
+                        visualEditor.focus();
+                        document.execCommand(cmd, false, null);
+                        syncVisualToTextarea();
+                    });
+                });
+
+                // Font Family
+                const fontSelect = toolbar.querySelector('.sm-sig-font-family');
+                if (fontSelect) {
+                    fontSelect.addEventListener('change', () => {
+                        if (fontSelect.value) {
+                            visualEditor.focus();
+                            document.execCommand('fontName', false, fontSelect.value);
+                            syncVisualToTextarea();
+                        }
+                    });
+                }
+
+                // Font Size
+                const sizeSelect = toolbar.querySelector('.sm-sig-font-size');
+                if (sizeSelect) {
+                    sizeSelect.addEventListener('change', () => {
+                        if (sizeSelect.value) {
+                            visualEditor.focus();
+                            document.execCommand('fontSize', false, sizeSelect.value);
+                            syncVisualToTextarea();
+                        }
+                    });
+                }
+
+                // Text Color Picker
+                const textColorPicker = toolbar.querySelector('.sm-sig-text-color-picker');
+                const textColorBar = toolbar.querySelector('.sm-sig-text-color-bar');
+                if (textColorPicker) {
+                    textColorPicker.addEventListener('input', () => {
+                        textColorBar.style.backgroundColor = textColorPicker.value;
+                        visualEditor.focus();
+                        document.execCommand('foreColor', false, textColorPicker.value);
+                        syncVisualToTextarea();
+                    });
+                }
+
+                // Background Color Picker
+                const bgColorPicker = toolbar.querySelector('.sm-sig-bg-color-picker');
+                const bgColorBar = toolbar.querySelector('.sm-sig-bg-color-bar');
+                if (bgColorPicker) {
+                    bgColorPicker.addEventListener('input', () => {
+                        bgColorBar.style.backgroundColor = bgColorPicker.value;
+                        visualEditor.focus();
+                        if (!document.execCommand('hiliteColor', false, bgColorPicker.value)) {
+                            document.execCommand('backColor', false, bgColorPicker.value);
+                        }
+                        syncVisualToTextarea();
+                    });
+                }
+
+                // Insert Link
+                const btnLink = toolbar.querySelector('.sm-sig-btn-link');
+                if (btnLink) {
+                    btnLink.addEventListener('click', () => {
+                        const sel = window.getSelection();
+                        const selectedText = sel ? sel.toString().trim() : '';
+                        const url = prompt('Enter Web Address / URL (e.g. https://example.com):', 'https://');
+                        if (url && url !== 'https://') {
+                            visualEditor.focus();
+                            if (selectedText.length > 0) {
+                                document.execCommand('createLink', false, url);
+                            } else {
+                                const text = prompt('Enter link display text:', url);
+                                const linkHtml = `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color:#2563eb; text-decoration:underline;">${text || url}</a>`;
+                                document.execCommand('insertHTML', false, linkHtml);
+                            }
+                            visualEditor.querySelectorAll('a').forEach(a => {
+                                a.setAttribute('target', '_blank');
+                                a.setAttribute('rel', 'noopener noreferrer');
+                            });
+                            syncVisualToTextarea();
+                        }
+                    });
+                }
+
+                // Insert Image / Logo
+                const btnImg = toolbar.querySelector('.sm-sig-btn-img');
+                if (btnImg) {
+                    btnImg.addEventListener('click', () => {
+                        const imgUrl = prompt('Enter Image / Logo URL (e.g. https://example.com/logo.png):', 'https://');
+                        if (imgUrl && imgUrl !== 'https://') {
+                            visualEditor.focus();
+                            const imgHtml = `<img src="${imgUrl}" alt="Signature Logo" style="max-height:48px; max-width:240px; vertical-align:middle; margin:4px 0;" /><br>`;
+                            if (!document.execCommand('insertHTML', false, imgHtml)) {
+                                visualEditor.innerHTML += imgHtml;
+                            }
+                            syncVisualToTextarea();
+                        }
+                    });
+                }
+
+                // Insert Divider Line
+                const btnHr = toolbar.querySelector('.sm-sig-btn-hr');
+                if (btnHr) {
+                    btnHr.addEventListener('click', () => {
+                        visualEditor.focus();
+                        const hrHtml = '<hr style="border:none; border-top:1px solid #cbd5e1; margin:8px 0;" />';
+                        if (!document.execCommand('insertHTML', false, hrHtml)) {
+                            visualEditor.innerHTML += hrHtml;
+                        }
+                        syncVisualToTextarea();
+                    });
+                }
+
+                // Two-way synchronization event handlers
+                visualEditor.addEventListener('input', syncVisualToTextarea);
+                visualEditor.addEventListener('keyup', syncVisualToTextarea);
+                visualEditor.addEventListener('blur', syncVisualToTextarea);
+                visualEditor.addEventListener('paste', () => setTimeout(syncVisualToTextarea, 20));
+
+                ta.addEventListener('input', syncTextareaToVisual);
+                ta.addEventListener('keyup', syncTextareaToVisual);
+                ta.addEventListener('change', syncTextareaToVisual);
+
+                // Form submission listener ensures textarea has current contents before serialization
+                const form = ta.form || ta.closest('form');
+                if (form) {
+                    form.addEventListener('submit', () => {
+                        if (visualEditor.style.display !== 'none') {
+                            ta.value = visualEditor.innerHTML;
+                        } else {
+                            visualEditor.innerHTML = ta.value;
+                        }
+                    }, true);
+                }
+
+                // Initial preview render
+                updatePreview();
             });
         },
 

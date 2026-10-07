@@ -20,6 +20,9 @@
 /**
  * Get HTML Signature for an identity
  *
+ * Checks dedicated hashed file first (standard for file-based preferences),
+ * falling back to preference database storage if configured.
+ *
  * @param string $data_dir
  * @param string $username
  * @param string|int $number 'g' or 0 for default, 1, 2, ... for alternate
@@ -27,30 +30,32 @@
  * @since 2.0
  */
 function getHtmlSig($data_dir, $username, $number = 'g') {
-    if ($number === 'g' || $number === 0 || $number === '0') {
-        $sig = getPref($data_dir, $username, 'html_signature');
-        if (empty($sig) && function_exists('getHashedFile')) {
-            $filename = getHashedFile($username, $data_dir, "$username.hsig");
-            if (file_exists($filename)) {
-                $sig = @file_get_contents($filename);
+    global $prefs_dsn;
+    $idx = ($number === 'g' || $number === 0 || $number === '0') ? 'g' : (int)$number;
+    $sig_file = ($idx === 'g') ? "$username.hsig" : "$username.hsi" . $idx;
+    $pref_key = ($idx === 'g') ? 'html_signature' : 'html_signature_' . $idx;
+
+    // 1. Check dedicated signature file first (prevents single-line truncation from .pref files)
+    if (function_exists('getHashedFile')) {
+        $filename = getHashedFile($username, $data_dir, $sig_file);
+        if (@file_exists($filename) && @is_readable($filename)) {
+            $sig = @file_get_contents($filename);
+            if ($sig !== false && strlen($sig) > 0) {
+                return (string)$sig;
             }
         }
-        return !empty($sig) ? (string)$sig : '';
-    } else {
-        $idx = (int)$number;
-        $sig = getPref($data_dir, $username, 'html_signature_' . $idx);
-        if (empty($sig) && function_exists('getHashedFile')) {
-            $filename = getHashedFile($username, $data_dir, "$username.hsi" . $idx);
-            if (file_exists($filename)) {
-                $sig = @file_get_contents($filename);
-            }
-        }
-        return !empty($sig) ? (string)$sig : '';
     }
+
+    // 2. Fall back to preference storage (e.g. database-backed preferences)
+    $sig = getPref($data_dir, $username, $pref_key);
+    return !empty($sig) ? (string)$sig : '';
 }
 
 /**
  * Set HTML Signature for an identity
+ *
+ * Writes multi-line HTML signatures atomically to dedicated .hsig files and removes
+ * flat-file preference keys to avoid corrupting the key=value .pref file structure.
  *
  * @param string $data_dir
  * @param string $username
@@ -59,33 +64,50 @@ function getHtmlSig($data_dir, $username, $number = 'g') {
  * @since 2.0
  */
 function setHtmlSig($data_dir, $username, $number, $value) {
+    global $prefs_dsn;
     if (strlen($value) > 65536) {
         if (function_exists('error_option_save')) {
             error_option_save(_("HTML signature is too big."));
         }
         return;
     }
-    if ($number === 'g' || $number === 0 || $number === '0') {
-        setPref($data_dir, $username, 'html_signature', $value);
-        if (function_exists('getHashedFile')) {
-            $filename = getHashedFile($username, $data_dir, "$username.hsig");
-            if (!empty($value)) {
+
+    $idx = ($number === 'g' || $number === 0 || $number === '0') ? 'g' : (int)$number;
+    $sig_file = ($idx === 'g') ? "$username.hsig" : "$username.hsi" . $idx;
+    $pref_key = ($idx === 'g') ? 'html_signature' : 'html_signature_' . $idx;
+
+    // 1. Write to dedicated hashed file atomically
+    if (function_exists('getHashedFile')) {
+        $filename = getHashedFile($username, $data_dir, $sig_file);
+        if (!empty($value)) {
+            $tmp_filename = $filename . '.tmp';
+            if ($file = @fopen($tmp_filename, 'wb')) {
+                if (function_exists('sq_fwrite')) {
+                    sq_fwrite($file, $value);
+                } else {
+                    fwrite($file, $value);
+                }
+                fclose($file);
+                if (!@copy($tmp_filename, $filename)) {
+                    @file_put_contents($filename, $value);
+                }
+                @unlink($tmp_filename);
+                @chmod($filename, 0600);
+            } else {
                 @file_put_contents($filename, $value);
-            } else if (file_exists($filename)) {
-                @unlink($filename);
+                @chmod($filename, 0600);
             }
+        } else if (@file_exists($filename)) {
+            @unlink($filename);
         }
+    }
+
+    // 2. If database-backed preferences are used ($prefs_dsn set), update DB store.
+    // If flat file preferences are used, remove key from .pref file to prevent multi-line corruption.
+    if (!empty($prefs_dsn)) {
+        setPref($data_dir, $username, $pref_key, $value);
     } else {
-        $idx = (int)$number;
-        setPref($data_dir, $username, 'html_signature_' . $idx, $value);
-        if (function_exists('getHashedFile')) {
-            $filename = getHashedFile($username, $data_dir, "$username.hsi" . $idx);
-            if (!empty($value)) {
-                @file_put_contents($filename, $value);
-            } else if (file_exists($filename)) {
-                @unlink($filename);
-            }
-        }
+        removePref($data_dir, $username, $pref_key);
     }
 }
 

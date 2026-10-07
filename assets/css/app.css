@@ -920,16 +920,46 @@ a.tm-btn-primary:active {
   text-decoration: none !important;
 }
 
+.sm-btn-secondary,
+.sm-btn-secondary:link,
+.sm-btn-secondary:visited,
+a.sm-btn-secondary,
+input.sm-btn-secondary,
+button.sm-btn-secondary,
+input[type="submit"].sm-btn-secondary {
+  background-color: var(--sm-bg-surface);
+  border: 1px solid var(--sm-border);
+  color: var(--sm-text-primary);
+}
+
+.sm-btn-secondary:hover,
+.sm-btn-secondary:focus,
+.sm-btn-secondary:active,
+a.sm-btn-secondary:hover,
+input.sm-btn-secondary:hover,
+button.sm-btn-secondary:hover,
+input[type="submit"].sm-btn-secondary:hover {
+  background-color: var(--sm-hover-bg);
+  border-color: var(--sm-border-hover);
+  color: var(--sm-primary);
+}
+
 .sm-btn-danger,
 .sm-btn-danger:link,
 .sm-btn-danger:visited,
 a.sm-btn-danger,
 a.sm-btn-danger:link,
-a.sm-btn-danger:visited {
-  background-color: var(--sm-danger);
-  border-color: var(--sm-danger);
-  color: #ffffff !important;
+a.sm-btn-danger:visited,
+input.sm-btn-danger,
+button.sm-btn-danger,
+input[type="submit"].sm-btn-danger,
+input[type="submit"][name="delete"],
+input[type="submit"][name="do_delete"] {
+  background-color: var(--sm-danger-light, #fee2e2) !important;
+  border: 1px solid #fca5a5 !important;
+  color: var(--sm-danger, #dc2626) !important;
   text-decoration: none !important;
+  font-weight: 500;
 }
 
 .sm-btn-danger:hover,
@@ -937,11 +967,38 @@ a.sm-btn-danger:visited {
 .sm-btn-danger:active,
 a.sm-btn-danger:hover,
 a.sm-btn-danger:focus,
-a.sm-btn-danger:active {
-  background-color: var(--sm-danger-hover);
-  border-color: var(--sm-danger-hover);
+a.sm-btn-danger:active,
+input.sm-btn-danger:hover,
+button.sm-btn-danger:hover,
+input[type="submit"].sm-btn-danger:hover,
+input[type="submit"][name="delete"]:hover,
+input[type="submit"][name="do_delete"]:hover {
+  background-color: var(--sm-danger, #dc2626) !important;
+  border-color: var(--sm-danger, #dc2626) !important;
   color: #ffffff !important;
   text-decoration: none !important;
+}
+
+[data-theme="dark"] .sm-btn-danger,
+[data-theme="dark"] input.sm-btn-danger,
+[data-theme="dark"] button.sm-btn-danger,
+[data-theme="dark"] input[type="submit"].sm-btn-danger,
+[data-theme="dark"] input[type="submit"][name="delete"],
+[data-theme="dark"] input[type="submit"][name="do_delete"] {
+  background-color: #3b1219 !important;
+  color: #fca5a5 !important;
+  border-color: #7f1d1d !important;
+}
+
+[data-theme="dark"] .sm-btn-danger:hover,
+[data-theme="dark"] input.sm-btn-danger:hover,
+[data-theme="dark"] button.sm-btn-danger:hover,
+[data-theme="dark"] input[type="submit"].sm-btn-danger:hover,
+[data-theme="dark"] input[type="submit"][name="delete"]:hover,
+[data-theme="dark"] input[type="submit"][name="do_delete"]:hover {
+  background-color: #ef4444 !important;
+  color: #ffffff !important;
+  border-color: #ef4444 !important;
 }
 
 .sm-btn-sm {
@@ -1671,6 +1728,125 @@ table.table1 input[type="submit"]:hover {
   background: var(--sm-primary-hover);
 }
 
+/* Modern Themed Paginator */
+.sm-paginator-container {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.sm-paginator-nav,
+.sm-paginator-pages,
+.sm-paginator-actions,
+.sm-paginator-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sm-paginator-btn,
+.sm-paginator-page {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 10px;
+  min-height: 28px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: var(--sm-radius-sm, 6px);
+  border: 1px solid var(--sm-border);
+  background-color: var(--sm-bg-surface);
+  color: var(--sm-text-primary);
+  text-decoration: none !important;
+  cursor: pointer;
+  transition: all var(--sm-transition-fast, 0.15s ease);
+  user-select: none;
+  box-sizing: border-box;
+}
+
+.sm-paginator-page {
+  min-width: 28px;
+  padding: 4px 8px;
+  text-align: center;
+}
+
+.sm-paginator-btn:hover:not(.disabled),
+.sm-paginator-page:hover:not(.active) {
+  background-color: var(--sm-hover-bg, #f0fdf4);
+  border-color: var(--sm-primary);
+  color: var(--sm-primary);
+}
+
+.sm-paginator-page.active {
+  background-color: var(--sm-primary) !important;
+  border-color: var(--sm-primary) !important;
+  color: #ffffff !important;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  cursor: default;
+}
+
+.sm-paginator-btn.disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background-color: transparent;
+  border-color: var(--sm-border);
+  color: var(--sm-text-muted);
+}
+
+.sm-paginator-ellipsis {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  color: var(--sm-text-muted);
+  font-size: 13px;
+}
+
+.sm-paginator-thread {
+  background-color: var(--sm-bg-surface);
+  border-color: var(--sm-border);
+  color: var(--sm-primary);
+}
+
+.sm-paginator-thread:hover {
+  background-color: var(--sm-hover-bg);
+  border-color: var(--sm-primary);
+}
+
+[data-theme="dark"] .sm-paginator-btn,
+[data-theme="dark"] .sm-paginator-page {
+  background-color: var(--sm-bg-surface);
+  border-color: var(--sm-border);
+  color: var(--sm-text-primary);
+}
+
+[data-theme="dark"] .sm-paginator-btn:hover:not(.disabled),
+[data-theme="dark"] .sm-paginator-page:hover:not(.active) {
+  background-color: var(--sm-hover-bg);
+  border-color: var(--sm-primary);
+  color: var(--sm-primary);
+}
+
+[data-theme="dark"] .sm-paginator-page.active {
+  background-color: var(--sm-primary) !important;
+  border-color: var(--sm-primary) !important;
+  color: #ffffff !important;
+}
+
+.message_count {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--sm-text-secondary);
+}
+
+.message_count em {
+  font-style: normal;
+  font-weight: 600;
+  color: var(--sm-text-primary);
+}
+
 /* Responsive Media Queries */
 @media (max-width: 768px) {
   .sm-menu-toggle {
@@ -1700,6 +1876,21 @@ table.table1 input[type="submit"]:hover {
     display: none;
   }
 
+  /* Mobile Brand & User Badge Compaction */
+  .sm-brand-name {
+    display: none !important;
+  }
+
+  .sm-user-badge {
+    padding: 0 !important;
+    background: transparent !important;
+    border: none !important;
+  }
+
+  .sm-user-badge span {
+    display: none !important;
+  }
+
   .optionElement {
     display: block;
     width: 100%;
@@ -1717,6 +1908,125 @@ table.table1 input[type="submit"]:hover {
 
   .sm-folder-link {
     min-height: 44px;
+  }
+
+  /* Mobile Mailbox 2-Line Row Layout */
+  table.table_messageList,
+  table.table_messageList tbody {
+    display: block !important;
+    width: 100% !important;
+  }
+
+  table.table_messageList tr.headerRow,
+  table.table_messageList tr.spacer {
+    display: none !important;
+  }
+
+  table.table_messageList tr.sm-message-row {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    padding: 10px 12px !important;
+    border-bottom: 1px solid var(--sm-border-light, #e5e7eb) !important;
+    gap: 6px 8px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    background-color: var(--sm-bg-surface);
+    transition: background-color var(--sm-transition-fast);
+  }
+
+  table.table_messageList tr.sm-message-row:hover {
+    background-color: var(--sm-hover-bg) !important;
+  }
+
+  /* LINE 1: (FROM, RECEIVED, MESSAGE FLAGS, ATTACHMENT) */
+  table.table_messageList tr.sm-message-row td.col_check {
+    order: 1 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    padding: 0 !important;
+    width: auto !important;
+    flex-shrink: 0 !important;
+  }
+
+  table.table_messageList tr.sm-message-row td.col_from,
+  table.table_messageList tr.sm-message-row td.col_to {
+    order: 2 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    flex: 1 1 auto !important;
+    font-weight: 600 !important;
+    font-size: 14px !important;
+    color: var(--sm-text-primary) !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    padding: 0 !important;
+    min-width: 0 !important;
+  }
+
+  table.table_messageList tr.sm-message-row td.col_date {
+    order: 3 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    margin-left: auto !important;
+    padding: 0 !important;
+    font-size: 12px !important;
+    color: var(--sm-text-muted) !important;
+    white-space: nowrap !important;
+    width: auto !important;
+    flex-shrink: 0 !important;
+  }
+
+  table.table_messageList tr.sm-message-row td.col_flags {
+    order: 4 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    padding: 0 !important;
+    width: auto !important;
+    flex-shrink: 0 !important;
+  }
+
+  table.table_messageList tr.sm-message-row td.col_attachment {
+    order: 5 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    padding: 0 !important;
+    width: auto !important;
+    flex-shrink: 0 !important;
+  }
+
+  table.table_messageList tr.sm-message-row td.col_size {
+    display: none !important;
+  }
+
+  /* LINE 2: (SUBJECT) */
+  table.table_messageList tr.sm-message-row td.col_subject {
+    order: 10 !important;
+    display: block !important;
+    width: 100% !important;
+    flex: 1 0 100% !important;
+    padding: 2px 0 0 0 !important;
+    font-size: 13px !important;
+    color: var(--sm-text-secondary) !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  table.table_messageList tr.sm-message-row td.col_subject a {
+    color: inherit !important;
+    text-decoration: none !important;
+    display: block !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  table.table_messageList tr.sm-message-row.unread td.col_subject {
+    font-weight: 600 !important;
+    color: var(--sm-text-primary) !important;
   }
 }
 
@@ -1960,4 +2270,299 @@ table.table1 input[type="submit"]:hover {
 [data-theme="dark"] .cal-add-btn:hover {
   background: #334155 !important;
   border-color: #475569 !important;
+}
+
+/* =========================================================================
+   Modern HTML Signature Editor & Formatting Toolbar
+   ========================================================================= */
+
+.sm-sig-editor-wrapper {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--sm-border);
+  border-radius: var(--sm-radius-md);
+  background: var(--sm-bg-card);
+  box-shadow: var(--sm-shadow-sm);
+  overflow: hidden;
+  margin-top: 6px;
+  margin-bottom: 12px;
+  width: 100%;
+  max-width: 780px;
+  transition: border-color var(--sm-transition-fast), box-shadow var(--sm-transition-fast);
+}
+
+.sm-sig-editor-wrapper:focus-within {
+  border-color: var(--sm-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.sm-sig-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 3px;
+  padding: 6px 10px;
+  background: var(--sm-bg-canvas);
+  border-bottom: 1px solid var(--sm-border);
+  user-select: none;
+}
+
+.sm-sig-toolbar-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.sm-sig-toolbar-sep {
+  width: 1px;
+  height: 20px;
+  background: var(--sm-border);
+  margin: 0 4px;
+}
+
+.sm-sig-toolbar-spacer {
+  flex: 1;
+  min-width: 8px;
+}
+
+.sm-sig-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  min-width: 28px;
+  padding: 0 6px;
+  border: 1px solid transparent;
+  border-radius: var(--sm-radius-sm);
+  background: transparent;
+  color: var(--sm-text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--sm-transition-fast);
+}
+
+.sm-sig-btn:hover:not(:disabled) {
+  background: var(--sm-hover-bg);
+  color: var(--sm-text-primary);
+  border-color: var(--sm-border);
+}
+
+.sm-sig-btn:active:not(:disabled) {
+  background: var(--sm-primary-light);
+  color: var(--sm-primary);
+}
+
+.sm-sig-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.sm-sig-select {
+  height: 28px;
+  padding: 0 6px;
+  border: 1px solid var(--sm-border);
+  border-radius: var(--sm-radius-sm);
+  background: var(--sm-bg-surface);
+  color: var(--sm-text-primary);
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  outline: none;
+}
+
+.sm-sig-select:focus {
+  border-color: var(--sm-primary);
+}
+
+.sm-sig-select:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Color Pickers */
+.sm-sig-color-btn {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  cursor: pointer;
+}
+
+.sm-sig-color-label {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.sm-sig-color-bar {
+  display: block;
+  width: 14px;
+  height: 3px;
+  margin-top: 2px;
+  border-radius: 1px;
+  background-color: #1e293b;
+}
+
+.sm-sig-color-input {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* Mode Switcher Tabs */
+.sm-sig-tabs {
+  display: inline-flex;
+  align-items: center;
+  background: var(--sm-border-light);
+  padding: 2px;
+  border-radius: var(--sm-radius-sm);
+}
+
+.sm-sig-tab {
+  border: none;
+  background: transparent;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--sm-text-secondary);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all var(--sm-transition-fast);
+}
+
+.sm-sig-tab.active {
+  background: var(--sm-bg-surface);
+  color: var(--sm-primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Visual Editor Surface (WYSIWYG) */
+.sm-sig-visual-editor {
+  min-height: 140px;
+  max-height: 380px;
+  overflow-y: auto;
+  padding: 14px 16px;
+  background: var(--sm-bg-surface);
+  color: var(--sm-text-primary);
+  font-family: var(--sm-font-sans);
+  font-size: 14px;
+  line-height: 1.6;
+  outline: none;
+  word-break: break-word;
+}
+
+.sm-sig-visual-editor:empty:before {
+  content: attr(placeholder);
+  color: var(--sm-text-muted);
+  pointer-events: none;
+}
+
+/* Source Editor Textarea */
+textarea.sm-sig-source-editor {
+  min-height: 140px;
+  max-height: 380px;
+  padding: 14px 16px;
+  border: none !important;
+  outline: none !important;
+  background: var(--sm-bg-surface) !important;
+  color: var(--sm-text-primary) !important;
+  font-family: var(--sm-font-mono) !important;
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+  resize: vertical;
+  box-sizing: border-box;
+  width: 100% !important;
+  border-radius: 0 !important;
+}
+
+/* Live Signature Preview Card */
+.sm-sig-preview-card {
+  border-top: 1px dashed var(--sm-border);
+  background: var(--sm-bg-canvas);
+  padding: 12px 16px;
+}
+
+.sm-sig-preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.sm-sig-preview-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sm-sig-preview-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--sm-success);
+}
+
+.sm-sig-preview-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--sm-text-muted);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.sm-sig-studio-link {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--sm-primary) !important;
+  text-decoration: none !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: color var(--sm-transition-fast);
+}
+
+.sm-sig-studio-link:hover {
+  color: var(--sm-primary-hover) !important;
+  text-decoration: underline !important;
+}
+
+.sm-sig-preview-body {
+  background: var(--sm-bg-surface);
+  border: 1px solid var(--sm-border-light);
+  border-radius: var(--sm-radius-sm);
+  padding: 12px 16px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--sm-text-primary);
+  min-height: 40px;
+  word-break: break-word;
+}
+
+.sm-sig-preview-body a {
+  color: var(--sm-primary);
+}
+
+.sm-sig-empty-placeholder {
+  color: var(--sm-text-muted);
+  font-style: italic;
+  font-size: 13px;
+}
+
+/* Dark Theme Overrides */
+[data-theme="dark"] .sm-sig-color-bar {
+  background-color: #f8fafc;
+}
+
+[data-theme="dark"] .sm-sig-tab.active {
+  background: var(--sm-bg-card);
+  color: #60a5fa;
 }

@@ -36,6 +36,7 @@ $importMsg = null;
 $highlightEventId = null;
 $autoOpenModal = false;
 $autoEventData = null;
+$feedUrls = calendar_get_feed_urls();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['ics_file']) && $_FILES['ics_file']['error'] === UPLOAD_ERR_OK) {
     $content = file_get_contents($_FILES['ics_file']['tmp_name']);
@@ -523,6 +524,10 @@ displayPageHeader($color, 'None');
             <form id="cal_ics_form" method="post" enctype="multipart/form-data" style="display:none;">
                 <input type="file" id="cal_ics_input" name="ics_file" accept=".ics" onchange="document.getElementById('cal_ics_form').submit()">
             </form>
+
+            <button type="button" class="cal-btn" onclick="calOpenShareModal()" title="<?php echo _("Share with Google Calendar / External Apps"); ?>">
+                <span>🔗</span> <span><?php echo _("Share with Google"); ?></span>
+            </button>
         </div>
     </div>
 
@@ -791,6 +796,119 @@ document.addEventListener('DOMContentLoaded', function() {
     openEventEdit(<?php echo json_encode($autoEventData); ?>);
 });
 <?php endif; ?>
+<!-- SHARE / GOOGLE CALENDAR MODAL -->
+<div id="cal-share-modal-backdrop" class="cal-modal-backdrop" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:100; align-items:center; justify-content:center;">
+    <div class="cal-modal" style="background:var(--cal-bg-surface); color:var(--cal-text-main); border-radius:12px; width:95%; max-width:540px; box-shadow:0 10px 30px rgba(0,0,0,0.2); overflow:hidden; border:1px solid var(--cal-border);">
+        <div class="cal-modal-header" style="display:flex; justify-content:space-between; align-items:center; padding:16px 20px; border-bottom:1px solid var(--cal-border);">
+            <h3 style="margin:0; font-size:16px; font-weight:600; display:flex; align-items:center; gap:8px;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--cal-primary);"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                <span><?php echo _("Share with Google Calendar & iCal"); ?></span>
+            </h3>
+            <button type="button" class="cal-btn" style="padding:4px 8px; font-size:16px;" onclick="calCloseShareModal()">&times;</button>
+        </div>
+
+        <div class="cal-modal-body" style="padding:20px; display:flex; flex-direction:column; gap:16px;">
+            <p style="margin:0; font-size:13px; color:var(--cal-text-muted); line-height:1.5;">
+                <?php echo _("Subscribe to your live SquirrelMail calendar to keep all your events, meetings, and appointments automatically in sync across Google Calendar, Apple Calendar, Outlook, and mobile devices."); ?>
+            </p>
+
+            <!-- 1-Click Google Calendar Button -->
+            <div style="background:var(--cal-bg-canvas); border:1px solid var(--cal-border); border-radius:8px; padding:14px; display:flex; flex-direction:column; gap:8px;">
+                <div style="font-weight:600; font-size:13px; display:flex; align-items:center; gap:6px;">
+                    <span>📅</span> <span><?php echo _("Direct Google Calendar Sync"); ?></span>
+                </div>
+                <div style="font-size:12px; color:var(--cal-text-muted);">
+                    <?php echo _("Open Google Calendar directly with your live subscription feed pre-filled:"); ?>
+                </div>
+                <div>
+                    <a id="btn-gcal-link" href="<?php echo htmlspecialchars($feedUrls['google']); ?>" target="_blank" rel="noopener noreferrer" class="cal-btn cal-btn-primary" style="display:inline-flex; align-items:center; gap:8px; font-weight:600; text-decoration:none;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                        <span><?php echo _("Add to Google Calendar"); ?></span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Manual iCal Feed URL -->
+            <div style="display:flex; flex-direction:column; gap:6px;">
+                <label style="font-size:12px; font-weight:600; color:var(--cal-text-muted);"><?php echo _("iCalendar (.ics / Webcal) Feed URL"); ?></label>
+                <div style="display:flex; gap:8px;">
+                    <input type="text" id="cal-feed-url-input" class="cal-input" value="<?php echo htmlspecialchars($feedUrls['http']); ?>" readonly onclick="this.select()" style="font-family:monospace; font-size:11px;">
+                    <button type="button" class="cal-btn" onclick="calCopyFeedUrl()" id="btn-copy-feed" style="white-space:nowrap;">
+                        <span>📋</span> <span id="copy-btn-text"><?php echo _("Copy URL"); ?></span>
+                    </button>
+                </div>
+                <small style="color:var(--cal-text-muted); font-size:11px; line-height:1.4;">
+                    <?php echo _("In Google Calendar: click '+' next to 'Other calendars' &rarr; 'From URL' &rarr; paste this link."); ?>
+                </small>
+            </div>
+
+            <!-- Security & Token Reset -->
+            <div style="border-top:1px solid var(--cal-border); padding-top:12px; display:flex; justify-content:space-between; align-items:center;">
+                <small style="color:var(--cal-text-muted); font-size:11px; max-width:70%;">
+                    <?php echo _("Feed access is secured by a unique private token. If you ever need to revoke access, reset your token below."); ?>
+                </small>
+                <button type="button" class="cal-btn" style="font-size:11px; color:#d93025; border-color:#fad2cf;" onclick="calResetShareToken()">
+                    <?php echo _("Reset Token"); ?>
+                </button>
+            </div>
+        </div>
+
+        <div class="cal-modal-footer" style="padding:12px 20px; border-top:1px solid var(--cal-border); display:flex; justify-content:flex-end;">
+            <button type="button" class="cal-btn" onclick="calCloseShareModal()"><?php echo _("Close"); ?></button>
+        </div>
+    </div>
+</div>
+
+<script>
+function calOpenShareModal() {
+    document.getElementById('cal-share-modal-backdrop').style.display = 'flex';
+}
+
+function calCloseShareModal() {
+    document.getElementById('cal-share-modal-backdrop').style.display = 'none';
+}
+
+function calCopyFeedUrl() {
+    var input = document.getElementById('cal-feed-url-input');
+    input.select();
+    input.setSelectionRange(0, 99999);
+    navigator.clipboard.writeText(input.value).then(function() {
+        var btnText = document.getElementById('copy-btn-text');
+        var old = btnText.textContent;
+        btnText.textContent = '<?php echo _("Copied!"); ?>';
+        setTimeout(function() { btnText.textContent = old; }, 2000);
+    }).catch(function() {
+        document.execCommand('copy');
+        alert('URL copied to clipboard!');
+    });
+}
+
+function calResetShareToken() {
+    if (!confirm('<?php echo _("Are you sure you want to reset your share token? Any existing subscriptions in Google Calendar or other calendar apps will stop updating until you update them with the new URL."); ?>')) {
+        return;
+    }
+
+    var formData = new FormData();
+    formData.append('action', 'reset_share_token');
+
+    fetch('ajax.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.success && data.urls) {
+            document.getElementById('cal-feed-url-input').value = data.urls.http;
+            document.getElementById('btn-gcal-link').href = data.urls.google;
+            alert(data.message || '<?php echo _("Share token reset successfully."); ?>');
+        } else {
+            alert('Error resetting token: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(function(err) {
+        alert('Request failed: ' + err);
+    });
+}
 </script>
 <?php
 echo "</body></html>\n";

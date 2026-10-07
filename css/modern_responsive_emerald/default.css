@@ -154,6 +154,27 @@ input[type="submit"][value*="Send"]:hover,
     color: #ffffff !important;
 }
 
+/* Danger / Delete Action Buttons */
+input[type="submit"].sm-btn-danger,
+input[type="submit"][name="delete"],
+input[type="submit"][name="do_delete"],
+button.sm-btn-danger,
+.sm-btn-danger {
+    background-color: #fee2e2 !important;
+    border: 1px solid #fca5a5 !important;
+    color: #dc2626 !important;
+    font-weight: 500;
+}
+input[type="submit"].sm-btn-danger:hover,
+input[type="submit"][name="delete"]:hover,
+input[type="submit"][name="do_delete"]:hover,
+button.sm-btn-danger:hover,
+.sm-btn-danger:hover {
+    background-color: #dc2626 !important;
+    border-color: #dc2626 !important;
+    color: #ffffff !important;
+}
+
 /* Left Navigation Sidebar (Folder Tree) */
 body.sqm_leftMain {
     background-color: var(--sm-bg-sidebar) !important;

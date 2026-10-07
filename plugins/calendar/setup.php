@@ -41,9 +41,9 @@ function calendar_info()
 {
     return array(
         'english_name'           => 'Modern Calendar & Scheduling',
-        'version'                => '3.1.0',
-        'summary'                => 'Full-featured web calendar with month/agenda views, iCalendar (.ics) export/import, and email meeting scheduling.',
-        'details'                => 'Modern, responsive Google Calendar-styled scheduling for SquirrelMail with category badges, interactive event modals, and email event integration.',
+        'version'                => '3.2.0',
+        'summary'                => 'Full-featured web calendar with month/agenda views, Google Calendar live sync, iCalendar (.ics) export/import, and email meeting scheduling.',
+        'details'                => 'Modern, responsive Google Calendar-styled scheduling for SquirrelMail with live Google Calendar subscription feeds, category badges, interactive event modals, and email event integration.',
         'requires_configuration' => 0,
         'requires_source_patch'  => 0,
     );

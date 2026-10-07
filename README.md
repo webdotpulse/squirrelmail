@@ -1,4 +1,4 @@
-# SquirrelMail 1.5.45
+# SquirrelMail 1.5.47
 
 A modernized, responsive edition of SquirrelMail engineered for PHP 7.0 through 8.2+ with a Single-Page Application (SPA) interface, modern UI styling, and extensive feature enhancements.
 
@@ -57,6 +57,46 @@ This repository includes an [AGENTS.md](file:///home/koen/Git/squirrelmail/AGENT
 ---
 
 ## 📝 Changelog
+
+### Version 1.5.47
+- **HTML Signature Rich-Text WYSIWYG & Dual-Mode Formatting Toolbar**:
+  - Implemented dual-mode WYSIWYG and HTML Source editor component (`setupHtmlSignatureEditors`) in `assets/js/app.js` automatically enhancing all HTML signature textareas (`html_signature`, `html_signature_<id>`, and `new_ident_html_sig`).
+  - Added comprehensive formatting toolbar with History (Undo, Redo), Typography (Font Family, Font Size), Styles (Bold, Italic, Underline, Strikethrough), Pickers (Text Color, Highlight / Background Color), Alignment (Left, Center, Right), Lists (Bulleted, Numbered), Divider Line (`<hr>`), Media & Links (Insert/Edit Link with `target="_blank"`, Insert Image / Logo URL), and Clear Formatting.
+  - Added seamless Mode Switcher tabs: **👁️ Visual Mode** (rich `contenteditable` surface) and **</> HTML Source Mode** (raw HTML textarea for code pasting and inspection) with two-way real-time state synchronization.
+  - Added Live Signature Preview Card with live simulated email rendering and direct navigation link to the Signature Creator & Templates Studio (`plugins/signature_creator/options.php`).
+  - Styled all editor components in `assets/css/app.css` adhering to `--sm-*` custom properties with complete Light and Dark theme support.
+- **HTML Signature Persistence & Flat-File Corruption Fix**:
+  - Fixed HTML signature truncation defect in `functions/identity.php` (`getHtmlSig()` and `setHtmlSig()`):
+    - `getHtmlSig()` now queries dedicated `.hsig` (and `.hsi<id>`) files first, preventing multi-line HTML signatures from being truncated to only the first line by flat-file `.pref` caching.
+    - `setHtmlSig()` writes multi-line HTML signatures atomically to dedicated `.hsig` files using temporary files and removes flat-file preference keys on file-based setups to prevent key=value `.pref` corruption.
+  - Escaped textarea contents in `templates/default/textarea.tpl` using `htmlspecialchars($text ?? '', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')` to prevent premature textarea tag termination, entity corruption, and broken HTML rendering on page reload.
+  - Fixed `new_ident_header` widget output in `include/options/personal.php` by properly passing `'initial_value'`.
+- **Version Bump**: Incremented version from `1.5.46` to `1.5.47`.
+
+### Version 1.5.46
+- **Themed Message List Pagination & Spacing**:
+  - Replaced legacy text brackets (`[ ]`) and pipe separators (`|`) with semantic, responsive flex containers (`.sm-paginator-container`, `.sm-paginator-nav`, `.sm-paginator-pages`, `.sm-paginator-actions`) in `functions/template/paginator_util.php`.
+  - Fixed uneven spacing between page numbers by wrapping the active page in `<span class="sm-paginator-page active">` and page links in `<a class="sm-paginator-page">`, using uniform flex `gap: 4px`.
+  - Styled previous/next buttons (`.sm-paginator-btn`), disabled states, ellipsis (`.sm-paginator-ellipsis`), and thread view buttons (`.sm-paginator-thread`) adhering to the active theme palette (`--sm-*`) across light and dark modes in `assets/css/app.css`.
+- **Delete Button Styling & Contrast Fix**:
+  - Resolved white-on-white invisible text defect on the mailbox Delete button caused by high-specificity `input[type="submit"]` element styling overriding `.sm-btn-danger`.
+  - Added high-contrast danger button rules (`input.sm-btn-danger`, `button.sm-btn-danger`, `input[type="submit"].sm-btn-danger`, `input[name="delete"]`) with soft danger backgrounds (`#fee2e2`), borders (`#fca5a5`), and red text (`#dc2626`), transitioning to solid red with white text on hover.
+  - Added missing `--sm-danger`, `--sm-danger-hover`, and `--sm-danger-light` CSS custom variables to `themes/css/emerald.css` and added danger button overrides to `css/modern_responsive_emerald/default.css` and alternates.
+- **Google Calendar Live Sync & Sharing (`plugins/calendar`)**:
+  - Created standalone subscription feed endpoint (`plugins/calendar/feed.php`) outputting standard RFC 5545 iCalendar (`.ics`) data with secure private token authentication.
+  - Added token generation, storage, and retrieval helpers (`calendar_get_share_token()`, `calendar_reset_share_token()`, and `calendar_get_feed_urls()`) in `plugins/calendar/calendar_data.php`.
+  - Added AJAX actions in `plugins/calendar/ajax.php` for fetching share URLs and resetting tokens.
+  - Integrated "Share with Google" button into the calendar topbar (`plugins/calendar/calendar.php`) with an interactive modal featuring a 1-click "Add to Google Calendar" button (`https://calendar.google.com/calendar/render?cid=webcal://...`), a copyable iCal feed URL with one-click clipboard copy, and token reset security options.
+- **Mobile Header Compaction**:
+  - Hidden the branding text (`.sm-brand-name`) under mobile view (`@media (max-width: 768px)`) in `assets/css/app.css`.
+  - Compacted the user identity badge (`.sm-user-badge`) on mobile to hide the email address text span (`.sm-user-badge span`), displaying only the clean circular user avatar (`.sm-avatar`) with the full email address preserved in the title tooltip.
+- **Mobile Mailbox 2-Line Row Layout**:
+  - Classified message list columns in `templates/default/message_list.tpl` (`col_check`, `col_from`, `col_to`, `col_date`, `col_flags`, `col_attachment`, `col_subject`, `col_size`).
+  - Implemented responsive flex card layout in `assets/css/app.css` under `@media (max-width: 768px)`:
+    - **Line 1**: Checkbox, From / To, Received Date (aligned right), Message Flags, Attachment icon.
+    - **Line 2**: Subject spanning 100% width on the second line with truncation and unread styling.
+    - Hidden table header row and row spacers for a modern card-like message list on phones and small tablets.
+- **Version Bump**: Incremented version from `1.5.45` to `1.5.46`.
 
 ### Version 1.5.45
 - **Conversation View Plugin (`plugins/conversation_view`)**:

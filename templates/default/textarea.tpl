@@ -32,6 +32,6 @@ echo '<textarea name="' . $name . '" rows="' . $rows . '" cols="' . $cols . '"';
 foreach ($aAttribs as $key => $value) {
     echo ' ' . $key . (is_null($value) ? '' : '="' . $value . '"');
 }
-echo ">\n" . $text . "</textarea>\n";
+echo ">\n" . htmlspecialchars($text ?? '', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "</textarea>\n";
 
 

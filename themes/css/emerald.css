@@ -20,4 +20,7 @@
   --sm-hover-bg: #dcfce7;
   --sm-unread-bg: #dcfce7;
   --sm-selected-bg: #a7f3d0;
+  --sm-danger: #dc2626;
+  --sm-danger-hover: #b91c1c;
+  --sm-danger-light: #fee2e2;
 }

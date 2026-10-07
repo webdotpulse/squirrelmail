@@ -11,6 +11,20 @@
 if (defined('SM_PATH')) {
     include_once(SM_PATH . 'functions/date.php');
     include_once(SM_PATH . 'functions/prefs.php');
+    if (!function_exists('getPref')) {
+        global $prefs_dsn;
+        if (!function_exists('do_hook')) {
+            include_once(SM_PATH . 'functions/plugin.php');
+        }
+        if (!function_exists('sq_fwrite')) {
+            include_once(SM_PATH . 'functions/files.php');
+        }
+        if (!empty($prefs_dsn)) {
+            include_once(SM_PATH . 'functions/db_prefs.php');
+        } else {
+            include_once(SM_PATH . 'functions/file_prefs.php');
+        }
+    }
     include_once(SM_PATH . 'functions/imap.php');
     include_once(SM_PATH . 'functions/imap_mailbox.php');
     include_once(SM_PATH . 'functions/mime.php');
@@ -19,20 +33,22 @@ if (defined('SM_PATH')) {
 /**
  * Retrieve calendar data file path for user
  */
-function calendar_get_store_file()
+function calendar_get_store_file($user = null)
 {
     global $username, $data_dir;
-    return getHashedFile($username, $data_dir, "$username.calendar.json");
+    $u = !empty($user) ? $user : $username;
+    return getHashedFile($u, $data_dir, "$u.calendar.json");
 }
 
 /**
  * Load all events for user
  * Migrates old .cal files if present
  */
-function calendar_load_events()
+function calendar_load_events($user = null)
 {
     global $username, $data_dir;
-    $file = calendar_get_store_file();
+    $u = !empty($user) ? $user : $username;
+    $file = calendar_get_store_file($u);
 
     $events = array();
     if (file_exists($file)) {
@@ -640,4 +656,61 @@ function calendar_get_message_vcal($message = null, $imapConnection = null, $pas
 
     $cache[$cacheKey] = $res;
     return $res;
+}
+
+/**
+ * Get or initialize secret share token for user
+ */
+function calendar_get_share_token($user = null)
+{
+    global $username, $data_dir;
+    $u = !empty($user) ? $user : $username;
+    $token = getPref($data_dir, $u, 'calendar_share_token', '');
+    if (empty($token) || strlen($token) < 16) {
+        $token = bin2hex(random_bytes(16));
+        setPref($data_dir, $u, 'calendar_share_token', $token);
+    }
+    return $token;
+}
+
+/**
+ * Reset and regenerate secret share token for user
+ */
+function calendar_reset_share_token($user = null)
+{
+    global $username, $data_dir;
+    $u = !empty($user) ? $user : $username;
+    $token = bin2hex(random_bytes(16));
+    setPref($data_dir, $u, 'calendar_share_token', $token);
+    return $token;
+}
+
+/**
+ * Get full URLs for subscription with Google Calendar and external apps
+ */
+function calendar_get_feed_urls($user = null)
+{
+    global $username;
+    $u = !empty($user) ? $user : $username;
+    $token = calendar_get_share_token($u);
+
+    $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+            || (!empty($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443)
+            || (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
+    $scheme = $isHttps ? 'https://' : 'http://';
+    $host = !empty($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : (!empty($_SERVER['SERVER_NAME']) ? $_SERVER['SERVER_NAME'] : 'localhost');
+    $baseUri = function_exists('sqm_baseuri') ? sqm_baseuri() : '/';
+    $feedPath = $baseUri . 'plugins/calendar/feed.php';
+
+    $params = '?user=' . urlencode($u) . '&token=' . urlencode($token);
+    $httpUrl = $scheme . $host . $feedPath . $params;
+    $webcalUrl = 'webcal://' . $host . $feedPath . $params;
+    $googleUrl = 'https://calendar.google.com/calendar/render?cid=' . urlencode($webcalUrl);
+
+    return array(
+        'token'   => $token,
+        'http'    => $httpUrl,
+        'webcal'  => $webcalUrl,
+        'google'  => $googleUrl
+    );
 }

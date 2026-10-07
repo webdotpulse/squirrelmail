@@ -208,14 +208,16 @@ function load_optpage_data_personal() {
             );
         }
 
-        // Add New Identity Card / Section
+        $new_ident_header_val = '<div style="font-weight: 700; color: #1e8e3e; padding: 14px 0 6px; border-bottom: 2px solid #e8eaed; margin-top: 12px; margin-bottom: 8px; font-size: 14px;">'
+                               . '+ ' . _("Add New Identity with HTML Signature") . '</div>';
+        $GLOBALS['new_ident_header'] = $new_ident_header_val;
         $optvals[SMOPT_GRP_IDENTITIES][] = array(
-            'name'    => 'new_ident_header',
-            'caption' => '',
-            'type'    => SMOPT_TYPE_INFO,
-            'refresh' => SMOPT_REFRESH_NONE,
-            'comment' => '<div style="font-weight: 700; color: #1e8e3e; padding: 14px 0 6px; border-bottom: 2px solid #e8eaed; margin-top: 12px; margin-bottom: 8px; font-size: 14px;">'
-                       . '+ ' . _("Add New Identity with HTML Signature") . '</div>'
+            'name'          => 'new_ident_header',
+            'caption'       => '',
+            'type'          => SMOPT_TYPE_INFO,
+            'refresh'       => SMOPT_REFRESH_NONE,
+            'initial_value' => $new_ident_header_val,
+            'comment'       => $new_ident_header_val
         );
 
         $optvals[SMOPT_GRP_IDENTITIES][] = array(
@@ -275,126 +277,6 @@ function load_optpage_data_personal() {
             'comment' =>  $identities_link_value
         );
     }
-
-    // Interactive Visual Toolbar & Live Preview Helper for all HTML Signature Textareas
-    $sig_script = '<script>
-(function() {
-    function initHtmlSigEditors() {
-        const textareas = document.querySelectorAll("textarea[name*=\"html_signature\"], textarea[name*=\"html_sig\"]");
-        textareas.forEach(function(ta) {
-            if (ta.dataset.sigEditorInit) return;
-            ta.dataset.sigEditorInit = "1";
-
-            const toolbar = document.createElement("div");
-            toolbar.className = "sm-sig-toolbar";
-            toolbar.style.cssText = "display:flex; flex-wrap:wrap; align-items:center; gap:4px; padding:6px 8px; background:#f8fafc; border:1px solid #cbd5e1; border-bottom:none; border-radius:6px 6px 0 0; margin-top:6px; font-size:12px;";
-            toolbar.innerHTML = `
-                <button type="button" class="sm-btn sm-btn-secondary" style="padding:2px 8px; font-weight:bold; font-size:12px;" title="Bold">B</button>
-                <button type="button" class="sm-btn sm-btn-secondary" style="padding:2px 8px; font-style:italic; font-size:12px;" title="Italic">I</button>
-                <button type="button" class="sm-btn sm-btn-secondary" style="padding:2px 8px; text-decoration:underline; font-size:12px;" title="Underline">U</button>
-                <label style="display:inline-flex; align-items:center; padding:2px 6px; cursor:pointer;" title="Text Color">
-                    🎨 <input type="color" value="#000000" style="width:18px; height:18px; border:none; padding:0; cursor:pointer; margin-left:2px;">
-                </label>
-                <button type="button" class="sm-btn sm-btn-secondary" style="padding:2px 8px; font-size:12px;" title="Insert Link">🔗 Link</button>
-                <button type="button" class="sm-btn sm-btn-secondary" style="padding:2px 8px; font-size:12px;" title="Insert Image / Logo">🖼️ Image</button>
-                <button type="button" class="sm-btn sm-btn-secondary" style="padding:2px 8px; font-size:12px;" title="Divider Line">—</button>
-                <button type="button" class="sm-btn sm-btn-secondary" style="padding:2px 8px; font-size:12px;" title="Clear HTML Tags">🧹 Text Only</button>
-            `;
-
-            const previewWrap = document.createElement("div");
-            previewWrap.className = "sm-sig-preview-wrap";
-            previewWrap.style.cssText = "margin-top:4px; margin-bottom:8px; border:1px dashed #94a3b8; border-radius:6px; padding:10px 14px; background:#ffffff; font-size:13px; min-height:36px;";
-            previewWrap.innerHTML = \'<div style="font-size:10px; font-weight:700; color:#64748b; text-transform:uppercase; margin-bottom:4px; letter-spacing:0.5px;">Signature Live Preview</div><div class="sm-sig-preview-content">\' + (ta.value || \'<span style="color:#94a3b8; font-style:italic;">(Empty HTML signature preview)</span>\') + \'</div>\';
-
-            ta.parentNode.insertBefore(toolbar, ta);
-            ta.parentNode.insertBefore(previewWrap, ta.nextSibling);
-            ta.style.borderRadius = "0 0 6px 6px";
-            ta.style.width = "100%";
-            ta.style.boxSizing = "border-box";
-
-            const previewContent = previewWrap.querySelector(".sm-sig-preview-content");
-
-            function updatePreview() {
-                if (ta.value.trim().length > 0) {
-                    previewContent.innerHTML = ta.value;
-                } else {
-                    previewContent.innerHTML = \'<span style="color:#94a3b8; font-style:italic;">(Empty HTML signature preview)</span>\';
-                }
-            }
-
-            ta.addEventListener("input", updatePreview);
-            ta.addEventListener("keyup", updatePreview);
-
-            const btns = toolbar.querySelectorAll("button");
-            const colorInput = toolbar.querySelector("input[type=\'color\']");
-
-            function wrapSelection(openTag, closeTag) {
-                const start = ta.selectionStart;
-                const end = ta.selectionEnd;
-                const text = ta.value;
-                const selected = text.substring(start, end) || "text";
-                ta.value = text.substring(0, start) + openTag + selected + closeTag + text.substring(end);
-                ta.focus();
-                ta.setSelectionRange(start + openTag.length, start + openTag.length + selected.length);
-                updatePreview();
-            }
-
-            // Bold
-            btns[0].onclick = () => wrapSelection("<strong>", "</strong>");
-            // Italic
-            btns[1].onclick = () => wrapSelection("<em>", "</em>");
-            // Underline
-            btns[2].onclick = () => wrapSelection("<u>", "</u>");
-            // Color
-            colorInput.onchange = () => wrapSelection("<span style=\\"color:" + colorInput.value + "\\">", "</span>");
-            // Link
-            btns[3].onclick = () => {
-                const url = prompt("Enter Web Address / URL (e.g. https://example.com):", "https://");
-                if (url && url !== "https://") {
-                    wrapSelection("<a href=\\"" + url + "\\" target=\\"_blank\\" style=\\"color:#2563eb; text-decoration:underline;\\">", "</a>");
-                }
-            };
-            // Image
-            btns[4].onclick = () => {
-                const imgUrl = prompt("Enter Image / Logo URL (e.g. https://example.com/logo.png):", "https://");
-                if (imgUrl && imgUrl !== "https://") {
-                    const start = ta.selectionStart;
-                    const text = ta.value;
-                    const imgTag = "<img src=\\"" + imgUrl + "\\" alt=\\"Signature Logo\\" style=\\"max-height:48px; vertical-align:middle;\\" /><br>";
-                    ta.value = text.substring(0, start) + imgTag + text.substring(start);
-                    updatePreview();
-                }
-            };
-            // Divider
-            btns[5].onclick = () => {
-                const start = ta.selectionStart;
-                const text = ta.value;
-                ta.value = text.substring(0, start) + "<hr style=\\"border:none; border-top:1px solid #cbd5e1; margin:8px 0;\\" />" + text.substring(start);
-                updatePreview();
-            };
-            // Clean text
-            btns[6].onclick = () => {
-                ta.value = ta.value.replace(/<[^>]*>/g, "");
-                updatePreview();
-            };
-        });
-    }
-
-    if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", initHtmlSigEditors);
-    } else {
-        initHtmlSigEditors();
-    }
-})();
-</script>';
-
-    $optvals[SMOPT_GRP_CONTACT][] = array(
-        'name'    => 'sig_editor_script',
-        'caption' => '',
-        'type'    => SMOPT_TYPE_INFO,
-        'refresh' => SMOPT_REFRESH_NONE,
-        'comment' => $sig_script
-    );
 
     if ( $tzChangeAllowed || function_exists('date_default_timezone_set')) {
         $TZ_ARRAY[SMPREF_NONE] = _("Same as server");

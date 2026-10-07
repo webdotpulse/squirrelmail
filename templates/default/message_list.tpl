@@ -133,11 +133,14 @@ if ($iNumberOfMessages == 0) {
 <!-- paginator and thread link string -->
       <?php
           $paginator_str = $this->fetch('paginator.tpl');
-          echo $paginator_str . '<small>[<a href="' . $thread_link_uri
-                              . ($accesskey_mailbox_thread != 'NONE'
-                              ? '" accesskey="' . $accesskey_mailbox_thread . '">'
-                              : '">')
-                              . $thread_name . '</a>]</small>&nbsp;&nbsp;';
+          echo $paginator_str;
+          if (!empty($thread_name)) {
+              echo '<a href="' . $thread_link_uri
+                  . ($accesskey_mailbox_thread != 'NONE'
+                  ? '" accesskey="' . $accesskey_mailbox_thread . '"'
+                  : '"')
+                  . ' class="sm-paginator-btn sm-paginator-thread">' . $thread_name . '</a>';
+          }
           if (!empty($plugin_output['mailbox_paginator_after'])) echo $plugin_output['mailbox_paginator_after'];
       ?>
 <!-- end paginator and thread link string -->
@@ -496,12 +499,26 @@ $row_class = trim((empty($class) ? '' : $class) . ' sm-message-row' . ($is_unrea
             echo $sText."</td>\n";
             break;
           case SQM_COL_SIZE:
+            $sText = "    <td class=\"col_size\" $javascript_auto_click>"
+                   . "$value</td>\n";
+            echo $sText;
+            break;
           case SQM_COL_FLAGS:
             $sText = "    <td class=\"col_flags\" $javascript_auto_click>"
                    . "$value</td>\n";
             echo $sText;
             break;
+          case SQM_COL_ATTACHMENT:
+            $sText = "    <td class=\"col_attachment\" $javascript_auto_click>"
+                   . "$value</td>\n";
+            echo $sText;
+            break;
           case SQM_COL_INT_DATE:
+            $sText = "    <td class=\"col_date col_received\" $javascript_auto_click";
+            if ($title) {$sText .= " title=\"$title\"";}
+            $sText .= ">" . $value. "</td>\n";
+            echo $sText;
+            break;
           case SQM_COL_DATE:
             $sText = "    <td class=\"col_date\" $javascript_auto_click";
             if ($title) {$sText .= " title=\"$title\"";}
@@ -509,7 +526,13 @@ $row_class = trim((empty($class) ? '' : $class) . ' sm-message-row' . ($is_unrea
             echo $sText;
             break;
           default:
-            $sText = "    <td class=\"col_text\" $javascript_auto_click";
+            $colCls = 'col_text';
+            if ($iCol == SQM_COL_FROM) $colCls .= ' col_from';
+            else if ($iCol == SQM_COL_TO) $colCls .= ' col_to';
+            else if ($iCol == SQM_COL_CC) $colCls .= ' col_cc';
+            else if ($iCol == SQM_COL_BCC) $colCls .= ' col_bcc';
+
+            $sText = "    <td class=\"$colCls\" $javascript_auto_click";
             if ($link) {
                 $sText .= "><a href=\"$link\"";
                 if ($target) { $sText .= " target=\"$target\"";}
