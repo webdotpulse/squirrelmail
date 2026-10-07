@@ -82,8 +82,8 @@ displayPageHeader($color, 'None');
 .tm-container {
     max-width: 1020px;
     margin: 24px auto;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    color: #202124;
+    font-family: var(--sm-font-sans, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+    color: var(--sm-text-primary, #202124);
 }
 .tm-header {
     display: flex;
@@ -91,23 +91,24 @@ displayPageHeader($color, 'None');
     justify-content: space-between;
     margin-bottom: 24px;
     padding-bottom: 16px;
-    border-bottom: 1px solid #dadce0;
+    border-bottom: 1px solid var(--sm-border, #dadce0);
 }
 .tm-header h2 {
     margin: 0;
     font-size: 22px;
-    font-weight: 500;
+    font-weight: 600;
     display: flex;
     align-items: center;
     gap: 10px;
+    color: var(--sm-text-primary, #202124);
 }
 .tm-card {
-    background: #ffffff;
-    border: 1px solid #dadce0;
+    background: var(--sm-bg-card, #ffffff);
+    border: 1px solid var(--sm-border, #dadce0);
     border-radius: 12px;
     padding: 24px;
     margin-bottom: 24px;
-    box-shadow: 0 1px 3px rgba(60,64,67,0.08);
+    box-shadow: var(--sm-shadow-sm, 0 1px 3px rgba(60,64,67,0.08));
 }
 .tm-card-title {
     font-size: 16px;
@@ -117,12 +118,15 @@ displayPageHeader($color, 'None');
     display: flex;
     align-items: center;
     gap: 8px;
+    color: var(--sm-text-primary, #202124);
 }
 .tm-input, .tm-select, .tm-textarea {
     width: 100%;
     box-sizing: border-box;
     padding: 10px 14px;
-    border: 1px solid #dadce0;
+    background: var(--sm-bg-surface, #ffffff);
+    color: var(--sm-text-primary, #202124);
+    border: 1px solid var(--sm-border, #dadce0);
     border-radius: 6px;
     font-size: 14px;
     outline: none;
@@ -130,7 +134,7 @@ displayPageHeader($color, 'None');
     font-family: inherit;
 }
 .tm-input:focus, .tm-select:focus, .tm-textarea:focus {
-    border-color: #1a73e8;
+    border-color: var(--sm-primary, #1a73e8);
     box-shadow: 0 0 0 2px rgba(26,115,232,0.2);
 }
 .tm-row-2 {
@@ -143,46 +147,75 @@ displayPageHeader($color, 'None');
     display: block;
     font-size: 13px;
     font-weight: 600;
-    color: #3c4043;
+    color: var(--sm-text-secondary, #3c4043);
     margin-bottom: 6px;
 }
-.tm-btn-primary {
+.tm-btn-primary,
+.tm-btn-primary:link,
+.tm-btn-primary:visited,
+a.tm-btn-primary,
+a.tm-btn-primary:link,
+a.tm-btn-primary:visited {
     padding: 10px 22px;
-    background: #1a73e8;
-    color: #ffffff;
-    border: none;
+    background: var(--sm-primary, #1a73e8);
+    color: #ffffff !important;
+    border: 1px solid var(--sm-primary, #1a73e8);
     border-radius: 6px;
     font-size: 14px;
-    font-weight: 500;
+    font-weight: 600;
     cursor: pointer;
-    transition: background 0.15s;
-    text-decoration: none;
+    transition: all 0.15s ease;
+    text-decoration: none !important;
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 6px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+    -webkit-font-smoothing: antialiased;
 }
-.tm-btn-primary:hover {
-    background: #1557b0;
+.tm-btn-primary:hover,
+.tm-btn-primary:focus,
+.tm-btn-primary:active,
+a.tm-btn-primary:hover,
+a.tm-btn-primary:focus,
+a.tm-btn-primary:active {
+    background: var(--sm-primary-hover, #1557b0);
+    border-color: var(--sm-primary-hover, #1557b0);
+    color: #ffffff !important;
+    text-decoration: none !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
-.tm-btn-secondary {
+.tm-btn-secondary,
+.tm-btn-secondary:link,
+.tm-btn-secondary:visited,
+a.tm-btn-secondary,
+a.tm-btn-secondary:link,
+a.tm-btn-secondary:visited {
     padding: 6px 12px;
-    background: #f1f3f4;
-    color: #3c4043;
-    border: 1px solid #dadce0;
+    background: var(--sm-bg-card, #f1f3f4);
+    color: var(--sm-text-primary, #3c4043) !important;
+    border: 1px solid var(--sm-border, #dadce0);
     border-radius: 6px;
     font-size: 13px;
     font-weight: 500;
     cursor: pointer;
-    text-decoration: none;
+    text-decoration: none !important;
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 4px;
-    transition: all 0.15s;
+    transition: all 0.15s ease;
 }
-.tm-btn-secondary:hover {
-    background: #e8f0fe;
-    color: #1a73e8;
-    border-color: #aecbfa;
+.tm-btn-secondary:hover,
+.tm-btn-secondary:focus,
+.tm-btn-secondary:active,
+a.tm-btn-secondary:hover,
+a.tm-btn-secondary:focus,
+a.tm-btn-secondary:active {
+    background: var(--sm-hover-bg, #e8f0fe);
+    color: var(--sm-primary, #1a73e8) !important;
+    border-color: var(--sm-primary-border, #aecbfa);
+    text-decoration: none !important;
 }
 .tm-grid {
     display: grid;
@@ -190,17 +223,18 @@ displayPageHeader($color, 'None');
     gap: 16px;
 }
 .tm-item-card {
-    border: 1px solid #dadce0;
+    border: 1px solid var(--sm-border, #dadce0);
     border-radius: 10px;
     padding: 16px;
-    background: #ffffff;
+    background: var(--sm-bg-card, #ffffff);
+    color: var(--sm-text-primary, #202124);
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     transition: box-shadow 0.15s;
 }
 .tm-item-card:hover {
-    box-shadow: 0 4px 12px rgba(60,64,67,0.12);
+    box-shadow: var(--sm-shadow-md, 0 4px 12px rgba(60,64,67,0.12));
 }
 .tm-category-badge {
     display: inline-block;
@@ -381,7 +415,8 @@ displayPageHeader($color, 'None');
     justify-content: center;
 }
 .tm-modal-content {
-    background: #ffffff;
+    background: var(--sm-bg-card, #ffffff);
+    color: var(--sm-text-primary, #0f172a);
     width: 90%;
     max-width: 720px;
     max-height: 85vh;
@@ -398,8 +433,8 @@ displayPageHeader($color, 'None');
 }
 .tm-modal-header {
     padding: 16px 20px;
-    background: #f8fafc;
-    border-bottom: 1px solid #e2e8f0;
+    background: var(--sm-bg-surface, #f8fafc);
+    border-bottom: 1px solid var(--sm-border, #e2e8f0);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -407,6 +442,8 @@ displayPageHeader($color, 'None');
 .tm-modal-body {
     padding: 20px;
     overflow-y: auto;
+    background: var(--sm-bg-card, #ffffff);
+    color: var(--sm-text-primary, #0f172a);
 }
 </style>
 
@@ -664,12 +701,12 @@ displayPageHeader($color, 'None');
             <button type="button" onclick="closePreviewModal()" style="background: none; border: none; font-size: 22px; cursor: pointer; color: #64748b;">&times;</button>
         </div>
         <div class="tm-modal-body">
-            <div id="modal-tpl-subject" style="font-size: 13px; color: #475569; margin-bottom: 12px; padding: 8px 12px; background: #f8fafc; border-radius: 6px; border: 1px solid #e2e8f0;"></div>
-            <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 6px;">HTML Preview (Simulated):</div>
-            <div id="modal-tpl-body" style="padding: 16px; border: 1px solid #e2e8f0; border-radius: 8px; background: #ffffff; min-height: 120px; font-size: 14px; line-height: 1.6;"></div>
+            <div id="modal-tpl-subject" style="font-size: 13px; color: var(--sm-text-secondary, #475569); margin-bottom: 12px; padding: 8px 12px; background: var(--sm-bg-surface, #f8fafc); border-radius: 6px; border: 1px solid var(--sm-border, #e2e8f0);"></div>
+            <div style="font-size: 11px; font-weight: 700; color: var(--sm-text-muted, #64748b); text-transform: uppercase; margin-bottom: 6px;">HTML Preview (Simulated):</div>
+            <div id="modal-tpl-body" style="padding: 16px; border: 1px solid var(--sm-border, #e2e8f0); border-radius: 8px; background: var(--sm-bg-card, #ffffff); min-height: 120px; font-size: 14px; line-height: 1.6; color: var(--sm-text-primary, #1e293b);"></div>
             <div id="modal-tpl-attachments" style="margin-top: 14px;"></div>
         </div>
-        <div style="padding: 12px 20px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 10px;">
+        <div style="padding: 12px 20px; background: var(--sm-bg-surface, #f8fafc); border-top: 1px solid var(--sm-border, #e2e8f0); display: flex; justify-content: flex-end; gap: 10px;">
             <a id="modal-edit-link" href="#" class="tm-btn-primary" style="font-size: 13px; padding: 8px 16px;">✏️ <?php echo _("Edit Template"); ?></a>
             <button type="button" class="tm-btn-secondary" onclick="closePreviewModal()"><?php echo _("Close"); ?></button>
         </div>

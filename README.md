@@ -1,4 +1,4 @@
-# SquirrelMail 1.5.42
+# SquirrelMail 1.5.43
 
 A modernized, responsive edition of SquirrelMail engineered for PHP 7.0 through 8.2+ with a Single-Page Application (SPA) interface, modern UI styling, and extensive feature enhancements.
 
@@ -51,6 +51,13 @@ This repository includes an [AGENTS.md](file:///home/koen/Git/squirrelmail/AGENT
 ---
 
 ## 📝 Changelog
+
+### Version 1.5.43
+- **Template Manager Primary Button CSS & Readability Fix (`plugins/templates`)**:
+  - Resolved unreadable text on anchor buttons (`+ New Template` and `✏️ Edit Template` in the preview modal) where theme and global link styles (`a`, `a:link`, `a:visited`, `a:hover`, `a:active`) overrode button text color with dark blue, purple, or theme link colors on a blue background.
+  - Added comprehensive pseudo-class selectors (`.tm-btn-primary`, `.tm-btn-primary:link`, `.tm-btn-primary:visited`, `a.tm-btn-primary`, etc.) with `color: #ffffff !important` and `text-decoration: none !important` across normal, hover, focus, active, and visited states.
+  - Synchronized primary and secondary button utility classes in both `plugins/templates/templates_manager.php` and `assets/css/app.css` using CSS custom properties (`--sm-primary`, `--sm-primary-hover`, `--sm-border`, `--sm-bg-card`), adding support for Light and Dark themes.
+- **Version Bump**: Incremented version from `1.5.42` to `1.5.43`.
 
 ### Version 1.5.42
 - **Removal of Priority (Normal/High Priority) in Favor of Flag / Unflag**:
