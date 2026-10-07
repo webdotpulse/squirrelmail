@@ -111,7 +111,7 @@ function buildMailboxTree ($box, $settings, $icon_theme_path, $indent_factor=0) 
                                             $box['MessageCount']);
                 }
 
-                $unseen_str = '<span class="'.
+                $unseen_str = '<span class="sm-badge sm-unread-badge '.
                               ($box['IsRecent'] ? 'leftrecent' : 'leftunseen') .
                               '">' . $unseen_str .
                               '</span>';

@@ -179,8 +179,9 @@ body.sqm_leftMain {
     text-decoration: none;
 }
 
-.leftunseen {
-    color: var(--sm-primary) !important;
+.leftunseen,
+.leftrecent {
+    color: #ffffff !important;
     font-weight: 700 !important;
 }
 

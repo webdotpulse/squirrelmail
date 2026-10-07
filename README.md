@@ -1,4 +1,4 @@
-# SquirrelMail 1.5.18
+# SquirrelMail 1.5.19
 
 A modernized, responsive edition of SquirrelMail engineered for PHP 7.0 through 8.2+ with a Single-Page Application (SPA) interface, modern UI styling, and extensive feature enhancements.
 
@@ -43,6 +43,14 @@ This repository includes an [AGENTS.md](file:///home/koen/Git/squirrelmail/AGENT
 ---
 
 ## 📝 Changelog
+
+### Version 1.5.19
+- **Folder Unread Badges Contrast & Text Color Fix**:
+  - Fixed an issue where the text on unread count badges next to the Inbox and subfolders was unreadable due to theme stylesheets overriding the badge text color with `var(--sm-primary) !important`, producing low/zero-contrast text (primary blue on primary blue).
+  - Resolved in `css/modern_responsive/default.css`, `css/modern_responsive_dark/default.css`, `css/modern_responsive_emerald/default.css`, and all corresponding alternate template stylesheets by enforcing `#ffffff !important` with bold typography.
+  - Enhanced badge selectors and styles in `assets/css/app.css` (`.sm-sidebar-folders-wrapper .leftunseen`, `.sm-sidebar-tree-container .leftrecent`, `.sm-unread-badge`) with high specificity, subtle depth shadow, and explicit link styling to guarantee crisp, legible text across all themes and dark mode.
+  - Added semantic `.sm-badge` and `.sm-unread-badge` classes to the unread count wrapper in `templates/default/left_main.tpl`.
+- **Version Bump**: Incremented version from `1.5.18` to `1.5.19`.
 
 ### Version 1.5.18
 - **Sidebar Multi-Account Widget Streamlining**:
