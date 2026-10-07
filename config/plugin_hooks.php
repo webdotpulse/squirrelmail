@@ -50,6 +50,7 @@ $squirrelmail_plugin_hooks['template_construct_page_header.tpl']['newmail_notify
 $squirrelmail_plugin_hooks['template_construct_page_header.tpl']['conversation_view'] = 'conversation_view_page_header';
 $squirrelmail_plugin_hooks['template_construct_addressbook_list.tpl']['abook_import_export'] = 'abook_ie_addressbook_list';
 $squirrelmail_plugin_hooks['template_construct_read_message_body.tpl']['calendar'] = 'calendar_read_message_body';
+$squirrelmail_plugin_hooks['template_construct_read_message_body.tpl']['conversation_view'] = 'conversation_view_read_body_top';
 $squirrelmail_plugin_hooks['attachment text/calendar']['calendar'] = 'calendar_attachment_hook';
 $squirrelmail_plugin_hooks['attachment application/ics']['calendar'] = 'calendar_attachment_hook';
 $squirrelmail_plugin_hooks['attachment */*']['calendar'] = 'calendar_attachment_generic_hook';

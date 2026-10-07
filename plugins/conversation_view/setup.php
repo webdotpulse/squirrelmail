@@ -35,6 +35,9 @@ function squirrelmail_plugin_init_conversation_view()
     $squirrelmail_plugin_hooks['read_body_top']['conversation_view']
         = 'conversation_view_read_body_top';
 
+    $squirrelmail_plugin_hooks['template_construct_read_message_body.tpl']['conversation_view']
+        = 'conversation_view_read_body_top';
+
     $squirrelmail_plugin_hooks['read_body_bottom']['conversation_view']
         = 'conversation_view_read_body_bottom';
 
@@ -111,24 +114,39 @@ function conversation_view_read_body_header_right(&$links)
 /**
  * Hook: Display conversation thread above message if positioned at top
  */
-function conversation_view_read_body_top()
+function conversation_view_read_body_top(&$args = null)
 {
     global $imapConnection, $mailbox, $passed_id, $message, $data_dir, $username;
+    static $cachedTopHtml = null;
 
     $enabled = (int) getPref($data_dir, $username, 'conversation_view_enabled', 1);
     if (!$enabled) {
-        return;
+        return array();
     }
 
     $pos = getPref($data_dir, $username, 'conversation_view_position', 'bottom');
     if ($pos === 'top' || $pos === 'both') {
         try {
-            include_once(SM_PATH . 'plugins/conversation_view/functions.php');
-            cv_render_thread_view($imapConnection, $mailbox, $passed_id, $message, 'top');
+            if ($cachedTopHtml === null) {
+                include_once(SM_PATH . 'plugins/conversation_view/functions.php');
+                ob_start();
+                cv_render_thread_view($imapConnection, $mailbox, $passed_id, $message, 'top');
+                $cachedTopHtml = ob_get_clean();
+            }
+
+            if (is_array($args) && isset($args[0]) && is_array($args[0])) {
+                if (!isset($args[0]['read_body_top'])) {
+                    $args[0]['read_body_top'] = '';
+                }
+                $args[0]['read_body_top'] .= $cachedTopHtml;
+            }
+
+            return array('read_body_top' => $cachedTopHtml);
         } catch (\Throwable $e) {
             error_log('conversation_view_read_body_top error: ' . $e->getMessage());
         }
     }
+    return array();
 }
 
 /**
@@ -203,7 +221,8 @@ function conversation_view_message_list($args = null)
     global $oTemplate, $imapConnection, $data_dir, $username;
 
     $enabled = (int) getPref($data_dir, $username, 'conversation_view_enabled', 1);
-    if (!$enabled) {
+    $badges = (int) getPref($data_dir, $username, 'cv_mailbox_badges', 1);
+    if (!$enabled || !$badges) {
         return array();
     }
 

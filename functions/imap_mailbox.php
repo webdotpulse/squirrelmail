@@ -277,9 +277,36 @@ function isInboxMailbox($box, $include_subs=TRUE) {
  */
 function isTrashMailbox ($box,$include_subs=true) {
     global $trash_folder, $move_to_trash;
-    return $move_to_trash && $trash_folder &&
-           ( $box == $trash_folder || 
-             ($include_subs && isBoxBelow($box, $trash_folder)) );
+    if (!$move_to_trash) {
+        return false;
+    }
+    if (!empty($trash_folder) && ( $box == $trash_folder || ($include_subs && isBoxBelow($box, $trash_folder)) )) {
+        return true;
+    }
+    $clean = trim((string)$box);
+    if ($clean === '') {
+        return false;
+    }
+    $lower = strtolower($clean);
+    if ($lower === 'trash' || $lower === 'deleted items' || $lower === 'deleted messages' || $lower === 'bin' ||
+        $lower === 'inbox.trash' || $lower === 'inbox.deleted items' || $lower === 'inbox.deleted messages' || $lower === 'inbox.bin' ||
+        $lower === 'inbox/trash' || $lower === 'inbox/deleted items' || $lower === 'inbox/deleted messages' || $lower === 'inbox/bin') {
+        return true;
+    }
+    $parts = preg_split('[/.]', $clean);
+    $leaf = strtolower(end($parts));
+    if ($leaf === 'trash' || $leaf === 'deleted items' || $leaf === 'deleted messages' || $leaf === 'bin') {
+        return true;
+    }
+    if ($include_subs && count($parts) > 1) {
+        for ($i = 0; $i < count($parts) - 1; $i++) {
+            $p = strtolower($parts[$i]);
+            if ($p === 'trash' || $p === 'deleted items' || $p === 'deleted messages' || $p === 'bin') {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 /**
@@ -291,10 +318,37 @@ function isTrashMailbox ($box,$include_subs=true) {
  * @since 1.4.0
  */
 function isSentMailbox($box,$include_subs=true) {
-   global $sent_folder, $move_to_sent;
-   return $move_to_sent && $sent_folder &&
-          ( $box == $sent_folder || 
-            ($include_subs && isBoxBelow($box, $sent_folder)) );
+    global $sent_folder, $move_to_sent;
+    if (!$move_to_sent) {
+        return false;
+    }
+    if (!empty($sent_folder) && ( $box == $sent_folder || ($include_subs && isBoxBelow($box, $sent_folder)) )) {
+        return true;
+    }
+    $clean = trim((string)$box);
+    if ($clean === '') {
+        return false;
+    }
+    $lower = strtolower($clean);
+    if ($lower === 'sent' || $lower === 'sent items' || $lower === 'sent messages' ||
+        $lower === 'inbox.sent' || $lower === 'inbox.sent items' || $lower === 'inbox.sent messages' ||
+        $lower === 'inbox/sent' || $lower === 'inbox/sent items' || $lower === 'inbox/sent messages') {
+        return true;
+    }
+    $parts = preg_split('[/.]', $clean);
+    $leaf = strtolower(end($parts));
+    if ($leaf === 'sent' || $leaf === 'sent items' || $leaf === 'sent messages') {
+        return true;
+    }
+    if ($include_subs && count($parts) > 1) {
+        for ($i = 0; $i < count($parts) - 1; $i++) {
+            $p = strtolower($parts[$i]);
+            if ($p === 'sent' || $p === 'sent items' || $p === 'sent messages') {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 /**
@@ -306,10 +360,36 @@ function isSentMailbox($box,$include_subs=true) {
  * @since 1.4.0
  */
 function isDraftMailbox($box,$include_subs=true) {
-   global $draft_folder, $save_as_draft;
-   return $save_as_draft &&
-          ( $box == $draft_folder || 
-            ($include_subs && isBoxBelow($box, $draft_folder)) );
+    global $draft_folder, $save_as_draft;
+    if (!$save_as_draft) {
+        return false;
+    }
+    if (!empty($draft_folder) && ( $box == $draft_folder || ($include_subs && isBoxBelow($box, $draft_folder)) )) {
+        return true;
+    }
+    $clean = trim((string)$box);
+    if ($clean === '') {
+        return false;
+    }
+    $lower = strtolower($clean);
+    if ($lower === 'drafts' || $lower === 'draft' || $lower === 'inbox.drafts' || $lower === 'inbox.draft' ||
+        $lower === 'inbox/drafts' || $lower === 'inbox/draft') {
+        return true;
+    }
+    $parts = preg_split('[/.]', $clean);
+    $leaf = strtolower(end($parts));
+    if ($leaf === 'drafts' || $leaf === 'draft') {
+        return true;
+    }
+    if ($include_subs && count($parts) > 1) {
+        for ($i = 0; $i < count($parts) - 1; $i++) {
+            $p = strtolower($parts[$i]);
+            if ($p === 'drafts' || $p === 'draft') {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 /**

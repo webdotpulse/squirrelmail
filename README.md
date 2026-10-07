@@ -1,4 +1,4 @@
-# SquirrelMail 1.5.64
+# SquirrelMail 1.5.66
 
 A modernized, responsive edition of SquirrelMail engineered for PHP 7.0 through 8.2+ with a Single-Page Application (SPA) interface, modern UI styling, and extensive feature enhancements.
 
@@ -14,7 +14,7 @@ A modernized, responsive edition of SquirrelMail engineered for PHP 7.0 through 
 - **Conversation View & Threading (Drafts & Replies)** (`plugins/conversation_view`):
   - Cross-mailbox conversation discovery: dynamically inspects `Message-ID`, `In-Reply-To`, `References`, and normalized base subjects across `Sent`, `Drafts`, and active mailboxes.
   - Displays sent replies and pending drafts directly in the message reader (`src/read_body.php`) in an interactive chronological timeline with clean, unquoted body previews.
-  - One-click actions: "Resume Draft" (`compose.php?smaction_draft=1`), async "Discard Draft", "View Sent Message", and quick "Reply" / "Reply All".
+  - One-click actions: "Resume Draft" (`read_body.php?account=0&mailbox=Drafts&passed_id=$uid&startMessage=1`), async "Discard Draft", "View Sent Message", and quick "Reply" / "Reply All".
   - Asynchronous inline message expansion (`ajax.php?action=get_body`) to read full replies without navigating away from the current email.
   - Header toolbar indicator badge (`💬 Thread (#)`) with smooth-scrolling anchor navigation.
 - **Signature Creator & Templates Studio** (`plugins/signature_creator`):
@@ -57,6 +57,36 @@ This repository includes an [AGENTS.md](file:///home/koen/Git/squirrelmail/AGENT
 ---
 
 ## 📝 Changelog
+
+### Version 1.5.66
+- **Conversation View Thread Discovery & Draft Link Modernization (`plugins/conversation_view/functions.php`, `functions/imap_mailbox.php`)**:
+  - **Draft Action Routing in Mailbox List & Reader Timeline**:
+    - Updated the "📝 Draft" action badge in the mailbox message list view and thread cards to route directly to `src/read_body.php?account=0&mailbox=Drafts&passed_id=$uid&startMessage=1` instead of `src/compose.php?smaction_draft=1`.
+    - Enables users to inspect the draft in full context within SquirrelMail's native message view where the header action bar presents the standard "Resume Draft" button.
+  - **Special Folder Detection (`isDraftMailbox`, `isSentMailbox`, `isTrashMailbox`)**:
+    - Modernized `isDraftMailbox()`, `isSentMailbox()`, and `isTrashMailbox()` in `functions/imap_mailbox.php` to recognize non-prefixed standard mailboxes (`Drafts`, `Sent`, `Trash`), custom preferences, and delimiter-separated leaf nodes (e.g. `INBOX/Drafts`, `INBOX.Drafts`).
+    - Eliminates false negatives when server folder structures diverge from legacy configuration defaults (`INBOX.Drafts` vs `Drafts`).
+  - **Comprehensive Multi-Folder Thread Discovery**:
+    - Introduced `cv_resolve_all_special_folders()` to probe and select all existing `Sent` and `Drafts` candidates directly on the IMAP stream without relying on potentially incomplete subscription lists.
+    - Added automatic extraction of `X-SM-Flag-Reply` (`reply::$origUid::$origMailbox`) from both message headers and IMAP small header fetches, ensuring drafts and replies correctly discover and link to original incoming messages even when opened directly from the Drafts or Sent folders.
+    - Added fallback inspection of recent drafts (up to 50) and recent sent messages (up to 30) with case-insensitive UTF-8 subject and Message-ID matching, resolving false "No sent replies or pending drafts found for this message thread yet" messages.
+- **Version Bump**: Incremented version from `1.5.65` to `1.5.66`.
+
+### Version 1.5.65
+- **Conversation View Mail Opening & Reader Compatibility (`plugins/conversation_view/setup.php`, `plugins/conversation_view/functions.php`, `config/plugin_hooks.php`)**:
+  - **Mailbox Subject Link Integrity (Nested Anchor Removal)**:
+    - Fixed an issue where enabling "Enable Conversation View in Message Reader" prevented emails from being opened when clicking on their subjects in the mailbox message list.
+    - Replaced inner `<a href="...">` draft badge links prepended into `$msg['columns'][SQM_COL_SUBJ]['value']` with accessible `<span class="cv-mb-badge" role="button">` elements equipped with click handlers and SPA navigation (`window.sqmApp.navigate()`).
+    - Eliminates invalid nested anchor tags (`<a>...<a>...</a>...</a>`) that caused browser HTML parsers to prematurely terminate the outer message link, which previously converted subject clicks into row checkbox toggle events instead of opening the email.
+  - **IMAP Connection State Preservation**:
+    - Fixed mailbox stream deselection in `cv_get_conversation_thread()` and `cv_mailbox_annotate_messages()`.
+    - Probed candidate `Sent` and `Drafts` mailboxes using `sqimap_mailbox_exists()` before selecting them, preventing RFC 3501 Section 6.3.1 connection state corruption where failed `SELECT` commands left the IMAP connection unselected.
+    - Added guaranteed restoration of the active mailbox via `finally` blocks and post-scan re-selection, ensuring `formatBody()` and `formatAttachments()` in `src/read_body.php` always operate on the intended mailbox.
+  - **Clean Output Buffering & Template Hooking**:
+    - Converted `conversation_view_read_body_top()` to capture HTML via output buffering (`ob_start() ... ob_get_clean()`) and registered it on `template_construct_read_message_body.tpl` in addition to `read_body_top`.
+    - Prevents premature HTML output prior to `displayPageHeader()` in `src/read_body.php`, ensuring headers, redirect handling, and document structure remain pristine.
+    - Enforced check on `cv_mailbox_badges` preference in `conversation_view_message_list()`.
+- **Version Bump**: Incremented version from `1.5.64` to `1.5.65`.
 
 ### Version 1.5.64
 - **Purge Trash Sidebar Reload Fix (`src/empty_trash.php`, `templates/default/left_main.tpl`, `assets/js/app.js`)**:
