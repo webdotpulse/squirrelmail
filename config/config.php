@@ -588,7 +588,7 @@ $force_username_lowercase = false;
  * This option enables use of email priority flags by end users.
  * @global bool $default_use_priority
  */
-$default_use_priority = true;
+$default_use_priority = false;
 
 /**
  * SquirrelMail Attributions Control

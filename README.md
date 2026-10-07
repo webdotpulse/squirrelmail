@@ -1,4 +1,4 @@
-# SquirrelMail 1.5.41
+# SquirrelMail 1.5.42
 
 A modernized, responsive edition of SquirrelMail engineered for PHP 7.0 through 8.2+ with a Single-Page Application (SPA) interface, modern UI styling, and extensive feature enhancements.
 
@@ -51,6 +51,17 @@ This repository includes an [AGENTS.md](file:///home/koen/Git/squirrelmail/AGENT
 ---
 
 ## 📝 Changelog
+
+### Version 1.5.42
+- **Removal of Priority (Normal/High Priority) in Favor of Flag / Unflag**:
+  - **Removed Priority Column from Message List**: Removed `SQM_COL_PRIO` from table headers, row cells, and column configuration (`templates/default/message_list.tpl`), eliminating message table clutter and relying on standard IMAP Flagged status (`SQM_COL_FLAGS`).
+  - **Removed Priority Batch Dropdown**: Removed the "🔴 Priority ▼" batch dropdown ("Mark as High Priority" and "Remove High Priority") from the mailbox action controls toolbar (`templates/default/message_list_controls.tpl`), utilizing existing "Flag" and "Unflag" action buttons.
+  - **Cleaned Reading View Priority Indicator**: Reverted message header priority rendering (`src/read_body.php` and `templates/default/read_message_priority.tpl`) to clean, simple priority text without interactive Normal/High buttons or badges, and set `$default_use_priority = false;` across default configurations (`config/config.php`, `config/config_default.php`, and `install.php`).
+  - **Removed Priority JavaScript & Event Listeners**: Purged interactive priority toggling and batch actions (`sqmTogglePriority`, `sqmApplyBatchPriority`, `sqmTogglePrioDropdown`) as well as dropdown click/Escape dismissal listeners from `assets/js/app.js`.
+  - **Purged Priority Styles**: Removed `.sm-prio-dropdown-wrapper`, `.sm-col-priority`, and `.sm-btn-prio-toggle` from `assets/css/app.css`.
+  - **Removed Priority Backend & AJAX Endpoint**: Deleted `functions/priority.php` and `src/priority_ajax.php`, removing priority overrides and legacy JSON storage.
+  - **Sanitized Column Layouts & Preferences**: Updated `include/load_prefs.php` and `src/options_order.php` to remove `SQM_COL_PRIO` from default mailbox column orders and automatically strip it from existing user profile settings.
+- **Version Bump**: Incremented version from `1.5.41` to `1.5.42`.
 
 ### Version 1.5.41
 - **AI Agent Email Summarizer & Body Text Extraction Fix**:

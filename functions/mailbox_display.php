@@ -13,8 +13,6 @@
  */
 
 
-require_once(SM_PATH . 'functions/priority.php');
-
 /**
  * Selects a mailbox for header retrieval.
  * Cache control for message headers is embedded.
@@ -693,9 +691,6 @@ function prepareMessageList(&$aMailbox, $aProps) {
                     $value = $aFlagColumn;
                     break;
                 case SQM_COL_PRIO:
-                    $rawPrio = ($value) ? (int) $value : 3;
-                    $value = sqm_get_effective_priority($sMailbox, $iUid, $rawPrio);
-                    $aColumns[$k]['raw_prio'] = $value;
                     break;
                 case SQM_COL_ATTACHMENT:
                     $value = (is_array($value) && $value[0] == 'multipart' && $value[1] == 'mixed') ? true : false;
@@ -1343,8 +1338,6 @@ function handleMessageListForm($imapConnection, &$aMailbox, $sButton='',
     $sButton = (sqgetGlobalVar('markUnread',      $sTmp, SQ_FORM)) ? 'unsetSeen'    : $sButton;
     $sButton = (sqgetGlobalVar('markFlagged',     $sTmp, SQ_FORM)) ? 'setFlagged'   : $sButton;
     $sButton = (sqgetGlobalVar('markUnflagged',   $sTmp, SQ_FORM)) ? 'unsetFlagged' : $sButton;
-    $sButton = (sqgetGlobalVar('markHighPriority', $sTmp, SQ_FORM)) ? 'setHighPriority'   : $sButton;
-    $sButton = (sqgetGlobalVar('clearHighPriority', $sTmp, SQ_FORM)) ? 'unsetHighPriority' : $sButton;
     if (empty($targetMailbox)) sqgetGlobalVar('targetMailbox', $targetMailbox,   SQ_FORM);
     if (is_null($bypass_trash)) sqgetGlobalVar('bypass_trash',  $bypass_trash,    SQ_FORM);
     sqgetGlobalVar('msg',           $msg,             SQ_FORM);
@@ -1389,12 +1382,6 @@ function handleMessageListForm($imapConnection, &$aMailbox, $sButton='',
             $sFlag = (substr($sButton,0,3) == 'set') ? '\\'.substr($sButton,3) : '\\'.substr($sButton,5);
             $bSet  = (substr($sButton,0,3) == 'set') ? true : false;
             $aUpdatedMsgs = sqimap_toggle_flag($imapConnection, $aUid, $sFlag, $bSet, true);
-            break;
-          case 'setHighPriority':
-            sqm_batch_set_priority($mailbox, $aUid, 1, $imapConnection);
-            break;
-          case 'unsetHighPriority':
-            sqm_batch_set_priority($mailbox, $aUid, 3, $imapConnection);
             break;
           case 'move':
             $aUpdatedMsgs = sqimap_msgs_list_move($imapConnection,$aUid,$targetMailbox,true,$mailbox);

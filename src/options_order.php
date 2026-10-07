@@ -58,10 +58,12 @@ if (sqgetGlobalVar('mailbox', $mailbox, SQ_GET)) {
 }
 if (!isset($index_order)) {
     if (isset($internal_date_sort) && $internal_date_sort == false) {
-        $index_order = array(SQM_COL_CHECK,SQM_COL_FROM,SQM_COL_DATE,SQM_COL_FLAGS,SQM_COL_ATTACHMENT,SQM_COL_PRIO,SQM_COL_SUBJ);
+        $index_order = array(SQM_COL_CHECK,SQM_COL_FROM,SQM_COL_DATE,SQM_COL_FLAGS,SQM_COL_ATTACHMENT,SQM_COL_SUBJ);
     } else {
-        $index_order = array(SQM_COL_CHECK,SQM_COL_FROM,SQM_COL_INT_DATE,SQM_COL_FLAGS,SQM_COL_ATTACHMENT,SQM_COL_PRIO,SQM_COL_SUBJ);
+        $index_order = array(SQM_COL_CHECK,SQM_COL_FROM,SQM_COL_INT_DATE,SQM_COL_FLAGS,SQM_COL_ATTACHMENT,SQM_COL_SUBJ);
     }
+} else if (is_array($index_order) && in_array(SQM_COL_PRIO, $index_order)) {
+    $index_order = array_values(array_diff($index_order, array(SQM_COL_PRIO)));
 }
 
 if (!sqgetGlobalVar('account', $account,  SQ_GET)) {
@@ -121,7 +123,6 @@ $available[SQM_COL_DATE]       = _("Date");
 $available[SQM_COL_SUBJ]       = _("Subject");
 $available[SQM_COL_FLAGS]      = _("Flags");
 $available[SQM_COL_SIZE]       = _("Size");
-$available[SQM_COL_PRIO]       = _("Priority");
 $available[SQM_COL_ATTACHMENT] = _("Attachments");
 $available[SQM_COL_INT_DATE]   = _("Received");
 $available[SQM_COL_TO]         = _("To");

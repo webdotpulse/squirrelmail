@@ -400,11 +400,7 @@ function formatEnvheader($aMailbox, $passed_id, $passed_ent_id, $message,
     $env[_("Cc")] = formatRecipientString($header->cc, "cc");
     $env[_("Bcc")] = formatRecipientString($header->bcc, "bcc");
     if ($default_use_priority) {
-        require_once(SM_PATH . 'functions/priority.php');
-        $effPriority = sqm_get_effective_priority($mailbox, $passed_id, $header->priority);
-        $oTemplate->assign('message_priority', $effPriority);
-        $oTemplate->assign('mailbox', $mailbox);
-        $oTemplate->assign('passed_id', $passed_id);
+        $oTemplate->assign('message_priority', $header->priority);
         $env[_("Priority")] = $oTemplate->fetch('read_message_priority.tpl');
     }
     if ($show_xmailer_default) {

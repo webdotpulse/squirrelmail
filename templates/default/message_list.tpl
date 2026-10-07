@@ -88,6 +88,13 @@ include_once(SM_PATH . 'functions/template/message_list_util.php');
 /* retrieve the template vars */
 extract($t);
 
+if (is_array($aOrder)) {
+    $aOrder = array_values(array_diff($aOrder, array(SQM_COL_PRIO)));
+}
+if (isset($aColumns[SQM_COL_PRIO])) {
+    unset($aColumns[SQM_COL_PRIO]);
+}
+
 
 if (!empty($plugin_output['mailbox_index_before'])) echo $plugin_output['mailbox_index_before'];
 
@@ -202,9 +209,7 @@ if ($iNumberOfMessages == 0) {
               // echo  _("Size") . "\n";
               $colNameText = _("Size");
               break;
-          case SQM_COL_PRIO:
-              echo getIcon($icon_theme_path, 'prio_high.png', '!', _("Priority")) . "\n";
-              break;
+
           case SQM_COL_ATTACHMENT:
               echo getIcon($icon_theme_path, 'attach.png', '+', _("Attachment")) . "\n";
               break;
@@ -301,13 +306,6 @@ if ($iNumberOfMessages == 0) {
 
         /* add the flag string to the value index */
         $aColumns[SQM_COL_FLAGS]['value'] = $sFlags;
-    }
-    /**
-     * Check the priority column
-     */
-    if (isset($aColumns[SQM_COL_PRIO])) {
-        $sValue = getPriorityIcon($aColumns[SQM_COL_PRIO]['value'], $icon_theme_path);
-        $aColumns[SQM_COL_PRIO]['value'] = $sValue;
     }
 
     /**
@@ -496,20 +494,6 @@ $row_class = trim((empty($class) ? '' : $class) . ' sm-message-row' . ($is_unrea
                 $sText .= str_repeat('&nbsp;&nbsp;',$indent);
             }
             echo $sText."</td>\n";
-            break;
-          case SQM_COL_PRIO:
-            $prioVal = isset($aCol['raw_prio']) ? $aCol['raw_prio'] : (isset($aMsg['columns'][SQM_COL_PRIO]['raw_prio']) ? $aMsg['columns'][SQM_COL_PRIO]['raw_prio'] : 3);
-            $isHigh = ($prioVal == 1 || $prioVal == 2);
-            $prioTitle = $isHigh ? _("High Priority (Click to remove)") : _("Normal Priority (Click to mark High Priority)");
-            $prioClass = $isHigh ? 'sm-prio-high' : 'sm-prio-normal';
-            $curMbx = !empty($mailbox) ? $mailbox : (!empty($mb_current) ? $mb_current : 'INBOX');
-            $sText = "    <td class=\"col_prio sm-col-priority\" style=\"text-align: center; vertical-align: middle; width: 34px;\">"
-                   . "<button type=\"button\" class=\"sm-btn-prio-toggle $prioClass\" onclick=\"event.stopPropagation(); if (typeof window.sqmTogglePriority === 'function') { window.sqmTogglePriority('" . htmlspecialchars($curMbx, ENT_QUOTES) . "', $iUid, this); }\" style=\"background: none; border: none; cursor: pointer; padding: 2px 4px; border-radius: 4px; line-height: 1; transition: transform 0.15s ease, opacity 0.15s ease;\" title=\"$prioTitle\">"
-                   . ($isHigh
-                       ? '<span class="sm-prio-icon-high" style="font-size: 14px; filter: drop-shadow(0 1px 2px rgba(217,48,37,0.3)); display: inline-block;">🔴</span>'
-                       : '<span class="sm-prio-icon-normal" style="font-size: 13px; opacity: 0.25; filter: grayscale(1); display: inline-block;" onmouseover="this.style.opacity=0.9; this.textContent=\'🔴\';" onmouseout="this.style.opacity=0.25; this.textContent=\'⚪\';">⚪</span>')
-                   . "</button></td>\n";
-            echo $sText;
             break;
           case SQM_COL_SIZE:
           case SQM_COL_FLAGS:

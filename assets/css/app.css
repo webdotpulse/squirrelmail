@@ -1024,13 +1024,7 @@ img[src$=".svg"],
   color: #fbbc04;
 }
 
-/* Priority Column & Dropdown Controls */
-.sm-prio-dropdown-wrapper {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-}
-
+/* Dropdown Menus */
 .sm-dropdown-menu {
   display: none;
   position: absolute;
@@ -1068,31 +1062,6 @@ img[src$=".svg"],
 .sm-dropdown-item:hover {
   background-color: var(--sm-hover-bg, #f1f3f4);
   color: var(--sm-primary, #1a73e8);
-}
-
-.sm-col-priority {
-  width: 34px;
-  text-align: center;
-  vertical-align: middle;
-}
-
-.sm-btn-prio-toggle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  border-radius: 6px;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  padding: 0;
-  transition: transform 0.15s ease, background-color 0.15s ease;
-}
-
-.sm-btn-prio-toggle:hover {
-  background-color: var(--sm-hover-bg, rgba(0, 0, 0, 0.06));
-  transform: scale(1.15);
 }
 
 .sm-btn-xs {

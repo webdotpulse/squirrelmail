@@ -223,10 +223,13 @@ if (is_string($index_order)) {
 
 if (!$index_order) {
     if (isset($internal_date_sort) && $internal_date_sort == false) {
-        $index_order = array(SQM_COL_CHECK,SQM_COL_FROM,SQM_COL_DATE,SQM_COL_FLAGS,SQM_COL_ATTACHMENT,SQM_COL_PRIO,SQM_COL_SUBJ);
+        $index_order = array(SQM_COL_CHECK,SQM_COL_FROM,SQM_COL_DATE,SQM_COL_FLAGS,SQM_COL_ATTACHMENT,SQM_COL_SUBJ);
     } else {
-        $index_order = array(SQM_COL_CHECK,SQM_COL_FROM,SQM_COL_INT_DATE,SQM_COL_FLAGS,SQM_COL_ATTACHMENT,SQM_COL_PRIO,SQM_COL_SUBJ);
+        $index_order = array(SQM_COL_CHECK,SQM_COL_FROM,SQM_COL_INT_DATE,SQM_COL_FLAGS,SQM_COL_ATTACHMENT,SQM_COL_SUBJ);
     }
+    setPref($data_dir, $username, 'index_order', serialize($index_order));
+} else if (is_array($index_order) && in_array(SQM_COL_PRIO, $index_order)) {
+    $index_order = array_values(array_diff($index_order, array(SQM_COL_PRIO)));
     setPref($data_dir, $username, 'index_order', serialize($index_order));
 }
 
@@ -248,6 +251,10 @@ if (!isset($default_mailbox_pref)) {
 //        unset($prefs_cache['show_num']);
 //        removePref($data_dir,$username,'show_num');
 //    }
+} else if (isset($default_mailbox_pref[MBX_PREF_COLUMNS]) && is_array($default_mailbox_pref[MBX_PREF_COLUMNS])) {
+    if (in_array(SQM_COL_PRIO, $default_mailbox_pref[MBX_PREF_COLUMNS])) {
+        $default_mailbox_pref[MBX_PREF_COLUMNS] = array_values(array_diff($default_mailbox_pref[MBX_PREF_COLUMNS], array(SQM_COL_PRIO)));
+    }
 }
 
 
