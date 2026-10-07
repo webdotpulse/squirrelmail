@@ -55,7 +55,29 @@ if (count($aFormElements)) {
     if (!empty($plugin_output['message_list_controls_buttons'])) {
         echo $plugin_output['message_list_controls_buttons'];
     }
+    $mb_current = $mailbox ?? ($aFormElements['mailbox']['value'] ?? ($_GET['mailbox'] ?? 'INBOX'));
 ?>
+      <!-- Priority Batch Dropdown -->
+      <div class="sm-prio-dropdown-wrapper" style="position: relative; display: inline-flex; align-items: center;">
+          <button type="button" class="sm-btn sm-btn-secondary sm-btn-sm" onclick="if(typeof window.sqmTogglePrioDropdown==='function') window.sqmTogglePrioDropdown(event);" title="<?php echo _("Set Priority for Selected Messages"); ?>" style="display: inline-flex; align-items: center; gap: 5px; cursor: pointer; white-space: nowrap;">
+              <span>🔴</span>
+              <span><?php echo _("Priority"); ?></span>
+              <span style="font-size: 8px; opacity: 0.7; margin-left: 2px;">▼</span>
+          </button>
+          <div id="sm-prio-batch-dropdown" class="sm-dropdown-menu" style="display: none; position: absolute; top: calc(100% + 4px); left: 0; min-width: 200px; background: var(--sm-bg-surface, #ffffff); border: 1px solid var(--sm-border, #dadce0); border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.16), 0 2px 6px rgba(0,0,0,0.08); z-index: 10005; padding: 6px 0;">
+              <div style="padding: 6px 14px 4px; font-size: 11px; font-weight: 700; color: var(--sm-text-muted, #5f6368); text-transform: uppercase; letter-spacing: 0.5px;">
+                  <?php echo _("Set Priority As"); ?>
+              </div>
+              <div class="sm-dropdown-item" onclick="if(typeof window.sqmApplyBatchPriority==='function') window.sqmApplyBatchPriority('<?php echo htmlspecialchars($mb_current, ENT_QUOTES); ?>', 1);" style="display: flex; align-items: center; gap: 10px; padding: 7px 14px; font-size: 13px; font-weight: 500; color: var(--sm-text-primary, #202124); cursor: pointer;" onmouseover="this.style.background='var(--sm-bg-hover, rgba(0,0,0,0.05))';" onmouseout="this.style.background='transparent';">
+                  <span style="font-size: 14px;">🔴</span>
+                  <span><?php echo _("Mark as High Priority"); ?></span>
+              </div>
+              <div class="sm-dropdown-item" onclick="if(typeof window.sqmApplyBatchPriority==='function') window.sqmApplyBatchPriority('<?php echo htmlspecialchars($mb_current, ENT_QUOTES); ?>', 3);" style="display: flex; align-items: center; gap: 10px; padding: 7px 14px; font-size: 13px; font-weight: 500; color: var(--sm-text-primary, #202124); cursor: pointer;" onmouseover="this.style.background='var(--sm-bg-hover, rgba(0,0,0,0.05))';" onmouseout="this.style.background='transparent';">
+                  <span style="font-size: 13px; opacity: 0.6;">⚪</span>
+                  <span><?php echo _("Remove High Priority"); ?></span>
+              </div>
+          </div>
+      </div>
     </div>
 
     <div class="sm-message-control-actions" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">

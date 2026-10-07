@@ -491,6 +491,19 @@ $row_class = trim((empty($class) ? '' : $class) . ' sm-message-row' . ($is_unrea
             }
             echo $sText."</td>\n";
             break;
+          case SQM_COL_PRIO:
+            $prioVal = isset($aCol['raw_prio']) ? $aCol['raw_prio'] : (isset($aMsg['columns'][SQM_COL_PRIO]['raw_prio']) ? $aMsg['columns'][SQM_COL_PRIO]['raw_prio'] : 3);
+            $isHigh = ($prioVal == 1 || $prioVal == 2);
+            $prioTitle = $isHigh ? _("High Priority (Click to remove)") : _("Normal Priority (Click to mark High Priority)");
+            $prioClass = $isHigh ? 'sm-prio-high' : 'sm-prio-normal';
+            $sText = "    <td class=\"col_prio sm-col-priority\" style=\"text-align: center; vertical-align: middle; width: 34px;\">"
+                   . "<button type=\"button\" class=\"sm-btn-prio-toggle $prioClass\" onclick=\"event.stopPropagation(); if (typeof window.sqmTogglePriority === 'function') { window.sqmTogglePriority('" . htmlspecialchars($mailbox, ENT_QUOTES) . "', $iUid, this); }\" style=\"background: none; border: none; cursor: pointer; padding: 2px 4px; border-radius: 4px; line-height: 1; transition: transform 0.15s ease, opacity 0.15s ease;\" title=\"$prioTitle\">"
+                   . ($isHigh
+                       ? '<span class="sm-prio-icon-high" style="font-size: 14px; filter: drop-shadow(0 1px 2px rgba(217,48,37,0.3)); display: inline-block;">🔴</span>'
+                       : '<span class="sm-prio-icon-normal" style="font-size: 13px; opacity: 0.25; filter: grayscale(1); display: inline-block;" onmouseover="this.style.opacity=0.9; this.textContent=\'🔴\';" onmouseout="this.style.opacity=0.25; this.textContent=\'⚪\';">⚪</span>')
+                   . "</button></td>\n";
+            echo $sText;
+            break;
           case SQM_COL_SIZE:
           case SQM_COL_FLAGS:
             $sText = "    <td class=\"col_flags\" $javascript_auto_click>"

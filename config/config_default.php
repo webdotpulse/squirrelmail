@@ -62,12 +62,11 @@ $org_title = "SquirrelMail";
 /**
  * Signout page
  *
- * Rather than going to the signout.php page (which only allows you
- * to sign back in), setting signout_page allows you to sign the user
- * out and then redirect to whatever page you want. For instance,
- * the following would return the user to your home page:
+ * Setting signout_page allows you to sign the user out and then redirect
+ * to whatever custom page or external URL you want. For instance, the
+ * following would return the user to your site home page:
  *   $signout_page = '/';
- * Set to the empty string to continue to use the default signout page.
+ * Set to the empty string (default) to redirect directly to the login page.
  * @global string $signout_page
  */
 $signout_page = '';

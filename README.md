@@ -1,4 +1,4 @@
-# SquirrelMail 1.5.11
+# SquirrelMail 1.5.13
 
 A modernized, responsive edition of SquirrelMail engineered for PHP 7.0 through 8.2+ with a Single-Page Application (SPA) interface, modern UI styling, and extensive feature enhancements.
 
@@ -43,6 +43,22 @@ This repository includes an [AGENTS.md](file:///home/koen/Git/squirrelmail/AGENT
 ---
 
 ## 📝 Changelog
+
+### Version 1.5.13
+- **Direct Login Redirection on Logout (Skip Signout Page)**:
+  - Updated `src/signout.php` to immediately redirect to `login.php` (or custom `$signout_page` if defined) upon destroying the session and purging attachments.
+  - Eliminated the intermediate "You have been successfully signed out. Click here to log back in." confirmation screen (`signout.tpl`), providing an instantaneous, seamless return to the login interface.
+  - Updated configuration documentation in `config/config.php` and `config/config_default.php`.
+- **Version Bump**: Incremented version from `1.5.12` to `1.5.13`.
+
+### Version 1.5.12
+- **Dynamic Email High Priority Management (Add & Remove)**:
+  - Enabled full interactive adding and removing of High priority on emails in the INBOX, all subfolders, and search listings.
+  - **One-Click Row Toggle**: Made the Priority column (`SQM_COL_PRIO` in `templates/default/message_list.tpl`) interactive with one-click toggling. High priority messages display 🔴 (with tooltip "High Priority (Click to remove)"), while normal priority messages show an intuitive, subtle hoverable indicator to mark as High Priority, updated instantaneously via AJAX with zero page flicker.
+  - **Mailbox Batch Priority Toolbar**: Integrated a dedicated "🔴 Priority ▼" batch dropdown into the mailbox action controls toolbar (`templates/default/message_list_controls.tpl`), enabling users to mark multiple selected emails as High Priority or remove High Priority across any mailbox or subfolder with one action.
+  - **Reading View Priority Toggle**: Enhanced the message header Priority indicator (`src/read_body.php` & `templates/default/read_message_priority.tpl`) with an inline action button (`[Remove High Priority]` / `[Mark as High Priority]`) to dynamically change priority while viewing an email.
+  - **Persistent Priority Engine & IMAP Keyword Sync**: Implemented `functions/priority.php` with per-user persistent JSON override storage and automatic synchronization with IMAP server keywords (`$HighPriority`), complemented by an asynchronous API endpoint (`src/priority_ajax.php`).
+- **Version Bump**: Incremented version from `1.5.11` to `1.5.12`.
 
 ### Version 1.5.11
 - **Missing `images/blank.png` 404 Resolution**:

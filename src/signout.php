@@ -3,7 +3,8 @@
 /**
  * signout.php -- cleans up session and logs the user out
  *
- *  Cleans up after the user. Resets cookies and terminates session.
+ * Cleans up after the user. Resets cookies, terminates session,
+ * and redirects directly to the login page (or custom signout_page).
  *
  * @copyright 1999-2026 The SquirrelMail Project Team
  * @license http://opensource.org/licenses/gpl-license.php GNU Public License
@@ -38,42 +39,13 @@ do_hook('logout', $login_uri);
 
 sqsession_destroy();
 
-if ($signout_page) {
-    // Status 303 header is disabled. PHP fastcgi bug. See 1.91 changelog.
-    //header('Status: 303 See Other');
-    header("Location: $signout_page");
-    exit; /* we send no content if we're redirecting. */
+// Redirect directly to the login page, skipping the signout confirmation page
+$target = !empty($signout_page) ? $signout_page : $login_uri;
+
+if (!headers_sent()) {
+    header("Location: $target");
+    exit;
+} else {
+    echo '<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0;url=' . htmlspecialchars($target, ENT_QUOTES) . '"><script>top.location.href=' . json_encode($target) . ';</script></head><body></body></html>';
+    exit;
 }
-
-/* After a reload of signout.php, $oTemplate might not exist anymore.
- * Recover, so that we don't get all kinds of errors in that situation. */
-if ( !isset($oTemplate) || !is_object($oTemplate) ) {
-    require_once(SM_PATH . 'class/template/Template.class.php');
-    $sTemplateID = Template::get_default_template_set();
-    $icon_theme_path = !$use_icons ? NULL : Template::calculate_template_images_directory($sTemplateID);
-    $oTemplate = Template::construct_template($sTemplateID);
-
-    // We want some variables to always be available to the template
-    $oTemplate->assign('javascript_on', checkForJavascript());
-    $oTemplate->assign('base_uri', sqm_baseuri());
-    $always_include = array('sTemplateID', 'icon_theme_path');
-    foreach ($always_include as $var) {
-        $oTemplate->assign($var, (isset($$var) ? $$var : NULL));
-    }
-}
-
-// The error handler object is probably also not initialized on a refresh
-$oErrorHandler = new ErrorHandler($oTemplate,'error_message.tpl');
-
-/* internal gettext functions will fail, if language is not set */
-set_up_language($squirrelmail_language, true, true);
-
-displayHtmlHeader($org_title . ' - ' . _("Signout"));
-
-$oTemplate->assign('frame_top', $frame_top);
-$oTemplate->assign('login_uri', $login_uri);
-
-$oTemplate->display('signout.tpl');
-
-$oTemplate->display('footer.tpl');
-
