@@ -4,7 +4,9 @@
    ========================================================================== */
 
 /* Modern CSS Reset & Typography */
-*, *::before, *::after {
+*,
+*::before,
+*::after {
     box-sizing: border-box;
 }
 
@@ -48,7 +50,7 @@ body {
     background-color: var(--sm-bg-body);
     line-height: 1.5;
     margin: 0;
-    padding: 12px 16px;
+    /*padding: 12px 16px;*/
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 }
@@ -58,24 +60,30 @@ body {
     width: 8px;
     height: 8px;
 }
+
 ::-webkit-scrollbar-track {
     background: #0b1120;
 }
+
 ::-webkit-scrollbar-thumb {
     background: #1f2937;
     border-radius: 4px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
     background: #374151;
 }
 
 /* Base Links */
-a:link, a:visited {
+a:link,
+a:visited {
     color: var(--sm-primary);
     text-decoration: none;
     transition: color 0.15s ease, background 0.15s ease;
 }
-a:hover, a:active {
+
+a:hover,
+a:active {
     color: var(--sm-primary-hover);
     text-decoration: underline;
 }
@@ -147,6 +155,7 @@ input[type="submit"][value*="Send"],
     color: #0b1120 !important;
     font-weight: 600;
 }
+
 input[type="submit"][name="send"]:hover,
 input[type="submit"][value*="Send"]:hover,
 .btn-primary:hover {
@@ -162,7 +171,8 @@ body.sqm_leftMain {
     border-right: 1px solid var(--sm-border);
 }
 
-.sqm_leftMain a:link, .sqm_leftMain a:visited {
+.sqm_leftMain a:link,
+.sqm_leftMain a:visited {
     color: var(--sm-text-dark);
     text-decoration: none;
     display: inline-block;
@@ -173,7 +183,8 @@ body.sqm_leftMain {
     transition: background-color 0.15s ease;
 }
 
-.sqm_leftMain a:hover, .sqm_leftMain a:active {
+.sqm_leftMain a:hover,
+.sqm_leftMain a:active {
     background-color: #1e293b;
     color: var(--sm-primary);
     text-decoration: none;
@@ -185,7 +196,9 @@ body.sqm_leftMain {
     font-weight: 700 !important;
 }
 
-.leftspecial, .leftspecial a:link, .leftspecial a:visited {
+.leftspecial,
+.leftspecial a:link,
+.leftspecial a:visited {
     color: #f43f5e !important;
     font-weight: 600 !important;
 }
@@ -203,7 +216,9 @@ body.sqm_leftMain {
 }
 
 /* Top App Header & Menuline */
-td.header1, .sqm_loginOrgName, .sqm_signoutBar {
+td.header1,
+.sqm_loginOrgName,
+.sqm_signoutBar {
     background-color: #111827 !important;
     border-bottom: 1px solid var(--sm-border);
     padding: 10px 16px;
@@ -219,7 +234,8 @@ td.header1, .sqm_loginOrgName, .sqm_signoutBar {
     margin-bottom: 16px;
 }
 
-.sqm_menuline a:link, .sqm_menuline a:visited {
+.sqm_menuline a:link,
+.sqm_menuline a:visited {
     display: inline-flex;
     align-items: center;
     padding: 5px 12px;
@@ -233,7 +249,8 @@ td.header1, .sqm_loginOrgName, .sqm_signoutBar {
     transition: all 0.15s ease;
 }
 
-.sqm_menuline a:hover, .sqm_menuline a:active {
+.sqm_menuline a:hover,
+.sqm_menuline a:active {
     background-color: var(--sm-primary-light);
     color: var(--sm-primary);
     border-color: var(--sm-primary-border);
@@ -241,7 +258,9 @@ td.header1, .sqm_loginOrgName, .sqm_signoutBar {
 }
 
 /* Message List Table */
-table.table1, table.table_empty, .sqm_wrapperTable {
+table.table1,
+table.table_empty,
+.sqm_wrapperTable {
     width: 100% !important;
     border-collapse: collapse;
     background-color: #111827;
@@ -253,7 +272,10 @@ table.table1, table.table_empty, .sqm_wrapperTable {
 }
 
 /* Table Headers */
-tr.header5, tr.header4, th, .thead_caption {
+tr.header5,
+tr.header4,
+th,
+.thead_caption {
     background-color: #1e293b !important;
     color: var(--sm-text-muted) !important;
     font-size: 12px !important;
@@ -266,7 +288,9 @@ tr.header5, tr.header4, th, .thead_caption {
 }
 
 /* Table Data Rows */
-table.table1 td, tr.even td, tr.odd td {
+table.table1 td,
+tr.even td,
+tr.odd td {
     padding: 10px 12px;
     border-bottom: 1px solid var(--sm-border);
     vertical-align: middle;
@@ -274,16 +298,20 @@ table.table1 td, tr.even td, tr.odd td {
     transition: background 0.1s ease;
 }
 
-tr.odd, tr.even {
+tr.odd,
+tr.even {
     background-color: #111827;
 }
 
-tr.odd:hover, tr.even:hover {
+tr.odd:hover,
+tr.even:hover {
     background-color: #1e293b !important;
 }
 
 /* Bold Styling for Unread Messages */
-tr.unread td, tr.unread b, tr.unread a {
+tr.unread td,
+tr.unread b,
+tr.unread a {
     font-weight: 700 !important;
     color: var(--sm-text-dark) !important;
 }
@@ -345,7 +373,8 @@ textarea#body {
 }
 
 /* Error and Alert Boxes */
-.error_table, .sqm_errorBox {
+.error_table,
+.sqm_errorBox {
     background-color: var(--sm-danger-light) !important;
     border: 1px solid #7f1d1d !important;
     color: #fca5a5 !important;
@@ -368,7 +397,9 @@ textarea#body {
         gap: 6px;
         justify-content: flex-start;
     }
-    .sqm_menuline a:link, .sqm_menuline a:visited {
+
+    .sqm_menuline a:link,
+    .sqm_menuline a:visited {
         padding: 6px 10px;
         font-size: 12px;
     }
@@ -380,7 +411,8 @@ textarea#body {
         border-radius: var(--sm-radius-md);
     }
 
-    table.table1 td, table.table1 th {
+    table.table1 td,
+    table.table1 th {
         padding: 8px 8px;
         font-size: 12.5px;
     }

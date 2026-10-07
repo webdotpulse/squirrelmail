@@ -27,7 +27,6 @@ $squirrelmail_plugin_hooks['optpage_register_block']['spam_buttons'] = 'sb_optpa
 $squirrelmail_plugin_hooks['optpage_register_block']['templates'] = 'tpl_optpage_register_block';
 $squirrelmail_plugin_hooks['optpage_register_block']['filters'] = 'filters_optpage_register_block';
 $squirrelmail_plugin_hooks['optpage_register_block']['signature_creator'] = 'signature_creator_optpage_register_block';
-$squirrelmail_plugin_hooks['optpage_register_block']['administrator'] = 'squirrelmail_administrator_optpage_register_block';
 $squirrelmail_plugin_hooks['optpage_register_block']['conversation_view'] = 'conversation_view_optpage_register_block';
 $squirrelmail_plugin_hooks['read_body_header_right']['ai_agent'] = 'ai_agent_read_toolbar';
 $squirrelmail_plugin_hooks['read_body_header_right']['calendar'] = 'calendar_read_body_header_right';

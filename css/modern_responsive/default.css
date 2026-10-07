@@ -40,7 +40,7 @@ body {
     background-color: var(--sm-bg-body);
     line-height: 1.5;
     margin: 0;
-    padding: 12px 16px;
+    /*padding: 12px 16px;*/
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 }

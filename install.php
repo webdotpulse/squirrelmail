@@ -13,7 +13,7 @@
  */
 
 define('SM_PATH', './');
-define('INSTALLER_VERSION', '1.5.54');
+define('INSTALLER_VERSION', '1.5.55');
 
 // Ensure core constants (such as SM_DEBUG_MODE_OFF) are loaded before config.php
 if (file_exists(SM_PATH . 'include/constants.php')) {
@@ -494,8 +494,8 @@ PHP;
         @file_put_contents('config/plugin_hooks.php', $hook_content);
     }
 
-    // Save administrator whitelist if administrator plugin is active or admin_users is submitted
-    if (isset($data['admin_users']) || in_array('administrator', $selected_plugins)) {
+    // Save administrator whitelist if administrator plugin is active
+    if (in_array('administrator', $selected_plugins) && (isset($data['admin_users']) || !file_exists('config/admins'))) {
         $raw_admins = isset($data['admin_users']) ? $data['admin_users'] : '';
         $admin_list = [];
         $split_admins = preg_split('/[\r\n,;]+/', $raw_admins);
@@ -1655,7 +1655,7 @@ if (empty($existing_admins)) {
                             </div>
                         </label>
                         <label class="plugin-check">
-                            <input type="checkbox" name="plugins[]" value="administrator" id="plugin-administrator-check" checked>
+                            <input type="checkbox" name="plugins[]" value="administrator" id="plugin-administrator-check">
                             <div>
                                 <strong>administrator</strong>
                                 <div class="field-desc">Web-based SquirrelMail configuration management panel for authorized administrators.</div>
@@ -1665,7 +1665,7 @@ if (empty($existing_admins)) {
                 </div>
 
                 <!-- Administrator Whitelist Settings -->
-                <div class="form-section" id="admin-whitelist-card" style="margin-top: 24px; padding: 20px; background: var(--bg); border: 1px solid var(--card-border); border-radius: var(--radius-sm);">
+                <div class="form-section" id="admin-whitelist-card" style="display: none; margin-top: 24px; padding: 20px; background: var(--bg); border: 1px solid var(--card-border); border-radius: var(--radius-sm);">
                     <h3 class="form-section-title" style="margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
                         <span>🔐</span> Web Administration Allowed Logins &amp; Email Addresses
                     </h3>
@@ -2060,6 +2060,15 @@ if (empty($existing_admins)) {
                     errBox.textContent = 'Installation request failed: ' + err;
                 });
         });
+
+        // Toggle admin whitelist settings if administrator plugin checkbox changes
+        const adminChk = document.getElementById('plugin-administrator-check');
+        const adminCard = document.getElementById('admin-whitelist-card');
+        if (adminChk && adminCard) {
+            adminChk.addEventListener('change', function() {
+                adminCard.style.display = this.checked ? 'block' : 'none';
+            });
+        }
     </script>
 </body>
 </html>

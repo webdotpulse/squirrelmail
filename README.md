@@ -1,4 +1,4 @@
-# SquirrelMail 1.5.54
+# SquirrelMail 1.5.55
 
 A modernized, responsive edition of SquirrelMail engineered for PHP 7.0 through 8.2+ with a Single-Page Application (SPA) interface, modern UI styling, and extensive feature enhancements.
 
@@ -57,6 +57,13 @@ This repository includes an [AGENTS.md](file:///home/koen/Git/squirrelmail/AGENT
 ---
 
 ## 📝 Changelog
+
+### Version 1.5.55
+- **Disable Administrator Plugin (`plugins/administrator`)**:
+  - Removed `administrator` from the active plugins list in `config/config.php` and `config/config_default.php`.
+  - Removed the `optpage_register_block` hook for `administrator` in `config/plugin_hooks.php`, preventing the Administration section from appearing in Webmail Options (`src/options.php`).
+  - Updated `install.php` to uncheck the `administrator` plugin by default, hide the administrator whitelist configuration card by default, and provide a dynamic checkbox toggle.
+- **Version Bump**: Incremented version from `1.5.54 [SVN]` to `1.5.55 [SVN]`.
 
 ### Version 1.5.54
 - **Resolve HTTP 500 Internal Server Error on Reading Messages (`src/read_body.php`)**:
