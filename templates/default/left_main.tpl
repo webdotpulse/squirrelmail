@@ -274,10 +274,15 @@ extract($t);
 <div class="sqm_leftMain">
 <?php if (!empty($plugin_output['left_main_before'])) echo $plugin_output['left_main_before']; ?>
 <div class="sm-sidebar-folders-wrapper">
- <div class="sm-sidebar-folders-header">
-  <span class="sqm_folderHeader"><?php echo _("Folders"); ?></span>
-  <span class="sqm_clock"><?php echo $clock; ?></span>
-  <span class="sqm_refreshButton"><small>[<a href="../src/left_main.php" <?php if ($accesskey_folders_refresh != 'NONE') echo 'accesskey="' . $accesskey_folders_refresh . '" '; ?>class="sm-folder-refresh-btn"><?php echo _("Check Mail"); ?></a>]</small></span>
+ <div class="sm-sidebar-folders-header" style="display: flex; align-items: center; justify-content: space-between;">
+  <div style="display: flex; align-items: center; gap: 6px;">
+   <span class="sqm_folderHeader"><?php echo _("Folders"); ?></span>
+   <a href="<?php echo sqm_baseuri(); ?>src/folders.php" style="color: var(--sm-primary, #1a73e8); text-decoration: none; font-size: 16px; font-weight: bold; line-height: 1; padding: 0 4px;" title="<?php echo _("Manage Folders"); ?>">+</a>
+  </div>
+  <div style="display: flex; align-items: center; gap: 6px;">
+   <span class="sqm_clock"><?php echo $clock; ?></span>
+   <span class="sqm_refreshButton"><small>[<a href="../src/left_main.php" <?php if ($accesskey_folders_refresh != 'NONE') echo 'accesskey="' . $accesskey_folders_refresh . '" '; ?>class="sm-folder-refresh-btn"><?php echo _("Check Mail"); ?></a>]</small></span>
+  </div>
  </div>
  <div class="sm-sidebar-tree-container">
   <?php echo buildMailboxTree($mailboxes, $settings, $icon_theme_path); ?>

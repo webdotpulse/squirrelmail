@@ -1,4 +1,4 @@
-# SquirrelMail 1.5.5
+# SquirrelMail 1.5.6
 
 A modernized, responsive edition of SquirrelMail engineered for PHP 7.0 through 8.2+ with a Single-Page Application (SPA) interface, modern UI styling, and extensive feature enhancements.
 
@@ -43,6 +43,13 @@ This repository includes an [AGENTS.md](file:///home/koen/Git/squirrelmail/AGENT
 ---
 
 ## 📝 Changelog
+
+### Version 1.5.6
+- **Folder Management Quick Access**: Integrated convenient shortcuts to the Folder Manager (`src/folders.php`):
+  - Added a `+` action button directly in the sidebar **Folders** section header (mirroring the `LABELS +` design).
+  - Added a dedicated Folder icon button in the top navigation header (`.sm-header-actions`).
+  - Added modern card styling in `assets/css/app.css` for `.dialogbox` and folder manipulation tables (create folder/subfolder, rename, delete, and subscribe).
+- **Version Bump**: Incremented version from `1.5.5` to `1.5.6`.
 
 ### Version 1.5.5
 - **Mailbox Labels Dropdown Positioning & Styling**: Fixed layout issues with the "🏷️ Labels ▼" dropdown where the menu was rendered as an in-flow static block (causing flex wrapping, height expansion, and toolbar distortion). Integrated absolute popup overlay styling (`.ml-dropdown-wrapper`, `.ml-dropdown-menu`, `.ml-dropdown-item`) into `assets/css/app.css` with dark mode support, color indicator dots, outside-click & Escape dismissal, and added a "Remove all labels" action.

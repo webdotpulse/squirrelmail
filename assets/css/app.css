@@ -1349,6 +1349,81 @@ table.table1 input[type="submit"]:hover {
   background: var(--sm-primary-hover);
 }
 
+/* Dialogbox & Folder Management Styling */
+.dialogbox {
+  max-width: 780px;
+  margin: 10px auto;
+}
+
+.dialogbox table.wrapper {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--sm-bg-surface);
+  border: 1px solid var(--sm-border);
+  border-radius: var(--sm-radius-lg, 10px);
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.dialogbox td.header1 {
+  background: var(--sm-bg-canvas);
+  color: var(--sm-text-primary);
+  font-weight: 700;
+  font-size: 16px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--sm-border);
+}
+
+.dialogbox td.header2 {
+  background: var(--sm-bg-surface);
+  color: var(--sm-primary);
+  font-weight: 600;
+  font-size: 14px;
+  padding: 14px 18px 6px;
+  border-top: 1px solid var(--sm-border);
+}
+
+.dialogbox table.wrapper tr:first-child + tr td.header2 {
+  border-top: none;
+}
+
+.dialogbox td {
+  padding: 8px 18px 14px;
+  color: var(--sm-text-primary);
+  font-size: 13px;
+}
+
+.dialogbox input[type="text"],
+.dialogbox select {
+  background: var(--sm-bg-surface);
+  color: var(--sm-text-primary);
+  border: 1px solid var(--sm-border);
+  border-radius: var(--sm-radius-sm, 6px);
+  padding: 7px 12px;
+  font-size: 13px;
+  margin: 6px 0;
+  min-width: 220px;
+  box-sizing: border-box;
+}
+
+.dialogbox input[type="submit"] {
+  background: var(--sm-primary);
+  color: #ffffff;
+  border: 1px solid var(--sm-primary);
+  border-radius: var(--sm-radius-sm, 6px);
+  padding: 7px 16px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: background var(--sm-transition-fast);
+}
+
+.dialogbox input[type="submit"]:hover {
+  background: var(--sm-primary-hover);
+}
+
 /* Responsive Media Queries */
 @media (max-width: 768px) {
   .sm-menu-toggle {
