@@ -44,11 +44,18 @@ require_once(SM_PATH . 'functions/imap_general.php');
 require_once(SM_PATH . 'functions/imap_mailbox.php');
 require_once(SM_PATH . 'functions/imap_messages.php');
 require_once(SM_PATH . 'functions/file_prefs.php');
+require_once(SM_PATH . 'functions/prefs.php');
+require_once(SM_PATH . 'functions/mime.php');
 require_once(SM_PATH . 'class/mime/Message.class.php');
 require_once(SM_PATH . 'class/mime/MessageHeader.class.php');
+require_once(SM_PATH . 'class/mime/AddressStructure.class.php');
+require_once(SM_PATH . 'class/mime/Rfc822Header.class.php');
 require_once(SM_PATH . 'class/mime/ContentType.class.php');
 require_once(SM_PATH . 'class/deliver/Deliver.class.php');
 require_once(SM_PATH . 'class/deliver/Deliver_IMAP.class.php');
+if (file_exists(SM_PATH . 'plugins/message_labels/labels.php')) {
+    require_once(SM_PATH . 'plugins/message_labels/labels.php');
+}
 
 // Load AI Agent config & Gemini Client
 require_once(SM_PATH . 'plugins/ai_agent/config.php');
@@ -114,6 +121,69 @@ function cron_log($msg) {
     $line = '[' . date('Y-m-d H:i:s') . '] ' . $msg . "\n";
     echo $line;
     @file_put_contents($data_folder . 'cron.log', $line, FILE_APPEND);
+}
+
+/**
+ * Assign a category label badge to a message in the message_labels store
+ */
+function cron_assign_message_label($user, $mailbox, $uid, $category) {
+    global $data_dir;
+    if (!function_exists('ml_load_data')) {
+        return;
+    }
+    $catMap = [
+        'work'          => 'work',
+        'finance'       => 'finance',
+        'personal'      => 'personal',
+        'urgent'        => 'important',
+        'important'     => 'important',
+        'newsletter'    => 'newsletter',
+        'notifications' => 'notifications',
+        'follow-up'     => 'followup',
+        'followup'      => 'followup',
+        'todo'          => 'todo',
+    ];
+    $norm = strtolower(trim($category));
+    $lid = isset($catMap[$norm]) ? $catMap[$norm] : preg_replace('/[^a-z0-9_-]/', '', $norm);
+    if (empty($lid)) $lid = 'work';
+
+    $usersToUpdate = [$user];
+    if (strpos($user, '@') !== false) {
+        $base = substr($user, 0, strpos($user, '@'));
+        $usersToUpdate[] = $base;
+    }
+
+    foreach (array_unique($usersToUpdate) as $u) {
+        global $username;
+        $username = $u;
+        $data = ml_load_data();
+        if (!isset($data['labels'][$lid])) {
+            $colors = [
+                'newsletter'    => ['color' => '#7c3aed', 'bg' => '#f5f3ff'],
+                'notifications' => ['color' => '#4b5563', 'bg' => '#f3f4f6'],
+                'work'          => ['color' => '#1a73e8', 'bg' => '#e8f0fe'],
+                'finance'       => ['color' => '#0d9488', 'bg' => '#ccfbf1'],
+                'personal'      => ['color' => '#1e8e3e', 'bg' => '#e6f4ea'],
+                'important'     => ['color' => '#d93025', 'bg' => '#fce8e6'],
+            ];
+            $palette = isset($colors[$lid]) ? $colors[$lid] : ['color' => '#0284c7', 'bg' => '#e0f2fe'];
+            $data['labels'][$lid] = [
+                'id'    => $lid,
+                'name'  => ucfirst($category),
+                'color' => $palette['color'],
+                'bg'    => $palette['bg']
+            ];
+        }
+
+        $key = ml_get_message_key($mailbox, $uid);
+        if (!isset($data['messages'][$key])) {
+            $data['messages'][$key] = [];
+        }
+        if (!in_array($lid, $data['messages'][$key])) {
+            $data['messages'][$key][] = $lid;
+        }
+        ml_save_data($data);
+    }
 }
 
 cron_log("=== SquirrelMail AI Agent Cron Started (Gemini Model: $gemini_model) ===");
@@ -210,6 +280,9 @@ if (empty($accounts_to_process)) {
 foreach ($accounts_to_process as $acc) {
     $user = $acc['username'];
     if (!empty($cli_user) && $user !== $cli_user) continue;
+
+    global $username;
+    $username = $user;
 
     $host = !empty($acc['host']) ? $acc['host'] : $imapServerAddress;
     $port = !empty($acc['port']) ? $acc['port'] : $imapPort;
@@ -336,6 +409,7 @@ foreach ($accounts_to_process as $acc) {
                 }
             }
             $state[$user][] = $id;
+            @file_put_contents($state_file, json_encode($state, JSON_PRETTY_PRINT));
             continue; // Skip further labeling/drafting on spam
         }
 
@@ -344,10 +418,12 @@ foreach ($accounts_to_process as $acc) {
             $stat_labeled++;
             cron_log("     [CATEGORY] Labeled as: $category");
             if (!$dry_run) {
+                cron_assign_message_label($user, 'INBOX', $id, $category);
                 if ($category === 'Urgent') {
-                    sqimap_toggle_flag($imap_stream, [$id], '\\Flagged', true, true);
+                    @sqimap_toggle_flag($imap_stream, [$id], '\\Flagged', true, true);
                     cron_log("     [ACTION] Marked msg #$id with \\Flagged (Urgent).");
                 }
+                cron_log("     [ACTION] Stored label badge '$category' for msg #$id.");
             }
         }
 
@@ -356,32 +432,49 @@ foreach ($accounts_to_process as $acc) {
             $stat_drafts++;
             cron_log("     [AUTO-DRAFT] Generating smart reply draft...");
             if (!$dry_run) {
-                // Draft target folder
-                $target_drafts = !empty($draft_folder) ? $draft_folder : 'Drafts';
-                if (!sqimap_mailbox_exists($imap_stream, $target_drafts)) {
-                    $target_drafts = 'INBOX.Drafts';
-                }
+                try {
+                    // Resolve user draft target folder preference
+                    $user_draft_folder = function_exists('getPref') ? getPref($data_dir, $user, 'draft_folder', '') : '';
+                    $target_drafts = !empty($user_draft_folder) ? $user_draft_folder : (!empty($draft_folder) ? $draft_folder : 'Drafts');
+                    if (!sqimap_mailbox_exists($imap_stream, $target_drafts)) {
+                        if (sqimap_mailbox_exists($imap_stream, 'INBOX.Drafts')) {
+                            $target_drafts = 'INBOX.Drafts';
+                        } elseif (sqimap_mailbox_exists($imap_stream, 'Drafts')) {
+                            $target_drafts = 'Drafts';
+                        } else {
+                            @sqimap_mailbox_create($imap_stream, $target_drafts, '');
+                        }
+                    }
 
-                if (sqimap_mailbox_exists($imap_stream, $target_drafts)) {
-                    $draftMsg = new Message();
-                    $rfcHeader = new MessageHeader();
-                    $rfcHeader->to = $from;
-                    $rfcHeader->from = $user;
-                    $rfcHeader->subject = 'Re: ' . preg_replace('/^(Re:\s*)+/i', '', $subject);
-                    $rfcHeader->date = time();
-                    $rfcHeader->content_type = new ContentType('text/plain');
-                    $draftMsg->rfc822_header = $rfcHeader;
-                    $draftMsg->body_part = $suggested_reply . "\n\n-- \n[Auto-drafted by Gemini 3.8 AI Assistant. Review before sending.]";
+                    if (sqimap_mailbox_exists($imap_stream, $target_drafts)) {
+                        $draftMsg = new Message();
+                        $rfcHeader = new Rfc822Header();
+                        $rfcHeader->to = $rfcHeader->parseAddress($from, true);
+                        $rfcHeader->from = $rfcHeader->parseAddress($user, true);
+                        $cleanSubj = preg_replace('/^(Re:\s*)+/i', '', $subject);
+                        $rfcHeader->subject = 'Re: ' . $cleanSubj;
+                        $rfcHeader->date = time();
+                        $rfcHeader->content_type = new ContentType('text/plain');
+                        $rfcHeader->content_type->properties['charset'] = 'utf-8';
+                        $rfcHeader->encoding = '8bit';
+                        $draftMsg->rfc822_header = $rfcHeader;
+                        $draftMsg->body_part = $suggested_reply . "\r\n\r\n-- \r\n[Auto-drafted by Gemini 3.8 AI Assistant. Review before sending.]\r\n";
 
-                    $deliver = new Deliver_IMAP();
-                    $deliver->mail($draftMsg, $imap_stream, '', '', $imap_stream, $target_drafts);
-                    cron_log("     [ACTION] Saved draft response into $target_drafts.");
+                        $deliver = new Deliver_IMAP();
+                        $deliver->mail($draftMsg, $imap_stream, 0, 0, $imap_stream, $target_drafts);
+                        cron_log("     [ACTION] Saved draft response into $target_drafts.");
+                    } else {
+                        cron_log("     [WARNING] Could not locate or create drafts folder '$target_drafts'.");
+                    }
+                } catch (\Throwable $e) {
+                    cron_log("     [ERROR] Failed to save draft for msg #$id: " . $e->getMessage());
                 }
             }
         }
 
-        // Mark this UID as processed
+        // Mark this UID as processed and immediately persist state
         $state[$user][] = $id;
+        @file_put_contents($state_file, json_encode($state, JSON_PRETTY_PRINT));
     }
 
     // Keep state file bounded

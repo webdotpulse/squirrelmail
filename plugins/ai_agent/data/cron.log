@@ -1,3 +1,9 @@
 [2026-10-06 19:01:35] === SquirrelMail AI Agent Cron Started (Gemini Model: gemini-3.8-flash) ===
 [2026-10-06 19:01:35] [INFO] Running in DRY-RUN mode. No emails will be moved or modified.
 [2026-10-06 19:01:35] [ERROR] Gemini API Key is missing! Please configure $gemini_api_key in plugins/ai_agent/config.php or Options.
+[2026-10-07 02:53:22] === SquirrelMail AI Agent Cron Started (Gemini Model: gemini-3.8-flash) ===
+[2026-10-07 02:53:22] [INFO] Running in DRY-RUN mode. No emails will be moved or modified.
+[2026-10-07 02:53:22] [ERROR] Gemini API Key is missing! Please configure $gemini_api_key in plugins/ai_agent/config.php or Options.
+[2026-10-07 02:57:34] === SquirrelMail AI Agent Cron Started (Gemini Model: gemini-3.8-flash) ===
+[2026-10-07 02:57:34] [INFO] Running in DRY-RUN mode. No emails will be moved or modified.
+[2026-10-07 02:57:34] [ERROR] Gemini API Key is missing! Please configure $gemini_api_key in plugins/ai_agent/config.php or Options.

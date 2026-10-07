@@ -1,0 +1,49 @@
+{
+    "labels": {
+        "work": {
+            "id": "work",
+            "name": "Work",
+            "color": "#1a73e8",
+            "bg": "#e8f0fe"
+        },
+        "personal": {
+            "id": "personal",
+            "name": "Personal",
+            "color": "#1e8e3e",
+            "bg": "#e6f4ea"
+        },
+        "finance": {
+            "id": "finance",
+            "name": "Finance",
+            "color": "#0d9488",
+            "bg": "#ccfbf1"
+        },
+        "important": {
+            "id": "important",
+            "name": "Important",
+            "color": "#d93025",
+            "bg": "#fce8e6"
+        },
+        "followup": {
+            "id": "followup",
+            "name": "Follow-up",
+            "color": "#ea8600",
+            "bg": "#fef7e0"
+        },
+        "todo": {
+            "id": "todo",
+            "name": "To Do",
+            "color": "#8e24aa",
+            "bg": "#f3e8fd"
+        }
+    },
+    "messages": {
+        "INBOX:52873": [
+            "work"
+        ],
+        "INBOX:52657": [
+            "finance"
+        ]
+    },
+    "starred": []
+}
