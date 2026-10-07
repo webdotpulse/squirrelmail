@@ -1,4 +1,4 @@
-# SquirrelMail 1.5.59
+# SquirrelMail 1.5.61
 
 A modernized, responsive edition of SquirrelMail engineered for PHP 7.0 through 8.2+ with a Single-Page Application (SPA) interface, modern UI styling, and extensive feature enhancements.
 
@@ -57,6 +57,37 @@ This repository includes an [AGENTS.md](file:///home/koen/Git/squirrelmail/AGENT
 ---
 
 ## 📝 Changelog
+
+### Version 1.5.61
+- **AI Agent Draft Threading & Conversation View Integration (`plugins/ai_agent/cron.php`, `plugins/conversation_view/functions.php`, `class/deliver/Deliver.class.php`, `class/deliver/Deliver_IMAP.class.php`, `functions/imap_general.php`)**:
+  - **Auto-Draft Thread Linking (`plugins/ai_agent/cron.php`)**:
+    - Resolved an issue where auto-drafts created by the AI Agent background cron were completely missing from the message thread view and did not appear in the "Conversation Thread" box (`#cv-conversation-thread`) down below viewed emails.
+    - Updated message inspection in `cron.php` to fetch full threading headers (`Message-ID`, `In-Reply-To`, `References`) via `sqimap_get_small_header_list()` with automatic raw header parsing fallback (`BODY.PEEK[HEADER.FIELDS]`).
+    - Explicitly set RFC 5322 thread headers on generated drafts: `$rfcHeader->message_id` (unique `<sm-ai-...@domain>`), `$rfcHeader->in_reply_to` (original email's Message-ID), and `$rfcHeader->references` (original references chain + original Message-ID).
+    - Added SquirrelMail reply-tracking flag `$rfcHeader->more_headers['X-SM-Flag-Reply'] = 'reply::' . $id . '::INBOX'`, allowing SquirrelMail's compose editor (`compose.php?smaction_draft=1`) to identify which message is being replied to and automatically set the `\Answered` flag upon sending.
+    - Decoded MIME encoded subjects before stripping `Re:`/`Fwd:` prefixes to prevent malformed or double-encoded subjects (`Re: =?UTF-8?...`).
+    - Appended original message citation and clean block quotes to auto-draft bodies, matching standard drafted email replies.
+  - **IMAP `\Draft` Flag Support (`class/deliver/Deliver_IMAP.class.php` & `functions/imap_general.php`)**:
+    - Updated `sqimap_append()` to accept custom IMAP append flags (`$flags = '(\\Seen)'`).
+    - Enhanced `Deliver_IMAP::send_mail()` to automatically detect draft target mailboxes and append messages with `(\Seen \Draft)`, ensuring IMAP servers and mail clients immediately recognize the message as an active draft.
+  - **RFC 822 Header Output in Deliver (`class/deliver/Deliver.class.php`)**:
+    - Updated `Deliver::prepareRFC822_Header()` to output `In-Reply-To:` and `References:` headers directly from `$rfc822_header` when `$reply_rfc822_header` is empty or not passed, preventing header dropping on programmatically created replies and drafts.
+    - Fixed a legacy syntax typo in `Deliver::prepareRFC822_Header()` header folding switch (`In-Reply_To` -> `In-Reply-To`), preventing folding corruption of In-Reply-To headers.
+  - **Multi-Folder Draft & Sent Discovery (`plugins/conversation_view/functions.php`)**:
+    - Implemented resilient candidate folder discovery for Drafts (`$user_draft`, `$draft_folder`, `'INBOX.Drafts'`, `'Drafts'`, `'INBOX/Drafts'`) and Sent (`$user_sent`, `$sent_folder`, `'INBOX.Sent'`, `'Sent'`, `'Sent Items'`), eliminating misses caused by folder naming mismatches between user preferences and server mailbox hierarchies.
+    - Added fallback header discovery directly via IMAP if `$currentMessage->rfc822_header` lacks IDs.
+    - Enhanced draft searching in `cv_get_conversation_thread()` to search by `HEADER X-SM-Flag-Reply "::$currentUid::"` in addition to Message-IDs and clean normalized subjects.
+    - Verified draft relevance and ensured proper draft pill badges (`📝 Draft Reply`), "Resume Draft" links, and top toolbar count badges (`💬 Thread (#)`) display seamlessly in the email reader.
+- **Version Bump**: Incremented version from `1.5.60 [SVN]` to `1.5.61 [SVN]`.
+- **Preserve HTML Formatting & Styles on Email Replies and Forwards (`src/compose.php`, `plugins/html_mail/html_mail.php`, `assets/css/app.css`)**:
+  - **Rich HTML Reply & Forward Extraction**: Fixed an issue where replying to or forwarding an email stripped all HTML formatting, styles, headings, tables, links, colors, and line breaks into collapsed unstyled plain text with clustered `> > > >` symbols.
+  - **Dual Body Entity Extraction (`newMail()` in `src/compose.php`)**: When replying or forwarding, `newMail()` now discovers and extracts the rich HTML entity (`text/html`) alongside the plain-text alternative. The HTML body is sanitized through `magicHTML()` to ensure script-safe, scoped rendering, while plain text is fallback converted with `nl2br` and auto-linkified.
+  - **Styled Reply Citation & Blockquote**: Formatted replied messages inside a sleek, modern citation header (`On [Date], [Sender] wrote:`) and a styled quote block (`<blockquote type="cite" class="sm-quote">`) preserving all original HTML structure, typography, tables, and colors.
+  - **Styled Forward Container & Header**: Formatted forwarded messages inside a modern, professional forward container with full envelope metadata (From, Date, Subject, To, Cc) and intact original content.
+  - **Clean Plain-Text / HTML Signature Separation**: Resolved a bug where HTML signatures were injected into the plain-text `<textarea>`, corrupting mode switching and collapsing reply citations onto one line. The plain text textarea now strictly holds plain-text signatures and standard `>` quotes, while the Rich HTML editor (`html-mail-wysiwyg`) receives the formatted HTML signature and styled quotes.
+  - **Interactive Signature & Identity Switching**: Added dynamic `#identity` change listener to update HTML signatures on the fly in the WYSIWYG editor without full page reloads, and enhanced the toolbar "Signature" button for instant HTML insertion.
+  - **Theme Support (Light & Dark)**: Added complete CSS rules for `.sm-quote`, `.sm-reply-header`, `.sm-forward-container`, `.sm-forward-header`, and `.sm-signature` matching both light and dark mode design tokens.
+- **Version Bump**: Incremented version from `1.5.59 [SVN]` to `1.5.60 [SVN]`.
 
 ### Version 1.5.59
 - **Modern Login Screen & Brand Icon Logo (`templates/default/login.tpl`, `templates/default/error_logout.tpl`, `assets/css/app.css`, `images/sm_logo.png`)**:

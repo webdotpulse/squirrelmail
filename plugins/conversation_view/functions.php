@@ -233,10 +233,25 @@ function cv_get_conversation_thread($imapConnection, $currentMailbox, $currentUi
 
         // 1. Gather Message-IDs and normalized Subject from current message
         $rfcHeader = isset($currentMessage->rfc822_header) ? $currentMessage->rfc822_header : null;
+        if (!$rfcHeader && isset($currentMessage->header)) {
+            $rfcHeader = $currentMessage->header;
+        }
         $curr_id = ($rfcHeader && !empty($rfcHeader->message_id)) ? trim($rfcHeader->message_id) : '';
         $in_reply_to = ($rfcHeader && !empty($rfcHeader->in_reply_to)) ? trim($rfcHeader->in_reply_to) : '';
         $references = ($rfcHeader && !empty($rfcHeader->references)) ? trim($rfcHeader->references) : '';
         $raw_subject = ($rfcHeader && !empty($rfcHeader->subject)) ? trim($rfcHeader->subject) : '';
+
+        // Resilient fallback: fetch headers directly via IMAP if current message header lacks IDs
+        if ((empty($curr_id) || empty($raw_subject)) && !empty($currentUid) && !empty($currentMailbox)) {
+            $hdr_cur = sqimap_get_small_header_list($imapConnection, array($currentUid), array('Subject', 'Message-ID', 'In-Reply-To', 'References'));
+            if (!empty($hdr_cur) && is_array($hdr_cur)) {
+                $c_hdr = reset($hdr_cur);
+                if (empty($curr_id) && !empty($c_hdr['message-id'])) $curr_id = trim($c_hdr['message-id']);
+                if (empty($in_reply_to) && !empty($c_hdr['in-reply-to'])) $in_reply_to = trim($c_hdr['in-reply-to']);
+                if (empty($references) && !empty($c_hdr['references'])) $references = trim($c_hdr['references']);
+                if (empty($raw_subject) && !empty($c_hdr['subject'])) $raw_subject = trim($c_hdr['subject']);
+            }
+        }
 
         $search_ids = array();
         if (!empty($curr_id)) {
@@ -251,16 +266,42 @@ function cv_get_conversation_thread($imapConnection, $currentMailbox, $currentUi
         $search_ids = array_unique(array_filter($search_ids));
         $clean_subject = cv_clean_subject($raw_subject);
 
-        // 2. Determine target folders to inspect
+        // 2. Determine target folders to inspect with resilient candidate discovery
         $folders_to_check = array();
         if ($search_current && !empty($currentMailbox)) {
             $folders_to_check[$currentMailbox] = 'received';
         }
-        if ($search_sent && !empty($user_sent)) {
-            $folders_to_check[$user_sent] = 'sent';
+        if ($search_sent) {
+            $sent_candidates = array_unique(array_filter(array(
+                $user_sent,
+                $sent_folder,
+                'INBOX.Sent',
+                'Sent',
+                'INBOX/Sent',
+                'INBOX.Sent Items',
+                'Sent Items',
+            )));
+            foreach ($sent_candidates as $sf) {
+                if ($sf && sqimap_mailbox_exists($imapConnection, $sf)) {
+                    $folders_to_check[$sf] = 'sent';
+                    break;
+                }
+            }
         }
-        if ($search_drafts && !empty($user_draft)) {
-            $folders_to_check[$user_draft] = 'draft';
+        if ($search_drafts) {
+            $draft_candidates = array_unique(array_filter(array(
+                $user_draft,
+                $draft_folder,
+                'INBOX.Drafts',
+                'Drafts',
+                'INBOX/Drafts',
+            )));
+            foreach ($draft_candidates as $df) {
+                if ($df && sqimap_mailbox_exists($imapConnection, $df)) {
+                    $folders_to_check[$df] = 'draft';
+                    break;
+                }
+            }
         }
 
         $all_messages = array();
@@ -314,8 +355,19 @@ function cv_get_conversation_thread($imapConnection, $currentMailbox, $currentUi
                 }
             }
 
-            // 3b. Fallback: Search by clean subject if no ID results
-            if (empty($found_uids) && mb_strlen($clean_subject, 'UTF-8') >= 3) {
+            // 3b. Search by SquirrelMail reply flag (e.g. reply::$currentUid::INBOX) in drafts
+            if ($defaultType === 'draft' && !empty($currentUid)) {
+                $qFlag = 'HEADER X-SM-Flag-Reply "::' . addcslashes($currentUid, '"\\') . '::"';
+                $resFlag = cv_run_uid_search($imapConnection, $qFlag);
+                if (!empty($resFlag) && is_array($resFlag)) {
+                    foreach ($resFlag as $u) {
+                        if (is_numeric($u)) $found_uids[] = (int)$u;
+                    }
+                }
+            }
+
+            // 3c. Search by clean subject (always search in drafts, or as fallback in other folders)
+            if (($defaultType === 'draft' || empty($found_uids)) && mb_strlen($clean_subject, 'UTF-8') >= 3) {
                 $safe_subj = trim(preg_replace('/[\r\n\x00-\x1F\x7F]+/', '', $clean_subject));
                 $qSubj = 'SUBJECT "' . addcslashes($safe_subj, '"\\') . '"';
                 $resSubj = cv_run_uid_search($imapConnection, $qSubj);
@@ -341,11 +393,11 @@ function cv_get_conversation_thread($imapConnection, $currentMailbox, $currentUi
                 $found_uids = array_slice($found_uids, -12);
             }
 
-            // Fetch headers
+            // Fetch headers including X-SM-Flag-Reply
             $hdr_list = sqimap_get_small_header_list(
                 $imapConnection,
                 $found_uids,
-                array('Date', 'To', 'Cc', 'From', 'Subject', 'Message-ID', 'In-Reply-To', 'References', 'Content-Type'),
+                array('Date', 'To', 'Cc', 'From', 'Subject', 'Message-ID', 'In-Reply-To', 'References', 'Content-Type', 'X-SM-Flag-Reply'),
                 array('FLAGS', 'RFC822.SIZE', 'INTERNALDATE')
             );
 
@@ -359,10 +411,31 @@ function cv_get_conversation_thread($imapConnection, $currentMailbox, $currentUi
 
                 // Determine message type
                 $type = $defaultType;
-                if ($folderName === $user_draft) {
+                if ($defaultType === 'draft' || stripos($folderName, 'draft') !== false) {
                     $type = 'draft';
-                } elseif ($folderName === $user_sent) {
+                } elseif ($defaultType === 'sent' || stripos($folderName, 'sent') !== false) {
                     $type = 'sent';
+                }
+
+                // Verify relevance if matched only by loose subject search in draft/sent folder
+                $has_id_link = false;
+                if (!empty($search_ids)) {
+                    $hdr_in_reply = !empty($hdr['in-reply-to']) ? cv_extract_ids($hdr['in-reply-to']) : array();
+                    $hdr_refs = !empty($hdr['references']) ? cv_extract_ids($hdr['references']) : array();
+                    $hdr_mid = !empty($hdr['message-id']) ? cv_extract_ids($hdr['message-id']) : array();
+                    $all_hdr_ids = array_merge($hdr_in_reply, $hdr_refs, $hdr_mid);
+                    if (!empty(array_intersect($search_ids, $all_hdr_ids))) {
+                        $has_id_link = true;
+                    }
+                }
+                if (!empty($hdr['x-sm-flag-reply']) && strpos($hdr['x-sm-flag-reply'], '::' . $currentUid . '::') !== false) {
+                    $has_id_link = true;
+                }
+                if (!$has_id_link && ($type === 'draft' || $type === 'sent') && !empty($clean_subject)) {
+                    $hdr_clean_subj = cv_clean_subject(!empty($hdr['subject']) ? $hdr['subject'] : '');
+                    if (strcasecmp($hdr_clean_subj, $clean_subject) !== 0) {
+                        continue;
+                    }
                 }
 
                 // Extract date and timestamp

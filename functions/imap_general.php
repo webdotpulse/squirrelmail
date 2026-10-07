@@ -1602,9 +1602,10 @@ function sqimap_status_messages ($imap_stream, $mailbox,
  * @param $length
  * @return string $sid
  */
-function sqimap_append ($imap_stream, $sMailbox, $length) {
+function sqimap_append ($imap_stream, $sMailbox, $length, $flags = '(\\Seen)') {
     $sid = sqimap_session_id();
-    $query = $sid . ' APPEND ' . sqimap_encode_mailbox_name($sMailbox) . " (\\Seen) {".$length."}";
+    $flagStr = !empty($flags) ? (substr($flags, 0, 1) === '(' ? $flags : "($flags)") : '(\\Seen)';
+    $query = $sid . ' APPEND ' . sqimap_encode_mailbox_name($sMailbox) . " $flagStr {".$length."}";
     fputs ($imap_stream, "$query\r\n");
     $tmp = fgets ($imap_stream, 1024);
     sqimap_append_checkresponse($tmp, $sMailbox,$sid, $query);

@@ -60,6 +60,9 @@ require_once(SM_PATH . 'class/deliver/Deliver_IMAP.class.php');
 if (file_exists(SM_PATH . 'plugins/message_labels/labels.php')) {
     require_once(SM_PATH . 'plugins/message_labels/labels.php');
 }
+if (file_exists(SM_PATH . 'plugins/conversation_view/functions.php')) {
+    require_once(SM_PATH . 'plugins/conversation_view/functions.php');
+}
 
 // Load AI Agent config & Gemini Client
 require_once(SM_PATH . 'plugins/ai_agent/config.php');
@@ -408,10 +411,43 @@ foreach ($accounts_to_process as $acc) {
             continue;
         }
 
-        // Fetch message header and body
+        // Fetch message headers including threading identifiers
+        $full_hdrs = sqimap_get_small_header_list(
+            $imap_stream,
+            array($id),
+            array('Date', 'To', 'Cc', 'From', 'Subject', 'Message-ID', 'In-Reply-To', 'References'),
+            array('FLAGS')
+        );
+        $hdr_entry = (!empty($full_hdrs) && is_array($full_hdrs)) ? reset($full_hdrs) : array();
+
         $header = sqimap_get_small_header($imap_stream, $id, false);
-        $subject = isset($header->subject) ? $header->subject : '(No Subject)';
-        $from = isset($header->from) ? $header->from : 'Unknown';
+        $raw_subject = isset($header->subject) ? $header->subject : (!empty($hdr_entry['subject']) ? $hdr_entry['subject'] : '(No Subject)');
+        $subject = function_exists('decodeHeader') ? decodeHeader($raw_subject, false, false, true) : $raw_subject;
+        $from = isset($header->from) ? $header->from : (!empty($hdr_entry['from']) ? $hdr_entry['from'] : 'Unknown');
+
+        // Extract Message-ID, In-Reply-To, and References for conversation threading
+        $orig_message_id = !empty($hdr_entry['message-id']) ? trim($hdr_entry['message-id']) : '';
+        $orig_in_reply_to = !empty($hdr_entry['in-reply-to']) ? trim($hdr_entry['in-reply-to']) : '';
+        $orig_references = !empty($hdr_entry['references']) ? trim($hdr_entry['references']) : '';
+
+        if (empty($orig_message_id)) {
+            $raw_mids = sqimap_run_command($imap_stream, "FETCH $id (BODY.PEEK[HEADER.FIELDS (MESSAGE-ID REFERENCES IN-REPLY-TO)])", true, $resp, $msg, true);
+            if (!empty($raw_mids) && is_array($raw_mids)) {
+                $raw_hdr_text = implode("\n", $raw_mids);
+                if (preg_match('/^Message-ID:\s*(<[^>]+>|[^\r\n]+)/mi', $raw_hdr_text, $m)) {
+                    $orig_message_id = trim($m[1]);
+                }
+                if (empty($orig_references) && preg_match('/^References:\s*([^\r\n]+(?:\r?\n[ \t]+[^\r\n]+)*)/mi', $raw_hdr_text, $m)) {
+                    $orig_references = trim(preg_replace('/\s+/', ' ', $m[1]));
+                }
+                if (empty($orig_in_reply_to) && preg_match('/^In-Reply-To:\s*(<[^>]+>|[^\r\n]+)/mi', $raw_hdr_text, $m)) {
+                    $orig_in_reply_to = trim($m[1]);
+                }
+            }
+        }
+        if (!empty($orig_message_id) && substr($orig_message_id, 0, 1) !== '<') {
+            $orig_message_id = '<' . trim($orig_message_id) . '>';
+        }
 
         // Fetch snippet of body
         $body_part = sqimap_run_command($imap_stream, "FETCH $id (BODY.PEEK[TEXT]<0.4000>)", true, $resp, $msg, true);
@@ -488,23 +524,75 @@ foreach ($accounts_to_process as $acc) {
                         }
                     }
 
+                    // Keep user preference synchronized with real drafts mailbox if unset
+                    if (empty($user_draft_folder) && function_exists('setPref')) {
+                        setPref($data_dir, $user, 'draft_folder', $target_drafts);
+                    }
+
                     if (sqimap_mailbox_exists($imap_stream, $target_drafts)) {
                         $draftMsg = new Message();
                         $rfcHeader = new Rfc822Header();
                         $rfcHeader->to = $rfcHeader->parseAddress($from, true);
                         $rfcHeader->from = $rfcHeader->parseAddress($user, true);
-                        $cleanSubj = preg_replace('/^(Re:\s*)+/i', '', $subject);
-                        $rfcHeader->subject = 'Re: ' . $cleanSubj;
+
+                        // Normalize and prepare subject
+                        if (function_exists('cv_clean_subject')) {
+                            $cleanSubj = cv_clean_subject($subject);
+                        } else {
+                            $cleanSubj = trim(preg_replace('/^\s*(?:\[[^\]]+\]\s*)?(?:(?:re|fwd|fw|aw|antw|rif|sv)\s*:\s*)+/i', '', $subject));
+                        }
+                        $rfcHeader->subject = 'Re: ' . (!empty($cleanSubj) ? $cleanSubj : $subject);
                         $rfcHeader->date = time();
                         $rfcHeader->content_type = new ContentType('text/plain');
                         $rfcHeader->content_type->properties['charset'] = 'utf-8';
                         $rfcHeader->encoding = '8bit';
+
+                        // Build unique Message-ID for the draft
+                        $userHost = !empty($domain) ? $domain : 'localhost';
+                        if (strpos($user, '@') !== false) {
+                            $userHost = substr($user, strpos($user, '@') + 1);
+                        }
+                        $draftMsgId = '<sm-ai-' . bin2hex(random_bytes(12)) . '@' . $userHost . '>';
+                        $rfcHeader->message_id = $draftMsgId;
+
+                        // Thread linking: In-Reply-To & References
+                        if (!empty($orig_message_id)) {
+                            $rfcHeader->in_reply_to = $orig_message_id;
+                            $rfcHeader->more_headers['In-Reply-To'] = $orig_message_id;
+                        }
+
+                        $draft_references = !empty($orig_references) ? trim($orig_references) : '';
+                        if (!empty($orig_message_id) && strpos($draft_references, $orig_message_id) === false) {
+                            $draft_references = trim($draft_references . ' ' . $orig_message_id);
+                        }
+                        if (!empty($draft_references)) {
+                            $rfcHeader->references = $draft_references;
+                            $rfcHeader->more_headers['References'] = $draft_references;
+                        }
+
+                        // SquirrelMail reply tracking flag
+                        $rfcHeader->more_headers['X-SM-Flag-Reply'] = 'reply::' . $id . '::INBOX';
+                        $rfcHeader->more_headers['X-Mailer'] = 'SquirrelMail AI Assistant';
+
+                        // Build draft body with original citation
+                        $orig_quote = '';
+                        if (!empty($body_text)) {
+                            $quoted_lines = array();
+                            $raw_lines = explode("\n", trim($body_text));
+                            foreach (array_slice($raw_lines, 0, 30) as $l) {
+                                $quoted_lines[] = '> ' . rtrim($l);
+                            }
+                            $orig_date_str = !empty($hdr_entry['date']) ? $hdr_entry['date'] : (isset($header->date) ? $header->date : date('r'));
+                            $orig_quote = "\r\n\r\n" . sprintf(_("On %s, %s wrote:"), $orig_date_str, $from) . "\r\n" . implode("\r\n", $quoted_lines);
+                        }
+
                         $draftMsg->rfc822_header = $rfcHeader;
-                        $draftMsg->body_part = $suggested_reply . "\r\n\r\n-- \r\n[Auto-drafted by Gemini 3.8 AI Assistant. Review before sending.]\r\n";
+                        $draftMsg->body_part = $suggested_reply . "\r\n\r\n-- \r\n[Auto-drafted by Gemini 3.8 AI Assistant. Review before sending.]" . $orig_quote . "\r\n";
+                        $draftMsg->is_draft = true;
 
                         $deliver = new Deliver_IMAP();
                         $deliver->mail($draftMsg, $imap_stream, 0, 0, $imap_stream, $target_drafts);
-                        cron_log("     [ACTION] Saved draft response into $target_drafts.");
+                        cron_log("     [ACTION] Saved draft response into $target_drafts (Msg-ID: $draftMsgId).");
                     } else {
                         cron_log("     [WARNING] Could not locate or create drafts folder '$target_drafts'.");
                     }

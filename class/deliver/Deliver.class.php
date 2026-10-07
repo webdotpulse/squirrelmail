@@ -716,6 +716,13 @@ class Deliver {
             $references = $this->calculate_references($reply_rfc822_header);
             $header[] = 'References: '.$references . $rn;
             $rfc822_header->references = $references;
+        } else {
+            if (!empty($rfc822_header->in_reply_to) && empty($rfc822_header->more_headers['In-Reply-To'])) {
+                $header[] = 'In-Reply-To: ' . $rfc822_header->in_reply_to . $rn;
+            }
+            if (!empty($rfc822_header->references) && empty($rfc822_header->more_headers['References'])) {
+                $header[] = 'References: ' . $rfc822_header->references . $rn;
+            }
         }
 
         $header[] = "Date: $message_date" . $rn;
@@ -805,6 +812,7 @@ class Deliver {
             switch ($sKey)
             {
             case 'Message-ID':
+            case 'In-Reply-To':
             case 'In-Reply_To':
                 $hdr_s .= $header[$i];
                 break;

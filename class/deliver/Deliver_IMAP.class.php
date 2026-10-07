@@ -69,7 +69,9 @@ class Deliver_IMAP extends Deliver {
         // now if we have a real live stream, send the message
         //
         if ($stream) {
-            sqimap_append ($stream, $folder, $final_length);
+            $is_draft = (stripos($folder, 'draft') !== false) || (isset($message->is_draft) && $message->is_draft);
+            $flags = $is_draft ? '(\\Seen \\Draft)' : '(\\Seen)';
+            sqimap_append ($stream, $folder, $final_length, $flags);
 
             $this->preWriteToStream($header);
             $this->writeToStream($stream, $header);

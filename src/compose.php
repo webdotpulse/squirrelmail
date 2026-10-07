@@ -712,14 +712,18 @@ elseif (isset($sigappend)) {
     //
     sm_validate_security_token($submitted_token, -1, TRUE);
 
-    $html_mail_default = function_exists('getPref') ? getPref($data_dir, $username, 'html_mail_default', '1') : '1';
-    if ($html_mail_default === '1' && !empty($idents[$identity]['html_signature'])) {
-        $signature = $idents[$identity]['html_signature'];
-    } else {
-        $signature = $idents[$identity]['signature'];
+    $plain_sig = isset($idents[$identity]['signature']) ? $idents[$identity]['signature'] : '';
+    if ($prefix_sig == true && !empty($plain_sig)) {
+        $plain_sig = "-- \n" . $plain_sig;
+    }
+    $body .= "\n\n" . $plain_sig;
+
+    if (isset($_POST['html_mail_body'])) {
+        $body_html = $_POST['html_mail_body'];
+        $html_sig = !empty($idents[$identity]['html_signature']) ? $idents[$identity]['html_signature'] : nl2br(htmlspecialchars($plain_sig, ENT_QUOTES));
+        $body_html .= '<p><br></p><div class="sm-signature">' . $html_sig . '</div>';
     }
 
-    $body .= "\n\n".($prefix_sig==true? "-- \n":'').$signature;
     if ($compose_new_win == '1') {
         compose_Header($color, $mailbox);
     } else {
@@ -842,7 +846,7 @@ function getforwardSubject($subject)
 
 /* This function is used when not sending or adding attachments */
 function newMail ($mailbox='', $passed_id='', $passed_ent_id='', $action='', $session='') {
-    global $editor_size, $default_use_priority, $body, $idents,
+    global $editor_size, $default_use_priority, $body, $body_html, $idents,
         $use_signature, $data_dir, $username,
         $key, $imapServerAddress, $imapPort, $imap_stream_options,
         $composeMessage, $body_quote, $request_mdn, $request_dr,
@@ -867,6 +871,7 @@ function newMail ($mailbox='', $passed_id='', $passed_ent_id='', $action='', $se
         $message = sqimap_get_message($imapConnection, $passed_id, $mailbox);
 
         $body = '';
+        $body_html = '';
         if ($passed_ent_id) {
             /* redefine the messsage in case of message/rfc822 */
             $message = $message->getEntity($passed_ent_id);
@@ -929,6 +934,55 @@ function newMail ($mailbox='', $passed_id='', $passed_ent_id='', $action='', $se
             // end of charset encoding in compose
 
             $body .= $bodypart;
+        }
+
+        // Also fetch rich HTML body entity when present to preserve email formatting on reply/forward
+        $html_entities = array();
+        if ($message->type0 == 'multipart') {
+            $html_entities = $message->findDisplayEntity(array(), array('text/html'), true);
+        } else if ($message->type0 == 'text' && $message->type1 == 'html') {
+            $html_entities = array($message->entity_id ? $message->entity_id : '1');
+        }
+
+        if (!empty($html_entities)) {
+            require_once(SM_PATH . 'functions/mime.php');
+            foreach ($html_entities as $hent) {
+                $unencoded_html = mime_fetch_body($imapConnection, $passed_id, $hent);
+                $html_part_entity = $message->getEntity($hent);
+                if (!$html_part_entity) {
+                    $html_part_entity = $message;
+                }
+                $encoding = (isset($html_part_entity->header) && isset($html_part_entity->header->encoding))
+                          ? $html_part_entity->header->encoding : '8bit';
+                $html_content = decodeBody($unencoded_html, $encoding);
+
+                if (isset($languages[$squirrelmail_language]['XTRA_CODE']) &&
+                        function_exists($languages[$squirrelmail_language]['XTRA_CODE'] . '_decode')) {
+                    if (mb_detect_encoding($html_content) != 'ASCII') {
+                        $html_content = call_user_func($languages[$squirrelmail_language]['XTRA_CODE'] . '_decode', $html_content);
+                    }
+                }
+
+                if (isset($html_part_entity->header) && isset($html_part_entity->header->parameters['charset'])) {
+                    $hactual = $html_part_entity->header->parameters['charset'];
+                } else {
+                    $hactual = 'us-ascii';
+                }
+
+                if ($hactual && is_conversion_safe($hactual) && $hactual != $default_charset) {
+                    $html_content = charset_convert($hactual, $html_content, $default_charset, false);
+                }
+
+                // Clean and sanitize HTML for safe display and editing
+                $html_content = magicHTML($html_content, $passed_id, $message, $mailbox);
+                $body_html .= $html_content;
+            }
+        }
+
+        if (empty(trim($body_html)) && !empty(trim($body))) {
+            $escaped = htmlspecialchars($body, ENT_QUOTES, $default_charset ? $default_charset : 'UTF-8');
+            $escaped = preg_replace('/(https?:\/\/[^\s<]+)/i', '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>', $escaped);
+            $body_html = nl2br($escaped);
         }
         if ($default_use_priority) {
             $mailprio = substr($orig_header->priority,0,1);
@@ -1017,6 +1071,32 @@ function newMail ($mailbox='', $passed_id='', $passed_ent_id='', $action='', $se
 
                 //add a blank line after the forward headers
                 $body = "\n" . $body;
+
+                if (!empty($body_html)) {
+                    $fwd_subject = decodeHeader($orig_header->subject, false, false, true);
+                    $fwd_from = decodeHeader($orig_header->getAddr_s('from'), false, false, true);
+                    $fwd_date = getLongDateString($orig_header->date, $orig_header->date_unparsed);
+                    $fwd_to = decodeHeader($orig_header->getAddr_s('to'), false, false, true);
+                    $fwd_cc = !empty($orig_header->cc) ? decodeHeader($orig_header->getAddr_s('cc'), false, false, true) : '';
+
+                    $fwd_html_header = '<div class="sm-forward-header" style="font-size: 13px; color: #3c4043; margin-bottom: 16px; line-height: 1.6; font-family: inherit;">'
+                                     . '<b>---------- ' . _("Forwarded message") . ' ---------</b><br>'
+                                     . '<b>' . _("From") . ':</b> ' . htmlspecialchars($fwd_from) . '<br>'
+                                     . '<b>' . _("Date") . ':</b> ' . htmlspecialchars($fwd_date) . '<br>'
+                                     . '<b>' . _("Subject") . ':</b> ' . htmlspecialchars($fwd_subject) . '<br>'
+                                     . '<b>' . _("To") . ':</b> ' . htmlspecialchars($fwd_to) . '<br>';
+                    if (!empty($fwd_cc)) {
+                        $fwd_html_header .= '<b>' . _("Cc") . ':</b> ' . htmlspecialchars($fwd_cc) . '<br>';
+                    }
+                    $fwd_html_header .= '</div>';
+
+                    $body_html = '<div class="sm-forward-container" style="margin-top: 24px; padding-top: 14px; border-top: 1px solid #dadce0; font-family: inherit;">'
+                               . $fwd_html_header
+                               . '<div class="sm-forward-body">'
+                               . $body_html
+                               . '</div>'
+                               . '</div>';
+                }
                 break;
             case ('forward_as_attachment'):
                 $subject = getforwardSubject(decodeHeader($orig_header->subject,false,false,true));
@@ -1154,6 +1234,20 @@ function newMail ($mailbox='', $passed_id='', $passed_ent_id='', $action='', $se
                 $body = sqBodyWrap ($body, $editor_size);
 
                 $body = getReplyCitation($from , $orig_header->date) . $body;
+
+                if (!empty($body_html)) {
+                    $from_name_addr = decodeHeader($orig_header->getAddr_s('from'), false, false, true);
+                    $date_str = getLongDateString($orig_header->date, $orig_header->date_unparsed);
+                    $citation_html = sprintf(_("On %s, %s wrote:"), htmlspecialchars($date_str), htmlspecialchars($from_name_addr));
+
+                    $body_html = '<div class="sm-reply-header" style="margin: 20px 0 8px 0; color: #5f6368; font-size: 13px; font-family: inherit;">'
+                               . $citation_html
+                               . '</div>'
+                               . '<blockquote type="cite" class="sm-quote" style="margin: 0 0 0 0.8ex; border-left: 2px solid #1a73e8; padding-left: 1ex; color: #3c4043;">'
+                               . $body_html
+                               . '</blockquote>';
+                }
+
                 $composeMessage->reply_rfc822_header = $orig_header;
 
                 break;
@@ -1170,6 +1264,7 @@ function newMail ($mailbox='', $passed_id='', $passed_ent_id='', $action='', $se
             'subject' => $subject,
             'mailprio' => $mailprio,
             'body' => $body,
+            'body_html' => $body_html,
             'identity' => $identity );
 
     return ($ret);
@@ -1272,7 +1367,7 @@ function getMessage_RFC822_Attachment($message, $composeMessage, $passed_id,
 
 function showInputForm ($session, $values=false) {
     global $send_to, $send_to_cc, $send_to_bcc,
-        $body, $startMessage, $action, $attachments,
+        $body, $body_html, $body_html_str, $startMessage, $action, $attachments,
         $use_signature, $signature, $prefix_sig, $session_expired,
         $editor_size, $editor_height, $subject, $newmail,
         $use_javascript_addr_book, $passed_id, $mailbox, $fwduid,
@@ -1298,11 +1393,15 @@ function showInputForm ($session, $values=false) {
         $subject = $values['subject'];
         $mailprio = $values['mailprio'];
         $body = $values['body'];
+        $body_html = isset($values['body_html']) ? $values['body_html'] : '';
         $identity = (int) $values['identity'];
     } else {
         $send_to = decodeHeader($send_to, true, false);
         $send_to_cc = decodeHeader($send_to_cc, true, false);
         $send_to_bcc = decodeHeader($send_to_bcc, true, false);
+        if (isset($_POST['html_mail_body']) && !empty($_POST['html_mail_body'])) {
+            $body_html = $_POST['html_mail_body'];
+        }
     }
 
     if ($use_javascript_addr_book) {
@@ -1481,39 +1580,56 @@ function showInputForm ($session, $values=false) {
     }
 
     $body_str = '';
+    $body_html_str = '';
+
     if ($use_signature == true && $newmail == true && !isset($from_htmladdr_search)) {
-        $html_mail_default = function_exists('getPref') ? getPref($data_dir, $username, 'html_mail_default', '1') : '1';
-        if ($html_mail_default === '1' && !empty($idents[$identity]['html_signature'])) {
-            $signature = $idents[$identity]['html_signature'];
-        } else {
-            $signature = $idents[$identity]['signature'];
+        // Plain signature (pure text, never raw HTML)
+        $plain_sig = isset($idents[$identity]['signature']) ? $idents[$identity]['signature'] : '';
+        if ($prefix_sig == true && !empty($plain_sig)) {
+            $plain_sig = "-- \n" . $plain_sig;
+        }
+
+        // HTML signature
+        $html_sig = '';
+        if (!empty($idents[$identity]['html_signature'])) {
+            $html_sig = $idents[$identity]['html_signature'];
+        } else if (!empty($plain_sig)) {
+            $html_sig = nl2br(htmlspecialchars($plain_sig, ENT_QUOTES, $default_charset ? $default_charset : 'UTF-8'));
         }
 
         if ($sig_first == '1') {
-            /*
-             * FIXME: test is specific to ja_JP translation implementation.
-             * This test might apply incorrect conversion to other translations, but
-             * use of 7bit iso-2022-jp charset in other translations might have other
-             * issues too.
-             */
+            // Signature at TOP
             if ($default_charset == 'iso-2022-jp') {
-                $body_str = "\n\n".($prefix_sig==true? "-- \n":'').mb_convert_encoding($signature, 'EUC-JP');
+                $body_str = "\n\n" . mb_convert_encoding($plain_sig, 'EUC-JP');
             } else {
-                $body_str = "\n\n".($prefix_sig==true? "-- \n":'').decodeHeader($signature,false,false);
+                $body_str = "\n\n" . decodeHeader($plain_sig, false, false);
             }
-            $body_str .= "\n\n".sm_encode_html_special_chars(decodeHeader($body,false,false));
+            $body_str .= "\n\n" . sm_encode_html_special_chars(decodeHeader($body, false, false));
+
+            $body_html_str = '<p><br></p>'
+                           . (!empty($html_sig) ? '<div class="sm-signature">' . $html_sig . '</div>' : '')
+                           . (!empty($body_html) ? '<p><br></p>' . $body_html : '');
         } else {
-            $body_str = "\n\n".sm_encode_html_special_chars(decodeHeader($body,false,false));
-            // FIXME: test is specific to ja_JP translation implementation. See above comments.
+            // Signature at BOTTOM
+            $body_str = "\n\n" . sm_encode_html_special_chars(decodeHeader($body, false, false));
             if ($default_charset == 'iso-2022-jp') {
-                $body_str .= "\n\n".($prefix_sig==true? "-- \n":'').mb_convert_encoding($signature, 'EUC-JP');
+                $body_str .= "\n\n" . mb_convert_encoding($plain_sig, 'EUC-JP');
             } else {
-                $body_str .= "\n\n".($prefix_sig==true? "-- \n":'').decodeHeader($signature,false,false);
+                $body_str .= "\n\n" . decodeHeader($plain_sig, false, false);
             }
+
+            $body_html_str = '<p><br></p>'
+                           . (!empty($body_html) ? $body_html . '<p><br></p>' : '')
+                           . (!empty($html_sig) ? '<div class="sm-signature">' . $html_sig . '</div>' : '');
         }
     } else {
-        $body_str = sm_encode_html_special_chars(decodeHeader($body,false,false));
+        $body_str = sm_encode_html_special_chars(decodeHeader($body, false, false));
+        $body_html_str = (!empty($body_html) ? '<p><br></p>' . $body_html : '');
     }
+
+    $GLOBALS['body_html'] = $body_html_str;
+    $GLOBALS['body_html_str'] = $body_html_str;
+    $oTemplate->assign('body_html', $body_html_str);
 
     $oTemplate->assign('editor_width', (int)$editor_size);
     $oTemplate->assign('editor_height', (int)$editor_height);

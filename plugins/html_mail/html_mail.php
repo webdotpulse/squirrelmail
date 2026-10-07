@@ -31,11 +31,13 @@ function html_mail_compose_buttons_do()
  */
 function html_mail_compose_close_do()
 {
-    global $data_dir, $username;
+    global $data_dir, $username, $body_html, $body_html_str;
 
     $default_mode = function_exists('getPref') ? getPref($data_dir, $username, 'html_mail_default', '1') : '1';
     $default_font = function_exists('getPref') ? getPref($data_dir, $username, 'html_mail_font', 'sans-serif') : 'sans-serif';
     $default_size = function_exists('getPref') ? getPref($data_dir, $username, 'html_mail_size', '14px') : '14px';
+
+    $initial_html = !empty($body_html_str) ? $body_html_str : (!empty($body_html) ? $body_html : '');
 
     require_once(SM_PATH . 'functions/identity.php');
     $all_idents = get_identities();
@@ -52,6 +54,7 @@ function html_mail_compose_close_do()
     <!-- Hidden inputs for HTML mail status and content -->
     <input type="hidden" name="html_mail_enabled" id="html_mail_enabled" value="<?php echo ($default_mode === '1' ? '1' : '0'); ?>" />
     <input type="hidden" name="html_mail_body" id="html_mail_body" value="" />
+    <textarea id="html_mail_initial_content" style="display:none;"><?php echo htmlspecialchars($initial_html, ENT_QUOTES, 'UTF-8'); ?></textarea>
     <script>window.smIdentitiesSigs = <?php echo json_encode($ident_sigs); ?>;</script>
 
     <style>
@@ -181,6 +184,83 @@ function html_mail_compose_close_do()
             border-top: 1px solid var(--sm-border, #f1f3f4);
             box-sizing: border-box;
         }
+        #html-mail-wysiwyg blockquote,
+        #html-mail-wysiwyg .sm-quote {
+            border-left: 2px solid var(--sm-primary, #1a73e8);
+            margin: 12px 0 12px 0.8ex;
+            padding-left: 12px;
+            color: var(--sm-text-primary, #3c4043);
+            background: transparent;
+        }
+        #html-mail-wysiwyg .sm-reply-header {
+            margin: 16px 0 8px 0;
+            color: var(--sm-text-muted, #5f6368);
+            font-size: 13px;
+            font-weight: 500;
+        }
+        #html-mail-wysiwyg .sm-forward-container {
+            margin-top: 20px;
+            padding-top: 14px;
+            border-top: 1px solid var(--sm-border, #dadce0);
+        }
+        #html-mail-wysiwyg .sm-forward-header {
+            font-size: 13px;
+            color: var(--sm-text-secondary, #3c4043);
+            margin-bottom: 14px;
+            line-height: 1.6;
+        }
+        #html-mail-wysiwyg .sm-signature {
+            margin: 14px 0;
+        }
+        #html-mail-wysiwyg table {
+            border-collapse: collapse;
+            max-width: 100%;
+        }
+        #html-mail-wysiwyg img {
+            max-width: 100%;
+            height: auto;
+        }
+        [data-theme="dark"] #html-mail-wysiwyg {
+            background: var(--sm-bg-surface, #111827);
+            color: var(--sm-text-primary, #f8fafc);
+        }
+        [data-theme="dark"] .html-mail-toolbar {
+            background: var(--sm-bg-canvas, #090d16);
+            border-color: var(--sm-border, #1f2937);
+        }
+        [data-theme="dark"] .html-mail-editor-container {
+            background: var(--sm-bg-surface, #111827);
+            border-color: var(--sm-border, #1f2937);
+        }
+        [data-theme="dark"] .html-mail-toolbar button,
+        [data-theme="dark"] .html-mail-toolbar select {
+            background: var(--sm-bg-surface, #111827);
+            border-color: var(--sm-border, #1f2937);
+            color: var(--sm-text-primary, #f8fafc);
+        }
+        [data-theme="dark"] .html-mail-toolbar button:hover,
+        [data-theme="dark"] .html-mail-toolbar select:hover {
+            background: var(--sm-hover-bg, #1e293b);
+            color: var(--sm-primary, #3b82f6);
+            border-color: var(--sm-primary-border, #2563eb);
+        }
+        [data-theme="dark"] .html-mail-status {
+            background: var(--sm-bg-canvas, #090d16);
+            border-color: var(--sm-border, #1f2937);
+            color: var(--sm-text-muted, #94a3b8);
+        }
+        [data-theme="dark"] #html-mail-wysiwyg blockquote,
+        [data-theme="dark"] #html-mail-wysiwyg .sm-quote {
+            border-left-color: var(--sm-primary, #3b82f6);
+            color: var(--sm-text-secondary, #cbd5e1);
+        }
+        [data-theme="dark"] #html-mail-wysiwyg .sm-reply-header,
+        [data-theme="dark"] #html-mail-wysiwyg .sm-forward-header {
+            color: var(--sm-text-muted, #94a3b8);
+        }
+        [data-theme="dark"] #html-mail-wysiwyg .sm-forward-container {
+            border-top-color: var(--sm-border, #1f2937);
+        }
     </style>
 
     <script>
@@ -207,9 +287,10 @@ function html_mail_compose_close_do()
                 if (wrapper) wrapper.style.display = 'block';
 
                 if (wysiwyg && rawTextarea) {
-                    if (!wysiwyg.innerHTML.trim() || wysiwyg.innerText.trim() === rawTextarea.value.trim()) {
+                    if (!wysiwyg.innerHTML.trim() || rawTextarea.dataset.userEdited === 'true') {
                         const paras = rawTextarea.value.split("\n\n");
                         wysiwyg.innerHTML = paras.map(p => '<p>' + p.replace(/\n/g, '<br>') + '</p>').join('');
+                        rawTextarea.dataset.userEdited = 'false';
                     }
                 }
             } else {
@@ -358,14 +439,93 @@ function html_mail_compose_close_do()
             const wysiwyg = document.getElementById('html-mail-wysiwyg');
             const source = document.getElementById('html-mail-source');
 
-            // Populate initial content from textarea
-            if (rawTextarea.value.trim().length > 0) {
+            // Populate initial content
+            const initialHtmlElem = document.getElementById('html_mail_initial_content');
+            const initialHtml = initialHtmlElem ? initialHtmlElem.value : '';
+
+            if (initialHtml && initialHtml.trim().length > 0) {
+                wysiwyg.innerHTML = initialHtml;
+            } else if (rawTextarea.value.trim().length > 0) {
                 if (/<[a-z][\s\S]*>/i.test(rawTextarea.value)) {
                     wysiwyg.innerHTML = rawTextarea.value;
                 } else {
                     const paras = rawTextarea.value.split("\n\n");
                     wysiwyg.innerHTML = paras.map(p => '<p>' + p.replace(/\n/g, '<br>') + '</p>').join('');
                 }
+            }
+
+            // Track edits in plain text mode to sync back if switched
+            rawTextarea.addEventListener('input', function() {
+                rawTextarea.dataset.userEdited = 'true';
+            });
+
+            // Focus careting: if first child is an empty paragraph, place caret inside it
+            if (isHtmlMode) {
+                const firstP = wysiwyg.querySelector('p');
+                if (firstP && (firstP.innerHTML === '<br>' || firstP.innerHTML === '')) {
+                    try {
+                        const range = document.createRange();
+                        const sel = window.getSelection();
+                        range.setStart(firstP, 0);
+                        range.collapse(true);
+                        sel.removeAllRanges();
+                        sel.addRange(range);
+                    } catch (e) {}
+                }
+            }
+
+            // Identity dropdown change listener: dynamically update HTML signature
+            const identSelect = document.getElementById('identity');
+            if (identSelect && window.smIdentitiesSigs) {
+                identSelect.addEventListener('change', function() {
+                    const selId = this.value;
+                    const sigData = window.smIdentitiesSigs[selId];
+                    if (!sigData) return;
+                    const sigHtml = sigData.html || (sigData.plain ? sigData.plain.replace(/\n/g, '<br>') : '');
+                    if (!sigHtml) return;
+
+                    let sigContainer = wysiwyg.querySelector('.sm-signature');
+                    if (sigContainer) {
+                        sigContainer.innerHTML = sigHtml;
+                    } else {
+                        sigContainer = document.createElement('div');
+                        sigContainer.className = 'sm-signature';
+                        sigContainer.innerHTML = sigHtml;
+                        const firstP = wysiwyg.querySelector('p');
+                        if (firstP && firstP.nextSibling) {
+                            wysiwyg.insertBefore(sigContainer, firstP.nextSibling);
+                        } else {
+                            wysiwyg.appendChild(sigContainer);
+                        }
+                    }
+                });
+            }
+
+            // Signature toolbar button: dynamically insert signature in HTML mode
+            const sigBtn = document.querySelector('input[name="sigappend"]');
+            if (sigBtn) {
+                sigBtn.addEventListener('click', function(e) {
+                    if (isHtmlMode) {
+                        e.preventDefault();
+                        const identSelect = document.getElementById('identity');
+                        const selId = identSelect ? identSelect.value : 0;
+                        const sigData = window.smIdentitiesSigs ? window.smIdentitiesSigs[selId] : null;
+                        if (!sigData) return;
+                        const sigHtml = sigData.html || (sigData.plain ? sigData.plain.replace(/\n/g, '<br>') : '');
+                        if (!sigHtml) return;
+
+                        let sigContainer = wysiwyg.querySelector('.sm-signature');
+                        if (sigContainer) {
+                            sigContainer.innerHTML = sigHtml;
+                        } else {
+                            sigContainer = document.createElement('div');
+                            sigContainer.className = 'sm-signature';
+                            sigContainer.innerHTML = sigHtml;
+                            wysiwyg.appendChild(sigContainer);
+                        }
+                        wysiwyg.focus();
+                    }
+                });
             }
 
             wysiwyg.addEventListener('input', window.htmlMailUpdateStats);
@@ -453,7 +613,11 @@ function html_mail_compose_send_do(&$composeMessage)
                    . "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=" . htmlspecialchars($charset) . "\">\n"
                    . "<style>\n"
                    . "body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 14px; line-height: 1.6; color: #202124; margin: 0; padding: 12px; }\n"
-                   . "blockquote { border-left: 3px solid #dadce0; margin-left: 0; padding-left: 12px; color: #5f6368; }\n"
+                   . "blockquote, .sm-quote { border-left: 2px solid #1a73e8; margin: 8px 0 8px 0.8ex; padding-left: 10px; color: #3c4043; }\n"
+                   . ".sm-reply-header { margin: 16px 0 6px 0; color: #5f6368; font-size: 13px; font-weight: 500; }\n"
+                   . ".sm-forward-container { margin-top: 18px; padding-top: 12px; border-top: 1px solid #dadce0; }\n"
+                   . ".sm-forward-header { font-size: 13px; color: #3c4043; margin-bottom: 12px; line-height: 1.6; }\n"
+                   . ".sm-signature { margin: 12px 0; }\n"
                    . "pre { background: #f1f3f4; padding: 8px 12px; border-radius: 4px; font-family: monospace; }\n"
                    . "</style>\n"
                    . "</head>\n<body>\n" . $html_body . "\n</body>\n</html>";

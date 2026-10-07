@@ -2186,6 +2186,40 @@ table.table_messageList td.spacer {
   resize: vertical;
 }
 
+/* Quoted reply and forward formatting in compose & message view */
+.sm-quote,
+blockquote.sm-quote {
+  border-left: 2px solid var(--sm-primary);
+  margin: 12px 0 12px 0.8ex;
+  padding-left: 12px;
+  color: var(--sm-text-primary);
+  background: transparent;
+}
+
+.sm-reply-header {
+  margin: 16px 0 8px 0;
+  color: var(--sm-text-muted);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.sm-forward-container {
+  margin-top: 20px;
+  padding-top: 14px;
+  border-top: 1px solid var(--sm-border);
+}
+
+.sm-forward-header {
+  font-size: 13px;
+  color: var(--sm-text-secondary);
+  margin-bottom: 14px;
+  line-height: 1.6;
+}
+
+.sm-signature {
+  margin: 14px 0;
+}
+
 .sm-dropzone {
   border: 2px dashed var(--sm-border);
   border-radius: var(--sm-radius-md);
