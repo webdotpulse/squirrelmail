@@ -92,7 +92,7 @@ function conversation_view_read_body_header_right(&$links)
         include_once(SM_PATH . 'plugins/conversation_view/functions.php');
         $summary = cv_get_thread_summary($imapConnection, $mailbox, $passed_id, $message);
 
-        if (!empty($summary['total_count']) && $summary['total_count'] > 1) {
+        if (!empty($summary['total_count']) && ($summary['total_count'] > 1 || !empty($summary['draft_count']) || !empty($summary['sent_count']))) {
             $badgeText = _("Thread") . ' (' . $summary['total_count'] . ')';
             $title = sprintf(
                 _("%d messages in conversation (%d sent, %d drafts)"),

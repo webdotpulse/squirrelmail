@@ -1,4 +1,4 @@
-# SquirrelMail 1.5.67
+# SquirrelMail 1.5.68
 
 A modernized, responsive edition of SquirrelMail engineered for PHP 7.0 through 8.2+ with a Single-Page Application (SPA) interface, modern UI styling, and extensive feature enhancements.
 
@@ -57,6 +57,15 @@ This repository includes an [AGENTS.md](file:///home/koen/Git/squirrelmail/AGENT
 ---
 
 ## 📝 Changelog
+
+### Version 1.5.68
+- **Conversation Thread Draft & Reply Discovery Fix (`plugins/conversation_view/functions.php`, `setup.php`)**:
+  - **Unconditional Current Message Inclusion**: Guaranteed that the currently viewed email in `src/read_body.php` is immediately and safely populated into the conversation thread structure from `$currentMessage` and session state. Eliminates empty threads (`0 messages`) caused by IMAP mailbox name case sensitivity (`INBOX` vs `inbox`) or missing Message-IDs.
+  - **Fatal TypeError Resolution on Content-Type Arrays**: Fixed a PHP 8.2+ `TypeError` (`strtolower(): Argument #1 must be of type string, array given`) in `cv_get_conversation_thread()` when inspecting headers returned by `sqimap_get_small_header_list()` (where `Content-Type` is parsed as an array like `['text', 'plain']`). The caught `Throwable` previously aborted thread generation and discarded all discovered drafts and replies.
+  - **Robust Draft Matching via `X-SM-Flag-Reply`**: Upgraded SquirrelMail reply flag evaluation in `cv_get_conversation_thread()` from rigid substring matching (`::uid::`) to structured delimiter parsing (`explode('::', $flag, 3)`), cleanly matching `reply::$uid::$mailbox`, `reply::$uid::`, and `reply::$uid` even when trailing mailbox delimiters are omitted.
+  - **Mailbox Tree Flattening & Special Folder Resolution**: Added `cv_flatten_mailboxes()` to recursively traverse both array structures and `class mailboxes` object trees, ensuring all candidate `Drafts` and `Sent` mailboxes are discovered across diverse IMAP servers.
+  - **Header Jump Badge & Timeline Count Consistency**: Updated toolbar badge logic in `conversation_view_read_body_header_right` to display whenever related drafts or sent replies exist, and ensured the conversation thread timeline accurately reflects the message count (never displaying `0 messages`).
+- **Version Bump**: Incremented version from `1.5.67` to `1.5.68`.
 
 ### Version 1.5.67
 - **AI Agent Auto-Draft Duplicate Prevention & Resilient State Tracking (`plugins/ai_agent/cron.php`)**:

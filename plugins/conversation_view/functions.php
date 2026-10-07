@@ -172,6 +172,43 @@ function cv_run_uid_search($imapConnection, $searchString)
 }
 
 /**
+ * Flattens mailbox list or mailbox object tree into a flat array of mailbox full names.
+ *
+ * @param mixed $boxes Array or object tree of mailboxes
+ * @return array Flat array of mailbox names
+ */
+function cv_flatten_mailboxes($boxes)
+{
+    $list = array();
+    if (empty($boxes)) {
+        return $list;
+    }
+    if (is_object($boxes)) {
+        if (!empty($boxes->mailboxname_full)) {
+            $list[] = $boxes->mailboxname_full;
+        }
+        if (!empty($boxes->mbxs) && is_array($boxes->mbxs)) {
+            foreach ($boxes->mbxs as $child) {
+                $list = array_merge($list, cv_flatten_mailboxes($child));
+            }
+        }
+    } elseif (is_array($boxes)) {
+        foreach ($boxes as $b) {
+            if (is_object($b)) {
+                $list = array_merge($list, cv_flatten_mailboxes($b));
+            } elseif (is_array($b)) {
+                if (!empty($b['unformatted'])) $list[] = $b['unformatted'];
+                if (!empty($b['unformatted-dm'])) $list[] = $b['unformatted-dm'];
+                if (!empty($b['mailboxname_full'])) $list[] = $b['mailboxname_full'];
+            } elseif (is_string($b)) {
+                $list[] = $b;
+            }
+        }
+    }
+    return array_values(array_unique(array_filter($list)));
+}
+
+/**
  * Resolves all actual IMAP mailbox names matching a special folder type ('sent' or 'draft').
  * Tests candidate names against IMAP directly to ensure valid, accessible folders are returned.
  *
@@ -200,14 +237,9 @@ function cv_resolve_all_special_folders($imapConnection, $type)
 
     // 1. Check cached folder list if available
     $boxes = sqimap_mailbox_list($imapConnection);
-    if (!empty($boxes) && is_array($boxes)) {
-        $available = array();
-        foreach ($boxes as $b) {
-            if (!empty($b['unformatted'])) $available[] = $b['unformatted'];
-            if (!empty($b['unformatted-dm'])) $available[] = $b['unformatted-dm'];
-        }
-        $available = array_unique($available);
+    $available = cv_flatten_mailboxes($boxes);
 
+    if (!empty($available)) {
         foreach ($candidates as $cand) {
             foreach ($available as $avail) {
                 if (strcasecmp($cand, $avail) === 0) {
@@ -428,9 +460,60 @@ function cv_get_conversation_thread($imapConnection, $currentMailbox, $currentUi
             $folders_to_check[$origReplyBox] = array('type' => 'received');
         }
 
-        $all_messages = array();
+        $baseUri = sqm_baseuri();
+        $acctParam = isset($GLOBALS['iAccount']) ? (int)$GLOBALS['iAccount'] : 0;
+        $curType = 'received';
+        if (isDraftMailbox($currentMailbox)) {
+            $curType = 'draft';
+        } elseif (isSentMailbox($currentMailbox)) {
+            $curType = 'sent';
+        }
 
-        // 3. Search and extract messages from each folder
+        $curFromParsed = ($rfcHeader && !empty($rfcHeader->from)) ? cv_format_address($rfcHeader->from) : array('name' => _("Unknown"), 'email' => '');
+        $curToParsed = ($rfcHeader && !empty($rfcHeader->to)) ? cv_format_address($rfcHeader->to) : array('name' => _("Unknown"), 'email' => '');
+        $curSubj = !empty($raw_subject) ? decodeHeader($raw_subject, false, false, true) : _("(no subject)");
+
+        $curRawDate = ($rfcHeader && !empty($rfcHeader->date)) ? $rfcHeader->date : '';
+        $curTimestamp = !empty($curRawDate) ? strtotime($curRawDate) : 0;
+        if ($curTimestamp <= 0) {
+            $curTimestamp = time();
+        }
+        $curDateStr = function_exists('getDateString') ? getDateString($curTimestamp, true) : date('Y-m-d H:i', $curTimestamp);
+
+        $curSnippet = !empty($GLOBALS['messagebody']) ? cv_clean_body_snippet($GLOBALS['messagebody']) : '';
+
+        $curHasAttachment = false;
+        if (isset($currentMessage->entities) && count($currentMessage->entities) > 1) {
+            $curHasAttachment = true;
+        }
+
+        $curViewUrl = $baseUri . 'src/read_body.php?account=' . $acctParam . '&mailbox=' . urlencode($currentMailbox) . '&passed_id=' . (int)$currentUid . '&startMessage=1';
+        $curResumeUrl = ($curType === 'draft') ? $curViewUrl : '';
+        $curReplyUrl = $baseUri . 'src/compose.php?smaction_reply=1&passed_id=' . (int)$currentUid . '&mailbox=' . urlencode($currentMailbox);
+
+        $currentKey = $currentMailbox . '_' . (int)$currentUid;
+        $all_messages = array(
+            $currentKey => array(
+                'uid'            => (int)$currentUid,
+                'mailbox'        => $currentMailbox,
+                'type'           => $curType,
+                'is_current'     => true,
+                'from_name'      => $curFromParsed['name'],
+                'from_email'     => $curFromParsed['email'],
+                'to_name'        => $curToParsed['name'],
+                'to_email'       => $curToParsed['email'],
+                'subject'        => $curSubj,
+                'date_str'       => $curDateStr,
+                'timestamp'      => $curTimestamp,
+                'snippet'        => $curSnippet,
+                'has_attachment' => $curHasAttachment,
+                'view_url'       => $curViewUrl,
+                'resume_url'     => $curResumeUrl,
+                'reply_url'      => $curReplyUrl,
+            )
+        );
+
+        // 3. Search and extract related messages from each candidate folder
         foreach ($folders_to_check as $folderName => $fMeta) {
             $defaultType = $fMeta['type'];
 
@@ -443,7 +526,7 @@ function cv_get_conversation_thread($imapConnection, $currentMailbox, $currentUi
             $found_uids = array();
 
             // If we know the original UID in this folder from reply flag, add it directly!
-            if (!empty($origReplyUid) && ($folderName === $origReplyBox || (empty($origReplyBox) && $folderName === 'INBOX'))) {
+            if (!empty($origReplyUid) && ($folderName === $origReplyBox || (empty($origReplyBox) && strcasecmp($folderName, 'INBOX') === 0))) {
                 $found_uids[] = (int)$origReplyUid;
             }
 
@@ -469,9 +552,9 @@ function cv_get_conversation_thread($imapConnection, $currentMailbox, $currentUi
                 }
             }
 
-            // 3b. Search by SquirrelMail reply flag (e.g. reply::$currentUid::INBOX) in drafts
+            // 3b. Search by SquirrelMail reply flag in drafts
             if ($defaultType === 'draft' && !empty($currentUid)) {
-                $resFlag = cv_run_uid_search($imapConnection, 'HEADER X-SM-Flag-Reply "::' . addcslashes($currentUid, '"\\') . '::"');
+                $resFlag = cv_run_uid_search($imapConnection, 'HEADER X-SM-Flag-Reply "::' . addcslashes($currentUid, '"\\') . '"');
                 if (!empty($resFlag) && is_array($resFlag)) {
                     foreach ($resFlag as $u) {
                         if (is_numeric($u)) $found_uids[] = (int)$u;
@@ -479,7 +562,7 @@ function cv_get_conversation_thread($imapConnection, $currentMailbox, $currentUi
                 }
             }
 
-            // 3c. Search by clean subject (always search in drafts and sent, or as fallback in current mailbox)
+            // 3c. Search by clean subject
             if (mb_strlen($clean_subject, 'UTF-8') >= 3) {
                 $safe_subj = trim(preg_replace('/[\r\n\x00-\x1F\x7F]+/', '', $clean_subject));
                 if (strlen($safe_subj) >= 3) {
@@ -492,7 +575,7 @@ function cv_get_conversation_thread($imapConnection, $currentMailbox, $currentUi
                 }
             }
 
-            // 3d. In Drafts, inspect all recent drafts (up to 50)
+            // 3d. In Drafts, inspect all recent drafts (up to 50) to guarantee custom flag detection
             if ($defaultType === 'draft') {
                 $resAllDrafts = cv_run_uid_search($imapConnection, 'ALL');
                 if (!empty($resAllDrafts) && is_array($resAllDrafts)) {
@@ -518,19 +601,14 @@ function cv_get_conversation_thread($imapConnection, $currentMailbox, $currentUi
                 }
             }
 
-            // Always guarantee the currently viewed message is included when searching current mailbox
-            if ($folderName === $currentMailbox && !in_array((int)$currentUid, $found_uids)) {
-                $found_uids[] = (int)$currentUid;
-            }
-
-            $found_uids = array_unique(array_filter($found_uids));
+            $found_uids = array_values(array_unique(array_filter($found_uids)));
             if (empty($found_uids)) {
                 continue;
             }
 
-            // Limit to most recent 35 messages per folder
-            if (count($found_uids) > 35) {
-                $found_uids = array_slice($found_uids, -35);
+            // Limit to most recent 40 messages per folder
+            if (count($found_uids) > 40) {
+                $found_uids = array_slice($found_uids, -40);
             }
 
             // Fetch headers including X-SM-Flag-Reply
@@ -547,7 +625,15 @@ function cv_get_conversation_thread($imapConnection, $currentMailbox, $currentUi
 
             foreach ($hdr_list as $uid => $hdr) {
                 $uid = (int) $uid;
-                $is_current = ($folderName === $currentMailbox && $uid === (int)$currentUid);
+                $msgKey = $folderName . '_' . $uid;
+
+                // Skip if this is the currently viewed message already registered
+                if (strcasecmp($folderName, $currentMailbox) === 0 && $uid === (int)$currentUid) {
+                    continue;
+                }
+                if (isset($all_messages[$msgKey])) {
+                    continue;
+                }
 
                 // Determine message type
                 $type = $defaultType;
@@ -559,10 +645,23 @@ function cv_get_conversation_thread($imapConnection, $currentMailbox, $currentUi
 
                 // Verify relevance
                 $has_link = false;
-                if ($is_current) {
-                    $has_link = true;
+
+                // Check SquirrelMail reply flag (e.g. reply::243::INBOX)
+                if (!empty($hdr['x-sm-flag-reply'])) {
+                    $flagVal = trim($hdr['x-sm-flag-reply']);
+                    $parts = explode('::', $flagVal, 3);
+                    if (isset($parts[1]) && is_numeric($parts[1])) {
+                        $flagOrigUid = (int)$parts[1];
+                        if ($flagOrigUid === (int)$currentUid || (!empty($origReplyUid) && $flagOrigUid === (int)$origReplyUid)) {
+                            $has_link = true;
+                        }
+                    }
+                    if (!$has_link && strpos($flagVal, '::' . (int)$currentUid) !== false) {
+                        $has_link = true;
+                    }
                 }
 
+                // Check Message-IDs (References, In-Reply-To, Message-ID)
                 if (!$has_link && !empty($search_ids)) {
                     $hdr_in_reply = !empty($hdr['in-reply-to']) ? cv_extract_ids($hdr['in-reply-to']) : array();
                     $hdr_refs = !empty($hdr['references']) ? cv_extract_ids($hdr['references']) : array();
@@ -573,14 +672,12 @@ function cv_get_conversation_thread($imapConnection, $currentMailbox, $currentUi
                     }
                 }
 
-                if (!$has_link && !empty($hdr['x-sm-flag-reply']) && strpos($hdr['x-sm-flag-reply'], '::' . $currentUid . '::') !== false) {
-                    $has_link = true;
-                }
-
+                // Check Original UID pointer
                 if (!$has_link && !empty($origReplyUid) && $uid === (int)$origReplyUid) {
                     $has_link = true;
                 }
 
+                // Check Subject match
                 if (!$has_link && !empty($clean_subject)) {
                     $hdr_clean_subj = cv_clean_subject(!empty($hdr['subject']) ? $hdr['subject'] : '');
                     if (mb_strlen($hdr_clean_subj, 'UTF-8') >= 3 && 
@@ -612,40 +709,40 @@ function cv_get_conversation_thread($imapConnection, $currentMailbox, $currentUi
 
                 // Fetch clean body snippet
                 $snippet = '';
-                if ($is_current && !empty($GLOBALS['messagebody'])) {
-                    $snippet = cv_clean_body_snippet($GLOBALS['messagebody']);
-                } else {
-                    // Lightweight text fetch from IMAP
-                    $body_read = sqimap_run_command($imapConnection, "FETCH $uid (BODY.PEEK[TEXT]<0.400>)", false, $resp, $msg, true);
-                    if (empty($body_read) || !is_array($body_read)) {
-                        $body_read = sqimap_run_command($imapConnection, "FETCH $uid (BODY.PEEK[1]<0.400>)", false, $resp, $msg, true);
-                    }
-                    if (!empty($body_read) && is_array($body_read)) {
-                        $rawBody = implode('', $body_read);
-                        $snippet = cv_clean_body_snippet($rawBody);
-                    }
+                $body_read = sqimap_run_command($imapConnection, "FETCH $uid (BODY.PEEK[TEXT]<0.400>)", false, $resp, $msg, true);
+                if (empty($body_read) || !is_array($body_read)) {
+                    $body_read = sqimap_run_command($imapConnection, "FETCH $uid (BODY.PEEK[1]<0.400>)", false, $resp, $msg, true);
+                }
+                if (!empty($body_read) && is_array($body_read)) {
+                    $rawBody = implode('', $body_read);
+                    $snippet = cv_clean_body_snippet($rawBody);
                 }
 
-                // Attachment indicator
+                // Attachment indicator (safely handling array or string Content-Type)
                 $hasAttachment = false;
-                if (!empty($hdr['content-type']) && strpos(strtolower($hdr['content-type']), 'multipart/mixed') !== false) {
-                    $hasAttachment = true;
+                if (!empty($hdr['content-type'])) {
+                    if (is_array($hdr['content-type'])) {
+                        $cTypeStr = implode('/', $hdr['content-type']);
+                    } else {
+                        $cTypeStr = (string)$hdr['content-type'];
+                    }
+                    if (stripos($cTypeStr, 'multipart/mixed') !== false || stripos($cTypeStr, 'multipart/related') !== false) {
+                        $hasAttachment = true;
+                    }
                 }
 
                 // URLs
-                $baseUri = sqm_baseuri();
-                $acctParam = isset($GLOBALS['iAccount']) ? (int)$GLOBALS['iAccount'] : 0;
                 $viewUrl = $baseUri . 'src/read_body.php?account=' . $acctParam . '&mailbox=' . urlencode($folderName) . '&passed_id=' . $uid . '&startMessage=1';
                 $resumeUrl = ($type === 'draft')
                     ? $baseUri . 'src/read_body.php?account=' . $acctParam . '&mailbox=' . urlencode($folderName) . '&passed_id=' . $uid . '&startMessage=1'
                     : '';
                 $replyUrl = $baseUri . 'src/compose.php?smaction_reply=1&passed_id=' . $uid . '&mailbox=' . urlencode($folderName);
 
-                $all_messages[] = array(
+                $all_messages[$msgKey] = array(
                     'uid'            => $uid,
                     'mailbox'        => $folderName,
                     'type'           => $type,
-                    'is_current'     => $is_current,
+                    'is_current'     => false,
                     'from_name'      => $fromParsed['name'],
                     'from_email'     => $fromParsed['email'],
                     'to_name'        => $toParsed['name'],
@@ -667,8 +764,11 @@ function cv_get_conversation_thread($imapConnection, $currentMailbox, $currentUi
             @sqimap_mailbox_select($imapConnection, $currentMailbox, false);
         }
 
+        // Convert associative map to indexed list
+        $msgList = array_values($all_messages);
+
         // Sort chronologically (oldest to newest)
-        usort($all_messages, function ($a, $b) {
+        usort($msgList, function ($a, $b) {
             if ($a['timestamp'] === $b['timestamp']) {
                 return ($a['uid'] <=> $b['uid']);
             }
@@ -677,13 +777,13 @@ function cv_get_conversation_thread($imapConnection, $currentMailbox, $currentUi
 
         // Compute stats
         $stats = array(
-            'total_count'    => count($all_messages),
+            'total_count'    => count($msgList),
             'sent_count'     => 0,
             'draft_count'    => 0,
             'received_count' => 0,
         );
 
-        foreach ($all_messages as $m) {
+        foreach ($msgList as $m) {
             if ($m['type'] === 'sent') {
                 $stats['sent_count']++;
             } elseif ($m['type'] === 'draft') {
@@ -694,7 +794,7 @@ function cv_get_conversation_thread($imapConnection, $currentMailbox, $currentUi
         }
 
         $result = array(
-            'messages' => $all_messages,
+            'messages' => $msgList,
             'stats'    => $stats,
             'subject'  => $clean_subject,
         );
