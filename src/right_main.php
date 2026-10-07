@@ -214,6 +214,11 @@ if (isset($showall)) {
 sqgetGlobalVar('mailbox_cache',$mailbox_cache,SQ_SESSION);
 
 /**
+ * Hook to allow plugins (e.g. filters) to operate on the mailbox before selection
+ */
+do_hook('right_main_before_select', $mailbox);
+
+/**
  * Select the mailbox and retrieve the cached info.
  */
 $aMailbox = sqm_api_mailbox_select($imapConnection,$account, $mailbox,$aConfig,$aMailboxPref);

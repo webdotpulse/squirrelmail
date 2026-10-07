@@ -17,6 +17,8 @@
 function squirrelmail_plugin_init_filters() {
     global $squirrelmail_plugin_hooks;
 
+    $squirrelmail_plugin_hooks['webmail_top']['filters'] = 'start_filters_hook';
+    $squirrelmail_plugin_hooks['right_main_before_select']['filters'] = 'start_filters_hook';
     $squirrelmail_plugin_hooks['left_main_before']['filters'] = 'start_filters_hook';
     $squirrelmail_plugin_hooks['right_main_after_header']['filters'] = 'start_filters_hook';
     $squirrelmail_plugin_hooks['optpage_register_block']['filters'] = 'filters_optpage_register_block_hook';

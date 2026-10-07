@@ -23,6 +23,16 @@ function multi_account_left_main_do()
 
     $mgr = new MultiAccountManager($data_dir, $username);
     $accounts = $mgr->getAccounts();
+
+    $enabledAccounts = array_filter($accounts, function($acc) {
+        return !empty($acc['enabled']);
+    });
+
+    // Only display Unified Inbox button / container in the sidebar if there is more than 1 connected account
+    if (count($enabledAccounts) === 0) {
+        return [];
+    }
+
     $unreadData = $mgr->getUnreadCounts();
     $totalUnread = $unreadData['total_unread'] ?? 0;
 
@@ -107,43 +117,65 @@ function multi_account_left_main_do()
             margin: 3px 0;
         }
         .sqm-account-link {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
+            display: flex !important;
+            flex-direction: row !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            flex-wrap: nowrap !important;
+            white-space: nowrap !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
             padding: 4px 6px;
             border-radius: var(--sm-radius-sm, 4px);
-            color: var(--sm-text-secondary, #3c4043);
-            text-decoration: none;
+            color: var(--sm-text-secondary, #3c4043) !important;
+            text-decoration: none !important;
             font-size: 11.5px;
             transition: background 0.1s ease;
+            gap: 6px;
         }
         .sqm-account-link:hover {
-            background: var(--sm-hover-bg, #f1f3f4);
-            color: var(--sm-text-primary, #0f172a);
-            text-decoration: none;
+            background: var(--sm-hover-bg, #f1f3f4) !important;
+            color: var(--sm-text-primary, #0f172a) !important;
+            text-decoration: none !important;
         }
         .sqm-acc-info {
-            display: flex;
-            align-items: center;
+            display: inline-flex !important;
+            align-items: center !important;
             gap: 6px;
             overflow: hidden;
             text-overflow: ellipsis;
-            white-space: nowrap;
+            white-space: nowrap !important;
+            min-width: 0;
+            flex: 1 1 auto;
+        }
+        .sqm-acc-name {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap !important;
         }
         .sqm-acc-dot {
             width: 8px;
             height: 8px;
             border-radius: 50%;
             display: inline-block;
-            flex-shrink: 0;
+            flex-shrink: 0 !important;
         }
         .sqm-acc-badge {
-            background: var(--sm-border, #dadce0);
-            color: var(--sm-text-primary, #3c4043);
+            background: var(--sm-primary, #1a73e8);
+            color: #ffffff !important;
             font-size: 10px;
-            font-weight: 600;
-            padding: 0 5px;
-            border-radius: 8px;
+            font-weight: 700;
+            padding: 1px 6px;
+            border-radius: 10px;
+            min-width: 14px;
+            text-align: center;
+            flex-shrink: 0 !important;
+            white-space: nowrap !important;
+            display: inline-flex !important;
+            align-items: center;
+            justify-content: center;
+            line-height: 1.3;
+            margin-left: auto;
         }
     </style>
 
@@ -164,14 +196,12 @@ function multi_account_left_main_do()
                     <a href="<?php echo htmlspecialchars($inboxUrl . '?account=primary'); ?>" class="sqm-account-link" title="<?php echo htmlspecialchars($username); ?>">
                         <span class="sqm-acc-info">
                             <span class="sqm-acc-dot" style="background-color: #1a73e8;"></span>
-                            <span style="font-weight: 500;"><?php echo _("Primary"); ?></span>
+                            <span class="sqm-acc-name" style="font-weight: 500;"><?php echo _("Primary"); ?></span>
                         </span>
                         <?php 
                         $primUnread = $unreadData['accounts']['primary']['unread'] ?? 0;
-                        if ($primUnread > 0): 
                         ?>
-                            <span class="sqm-acc-badge"><?php echo intval($primUnread); ?></span>
-                        <?php endif; ?>
+                        <span class="sqm-acc-badge" id="sqm-multi-badge-primary" style="<?php echo ($primUnread > 0 ? '' : 'display: none;'); ?>"><?php echo intval($primUnread); ?></span>
                     </a>
                 </li>
 
@@ -186,11 +216,9 @@ function multi_account_left_main_do()
                     <a href="<?php echo htmlspecialchars($inboxUrl . '?account=' . urlencode($accId)); ?>" class="sqm-account-link" title="<?php echo htmlspecialchars($acc['name'] . ' (' . $acc['email'] . ')'); ?>">
                         <span class="sqm-acc-info">
                             <span class="sqm-acc-dot" style="background-color: <?php echo htmlspecialchars($accColor); ?>;"></span>
-                            <span><?php echo htmlspecialchars($acc['name']); ?></span>
+                            <span class="sqm-acc-name"><?php echo htmlspecialchars($acc['name']); ?></span>
                         </span>
-                        <?php if ($accUnread > 0): ?>
-                            <span class="sqm-acc-badge"><?php echo intval($accUnread); ?></span>
-                        <?php endif; ?>
+                        <span class="sqm-acc-badge" id="sqm-multi-badge-<?php echo htmlspecialchars($accId); ?>" style="<?php echo ($accUnread > 0 ? '' : 'display: none;'); ?>"><?php echo intval($accUnread); ?></span>
                     </a>
                 </li>
                 <?php endforeach; ?>
@@ -215,6 +243,15 @@ function multi_account_left_main_do()
                                 totalBadge.classList.remove('zero');
                             } else {
                                 totalBadge.classList.add('zero');
+                            }
+                        }
+                    }
+                    if (data && data.accounts) {
+                        for (const [accId, accInfo] of Object.entries(data.accounts)) {
+                            const badge = document.getElementById('sqm-multi-badge-' + accId);
+                            if (badge) {
+                                badge.textContent = accInfo.unread;
+                                badge.style.display = (accInfo.unread > 0) ? 'inline-flex' : 'none';
                             }
                         }
                     }
@@ -249,6 +286,14 @@ function multi_account_page_header_do()
 
     $mgr = new MultiAccountManager($data_dir, $username);
     $accounts = $mgr->getAccounts();
+    $enabledAccounts = array_filter($accounts, function($acc) {
+        return !empty($acc['enabled']);
+    });
+
+    if (count($enabledAccounts) === 0) {
+        return [];
+    }
+
     $unreadData = $mgr->getUnreadCounts();
     $totalUnread = $unreadData['total_unread'] ?? 0;
 

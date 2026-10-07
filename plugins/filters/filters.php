@@ -59,17 +59,19 @@ if (file_exists(SM_PATH . 'config/filters_config.php')) {
 function filters_optpage_register_block() {
     global $optpage_blocks, $AllowSpamFilters;
 
+    $baseUri = function_exists('sqm_baseuri') ? sqm_baseuri() : (defined('SM_PATH') ? SM_PATH : '../');
+
     $optpage_blocks[] = array(
         'name' => _("Message Filters"),
-        'url'  => SM_PATH . 'plugins/filters/options.php',
-        'desc' => _("Filtering enables messages with different criteria to be automatically filtered into different folders for easier organization."),
+        'url'  => $baseUri . 'plugins/filters/options.php',
+        'desc' => _("Automatically sort incoming email into specific folders based on sender, recipient, subject, headers, or body content."),
         'js'   => false
     );
 
     if ($AllowSpamFilters) {
         $optpage_blocks[] = array(
             'name' => _("SPAM Filters"),
-            'url'  => SM_PATH . 'plugins/filters/spamoptions.php',
+            'url'  => $baseUri . 'plugins/filters/spamoptions.php',
             'desc' => _("SPAM filters allow you to select from various DNS based blacklists to detect junk email in your INBOX and move it to another folder (like Trash)."),
             'js'   => false
         );
@@ -186,252 +188,255 @@ function filters_bulkquery($filters, $IPs) {
 
 /**
  * Starts the filtering process
- * @param array $hook_args (since 1.5.2) do hook arguments. Is used to check
- * hook name, array key = 0 (UPDATE: but right_main_after_header hook uses
- * boolean_hook_function which doesn't pass the hook name)
- * @access private
+ * @param array $hook_args (since 1.5.2) hook arguments or options (e.g. array('force' => true))
+ * @return int Total number of messages filtered and moved
+ * @access public
  */
-function start_filters($hook_args) {
+function start_filters($hook_args = null) {
     global $imapServerAddress, $imapPort, $imap_stream_options, $imap_stream,
            $imapConnection, $UseSeparateImapConnection, $AllowSpamFilters,
-           $filter_inbox_count, $username;
+           $filter_inbox_count, $username, $mailbox;
 
-    // if there were filtering errors previously during
-    // this login session, we won't try again
-    //
-    // (errors that this plugin was able to catch or a "NO"
-    // response/failure from IMAP found in the current session,
-    // which could have resulted from an attempted filter copy
-    // (over quota), in which case execution halts before this
-    // plugin can catch the problem -- note, however, that any
-    // other IMAP "NO" failure (caused by unrelated actions) at
-    // any time during the current session will cause this plugin
-    // to effectively shut down)
-    //
+    static $already_filtered = false;
+
+    // Check if forced (e.g. manual run from options page)
+    $force = is_array($hook_args) && !empty($hook_args['force']);
+
+    if ($already_filtered && !$force) {
+        return 0;
+    }
+
+    // If there were filtering errors previously during this session, do not retry unless forced
     sqgetGlobalVar('filters_error', $filters_error, SQ_SESSION, FALSE);
     sqgetGlobalVar('IMAP_FATAL_ERROR_TYPE', $imap_fatal_error, SQ_SESSION, '');
-    if ($filters_error || $imap_fatal_error == 'NO')
-        return;
+    if (($filters_error || $imap_fatal_error == 'NO') && !$force) {
+        return 0;
+    }
 
-    /**
-     * check hook that calls filtering. If filters are called by right_main_after_header,
-     * do filtering only when we are in INBOX folder.
-     */
-    if (PAGE_NAME == 'right_main' &&
-        (sqgetGlobalVar('mailbox',$mailbox,SQ_FORM) && $mailbox!='INBOX')) {
-        return;
+    if ($force) {
+        sqsession_unregister('filters_error');
     }
 
     $filters = load_filters();
 
-    // No point running spam filters if there aren't any to run //
+    // Check if spam filters are configured and enabled
     if ($AllowSpamFilters) {
         $spamfilters = load_spam_filters();
-
-        $AllowSpamFilters = false;
-        foreach($spamfilters as $value) {
-            if ($value['enabled'] == SMPREF_ON) {
-                $AllowSpamFilters = true;
+        $has_spam_filters = false;
+        foreach ($spamfilters as $value) {
+            if (!empty($value['enabled'])) {
+                $has_spam_filters = true;
                 break;
             }
         }
+        $AllowSpamFilters = $has_spam_filters;
     }
 
-    // No user filters, and no spam filters, no need to continue //
+    // No user filters and no spam filters - nothing to do
     if (!$AllowSpamFilters && empty($filters)) {
-        return;
+        $already_filtered = true;
+        return 0;
     }
 
-
-    // Detect if we have already connected to IMAP or not.
-    // Also check if we are forced to use a separate IMAP connection
-    if ((!isset($imap_stream) && !isset($imapConnection)) ||
-        $UseSeparateImapConnection ) {
-            $stream = sqimap_login($username, false, $imapServerAddress,
-                                $imapPort, 10, $imap_stream_options);
-            $previously_connected = false;
+    // Detect if we have already connected to IMAP or not
+    $previously_connected = true;
+    if ((!isset($imap_stream) && !isset($imapConnection)) || $UseSeparateImapConnection) {
+        $stream = sqimap_login($username, false, $imapServerAddress,
+                               $imapPort, 10, $imap_stream_options);
+        $previously_connected = false;
     } else if (isset($imapConnection)) {
         $stream = $imapConnection;
-        $previously_connected = true;
     } else {
-        $previously_connected = true;
         $stream = $imap_stream;
     }
 
-    if (!isset($filter_inbox_count)) {
-        $aStatus = sqimap_status_messages ($stream, 'INBOX', array('MESSAGES'));
-        if (!empty($aStatus['MESSAGES'])) {
-            $filter_inbox_count=$aStatus['MESSAGES'];
-        } else {
-            $filter_inbox_count=0;
-        }
+    if (!$stream) {
+        return 0;
     }
+
+    $total_moved = 0;
+
+    $aStatus = sqimap_status_messages($stream, 'INBOX', array('MESSAGES'));
+    $filter_inbox_count = !empty($aStatus['MESSAGES']) ? (int)$aStatus['MESSAGES'] : 0;
 
     if ($filter_inbox_count > 0) {
         sqimap_mailbox_select($stream, 'INBOX');
-        // Filter spam from inbox before we sort them into folders
+
+        // Filter spam from inbox
         if ($AllowSpamFilters) {
             spam_filters($stream);
         }
 
-        // Sort into folders
-        user_filters($stream);
+        // Sort into folders based on user criteria
+        $total_moved = user_filters($stream);
+    }
+
+    // If stream was already open and user is on a folder other than INBOX, restore selection
+    if ($previously_connected && !empty($mailbox) && $mailbox !== 'INBOX') {
+        sqimap_mailbox_select($stream, $mailbox);
     }
 
     if (!$previously_connected) {
         sqimap_logout($stream);
     }
+
+    $already_filtered = true;
+    return $total_moved;
 }
 
 /**
- * Does the loop through each filter
- * @param stream imap_stream the stream to read from
+ * Does the loop through each filter rule
+ * @param resource $imap_stream the stream to read from
+ * @return int Number of messages moved
  * @access private
  */
 function user_filters($imap_stream) {
     global $data_dir, $username;
     $filters = load_filters();
-    if (! $filters) return;
+    if (empty($filters)) return 0;
     $filters_user_scan = getPref($data_dir, $username, 'filters_user_scan');
 
     $expunge = false;
-    // For every rule
-    for ($i=0, $num = count($filters); $i < $num; $i++) {
-        // If it is the "combo" rule
-        if ($filters[$i]['where'] == 'To or Cc') {
-            /*
-            *  If it's "TO OR CC", we have to do two searches, one for TO
-            *  and the other for CC.
-            */
-            $expunge = filter_search_and_delete($imap_stream, 'TO',
-                  $filters[$i]['what'], $filters[$i]['folder'], $filters_user_scan, $expunge);
-            $expunge = filter_search_and_delete($imap_stream, 'CC',
-                  $filters[$i]['what'], $filters[$i]['folder'], $filters_user_scan, $expunge);
-        } else if ($filters[$i]['where'] == 'Header and Body') {
-            $expunge = filter_search_and_delete($imap_stream, 'TEXT',
-                  $filters[$i]['what'], $filters[$i]['folder'], $filters_user_scan, $expunge);
-        } else if ($filters[$i]['where'] == 'Message Body') {
-            $expunge = filter_search_and_delete($imap_stream, 'BODY',
-                  $filters[$i]['what'], $filters[$i]['folder'], $filters_user_scan, $expunge);
+    $total_moved = 0;
+
+    for ($i = 0, $num = count($filters); $i < $num; $i++) {
+        $where = isset($filters[$i]['where']) ? $filters[$i]['where'] : '';
+        $what = isset($filters[$i]['what']) ? $filters[$i]['what'] : '';
+        $folder = isset($filters[$i]['folder']) ? $filters[$i]['folder'] : '';
+
+        if ($what === '' || $folder === '') {
+            continue;
+        }
+
+        if ($where == 'To or Cc') {
+            $m1 = filter_search_and_delete($imap_stream, 'TO', $what, $folder, $filters_user_scan);
+            $m2 = filter_search_and_delete($imap_stream, 'CC', $what, $folder, $filters_user_scan);
+            $moved = $m1 + $m2;
+        } else if ($where == 'Header and Body') {
+            $moved = filter_search_and_delete($imap_stream, 'TEXT', $what, $folder, $filters_user_scan);
+        } else if ($where == 'Message Body') {
+            $moved = filter_search_and_delete($imap_stream, 'BODY', $what, $folder, $filters_user_scan);
         } else {
-            /*
-            *  If it's a normal TO, CC, SUBJECT, or FROM, then handle it
-            *  normally.
-            */
-            $expunge = filter_search_and_delete($imap_stream, $filters[$i]['where'],
-                 $filters[$i]['what'], $filters[$i]['folder'], $filters_user_scan, $expunge);
+            $moved = filter_search_and_delete($imap_stream, $where, $what, $folder, $filters_user_scan);
+        }
+
+        if ($moved > 0) {
+            $total_moved += $moved;
+            $expunge = true;
         }
     }
-    // Clean out the mailbox whether or not auto_expunge is on
-    // That way it looks like it was redirected properly
+
+    // Clean out the mailbox if any messages were moved
     if ($expunge) {
         sqimap_mailbox_expunge($imap_stream, 'INBOX');
     }
+
+    return $total_moved;
 }
 
 /**
- * Creates and runs the IMAP command to filter messages
- * @param string $imap_stream TODO: Document this parameter
- * @param string $where Which part of the message to search (TO, CC, SUBJECT, etc...)
+ * Creates and runs the IMAP command to filter messages and move them to destination folder
+ * @param resource $imap_stream IMAP socket connection
+ * @param string $where Which part of the message to search (TO, CC, SUBJECT, HEADER, etc.)
  * @param string $what String to search for
  * @param string $where_to Folder it will move to
  * @param string $user_scan Whether to search all or just unseen
- * @param string $should_expunge
+ * @return int Number of messages moved
  * @access private
  */
-function filter_search_and_delete($imap_stream, $where, $what, $where_to, $user_scan,
-                                  $should_expunge) {
-    global $languages, $squirrelmail_language, $allow_charset_search, $imap_server_type;
-
-    //TODO: make use of new mailbox cache. See mailbox_display.phpinfo
+function filter_search_and_delete($imap_stream, $where, $what, $where_to, $user_scan = '') {
+    global $languages, $squirrelmail_language, $allow_charset_search, $color;
 
     if (strtolower($where_to) == 'inbox') {
-        return array();
+        return 0;
     }
 
     if ($user_scan == 'new') {
-        $category = 'UNSEEN';
+        $category = 'UNSEEN UNDELETED';
     } else {
-        $category = 'ALL';
+        $category = 'ALL UNDELETED';
     }
-    $category .= ' UNDELETED';
 
-    if ($allow_charset_search &&
+    // Build the search criterion
+    if ($where == 'Header') {
+        $parts = explode(':', $what, 2);
+        $hdr_name = trim($parts[0]);
+        $hdr_val = isset($parts[1]) ? trim($parts[1]) : '';
+        $criterion = 'HEADER "' . quoteimap($hdr_name) . '" "' . quoteimap($hdr_val) . '"';
+    } else {
+        $field = strtoupper($where);
+        $criterion = $field . ' "' . quoteimap($what) . '"';
+    }
+
+    $charset = '';
+    if (!empty($allow_charset_search) &&
         isset($languages[$squirrelmail_language]['CHARSET']) &&
         $languages[$squirrelmail_language]['CHARSET']) {
-        $search_str = 'SEARCH CHARSET '
-                    . strtoupper($languages[$squirrelmail_language]['CHARSET'])
-                    . ' ' . $category;
-    } else {
-        $search_str = 'SEARCH CHARSET US-ASCII ' . $category;
-    }
-    if ($where == 'Header') {
-        $what  = explode(':', $what);
-        $where = strtoupper($where);
-        $where = trim($where . ' ' . $what[0]);
-        $what  = addslashes(trim($what[1]));
+        $charset = strtoupper($languages[$squirrelmail_language]['CHARSET']);
     }
 
-    // see comments in squirrelmail sqimap_search function
-    if ($imap_server_type == 'macosx' || $imap_server_type == 'hmailserver') {
-        $search_str .= ' ' . $where . ' ' . $what;
-        /* read data back from IMAP */
-        $read = sqimap_run_command($imap_stream, $search_str, true, $response, $message, TRUE);
+    if (!empty($charset) && $charset !== 'US-ASCII') {
+        $query = 'SEARCH CHARSET "' . $charset . '" ' . $category . ' ' . $criterion;
     } else {
-        $search_str .= ' ' . $where . ' {' . strlen($what) . "}";
-        $sid = sqimap_session_id(true);
-        fputs ($imap_stream, $sid . ' ' . $search_str . "\r\n");
-        $read2 = sqimap_fgets($imap_stream);
-        # server should respond with Ready for argument, then we will send search text
-        #echo "RR2 $read2<br>";
-        fputs ($imap_stream, "$what\r\n");
-        #echo "SS $what<br>";
-        $read2 = sqimap_fgets($imap_stream);
-        #echo "RR2 $read2<br>";
-        $read[]=$read2;
-        $read3 = sqimap_fgets($imap_stream);
-        #echo "RR3 $read3<br>";
-        list($rtag,$response,$message)=explode(' ',$read3,3);
-##        $read2 = sqimap_retrieve_imap_response($imap_stream, $sid, true,
-##              $response, $message, $search_str, false, true, false);
-        #echo "RR2 $read2 / RESPONSE $response<br>";
+        $query = 'SEARCH CHARSET US-ASCII ' . $category . ' ' . $criterion;
     }
 
-    if (isset($read[0])) {
-        $ids = array();
-        for ($i = 0, $iCnt = count($read); $i < $iCnt; ++$i) {
-            if (preg_match("/^\* SEARCH (.+)$/", $read[$i], $regs)) {
-                $ids += explode(' ', trim($regs[1]));
-            }
+    $response = '';
+    $message = '';
+    $readin = sqimap_run_command_list($imap_stream, $query, false, $response, $message, TRUE);
+
+    // Fallback if IMAP server rejected CHARSET
+    if ($response == 'NO' && !empty($charset)) {
+        $query = 'SEARCH CHARSET US-ASCII ' . $category . ' ' . $criterion;
+        $readin = sqimap_run_command_list($imap_stream, $query, false, $response, $message, TRUE);
+        if ($response == 'NO') {
+            $query = 'SEARCH ' . $category . ' ' . $criterion;
+            $readin = sqimap_run_command_list($imap_stream, $query, false, $response, $message, TRUE);
         }
-        if ($response == 'OK' && count($ids)) {
-            if (sqimap_mailbox_exists($imap_stream, $where_to)) {
-                if (!sqimap_msgs_list_move ($imap_stream, $ids, $where_to, false)) {
-                    // if errors occurred, don't try to filter again during this session
-                    sqsession_register(TRUE, 'filters_error');
-                    global $color;
-                    error_box(_("A problem occurred filtering messages. Check filter settings and account quota if applicable. Filtering is disabled for the remainder of this login session."), $color);
-                }
+    }
 
-                // expunge even in the case of errors, in case some
-                // messages were filtered before the error happened
-                $should_expunge = true;
-            }
-        } elseif ($response != 'OK') {
-            $query = $search_str . "\r\n".$what ."\r\n";
-            if ($response == 'NO') {
-                if (strpos($message,'BADCHARSET') !== false ||
-                    strpos($message,'character') !== false) {
-                    sqm_trigger_imap_error('SQM_IMAP_BADCHARSET',$query, $response, $message);
-                } else {
-                    sqm_trigger_imap_error('SQM_IMAP_ERROR',$query, $response, $message);
+    $ids = array();
+    if (!empty($readin) && is_array($readin)) {
+        foreach ($readin as $line) {
+            if (is_array($line)) {
+                foreach ($line as $subline) {
+                    if (preg_match("/^\*\s+SEARCH\s+(.*)$/i", $subline, $regs)) {
+                        $parts = explode(' ', trim($regs[1]));
+                        foreach ($parts as $p) {
+                            $p = trim($p);
+                            if ($p !== '' && ctype_digit($p)) {
+                                $ids[] = $p;
+                            }
+                        }
+                    }
                 }
-            } else {
-                sqm_trigger_imap_error('SQM_IMAP_ERROR',$query, $response, $message);
+            } elseif (is_string($line) && preg_match("/^\*\s+SEARCH\s+(.*)$/i", $line, $regs)) {
+                $parts = explode(' ', trim($regs[1]));
+                foreach ($parts as $p) {
+                    $p = trim($p);
+                    if ($p !== '' && ctype_digit($p)) {
+                        $ids[] = $p;
+                    }
+                }
             }
         }
     }
-    return $should_expunge;
+    $ids = array_unique($ids);
+
+    if ($response == 'OK' && count($ids) > 0) {
+        if (sqimap_mailbox_exists($imap_stream, $where_to)) {
+            if (!sqimap_msgs_list_move($imap_stream, $ids, $where_to, false)) {
+                sqsession_register(TRUE, 'filters_error');
+                if (function_exists('error_box')) {
+                    error_box(_("A problem occurred filtering messages. Check filter settings and account quota."), $color);
+                }
+                return 0;
+            }
+            return count($ids);
+        }
+    }
+
+    return 0;
 }
 
 /**

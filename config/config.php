@@ -1001,6 +1001,7 @@ $plugins[] = 'templates';
 $plugins[] = 'squirrelspell';
 $plugins[] = 'message_details';
 $plugins[] = 'info';
+$plugins[] = 'filters';
 
 /**
  * To disable all plugins regardless of any that are installed 

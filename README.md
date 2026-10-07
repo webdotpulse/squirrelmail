@@ -1,4 +1,4 @@
-# SquirrelMail 1.5.25
+# SquirrelMail 1.5.28
 
 A modernized, responsive edition of SquirrelMail engineered for PHP 7.0 through 8.2+ with a Single-Page Application (SPA) interface, modern UI styling, and extensive feature enhancements.
 
@@ -14,6 +14,7 @@ A modernized, responsive edition of SquirrelMail engineered for PHP 7.0 through 
 - **Unified Inbox & Multi-Account Support** (`plugins/multi_account`):
   - Aggregate emails across primary and secondary accounts into a single unified stream.
   - Real-time unread badges and single-line status display in the sidebar.
+  - Dynamic display: Unified Inbox button and multi-account container in the sidebar and menuline are only rendered when there is more than 1 connected/enabled mail account.
 - **Email Templates & Attachments** (`plugins/templates`):
   - Pre-defined and custom canned responses with dynamic variable tags (`{name}`, `{date}`, `{my_name}`, etc.).
   - Automatic file attachment capability (brochures, PDFs, intake forms) directly from templates into Compose.
@@ -21,6 +22,8 @@ A modernized, responsive edition of SquirrelMail engineered for PHP 7.0 through 
   - Full HTML & plaintext signature support configurable per identity in Personal Options.
 - **Message Labels & Categorization** (`plugins/message_labels`):
   - Gmail-style color-coded tags, customizable labels, and sidebar badge integration.
+- **Automated Message Filters** (`plugins/filters`):
+  - Automatic routing of incoming emails to specific folders based on customizable criteria (Sender, Recipient, Subject, Headers, Body text).
 - **Compose Improvements**:
   - Live contact autocomplete suggestions for `To:`, `Cc:`, and `Bcc:` fields.
   - Modal-based template insertion and rich-text synchronization.
@@ -43,6 +46,33 @@ This repository includes an [AGENTS.md](file:///home/koen/Git/squirrelmail/AGENT
 ---
 
 ## 📝 Changelog
+
+### Version 1.5.28
+- **Conditional Unified Inbox Display (Multi-Account)**:
+  - Configured `multi_account_left_main_do()` in `plugins/multi_account/multi_account.php` to conditionally render the Unified Inbox container widget in the sidebar only when there is more than 1 connected/enabled mail account (Primary account + at least 1 enabled secondary account).
+  - When only the primary account is active, the sidebar container and button are suppressed, keeping the folder tree clean and uncluttered.
+  - Skipped unneeded IMAP unread count queries when only a single account is active, improving folder list render speed.
+  - Applied the same multi-account check to `multi_account_page_header_do()` for the menuline link.
+- **Version Bump**: Incremented version from `1.5.27` to `1.5.28`.
+
+### Version 1.5.27
+- **Multi-Account Sidebar Unread Badge Single-Line Alignment**:
+  - Fixed an issue where the unread message count badge on secondary accounts (e.g. "The Charge Grid") wrapped down to a new line beneath the mailbox name in the sidebar widget.
+  - Enforced single-row flex layout (`.sqm-account-link { display: flex !important; flex-direction: row !important; justify-content: space-between !important; flex-wrap: nowrap !important; width: 100% !important; }`) and text truncation (`.sqm-acc-info`, `.sqm-acc-name`) in `plugins/multi_account/multi_account.php` and `assets/css/app.css`.
+  - Styled `.sqm-acc-badge` to match the Unified Inbox unread pill (`background: var(--sm-primary); color: #ffffff;`), anchoring it to the far right on the exact same line as the mailbox info.
+  - Added per-account element IDs (`sqm-multi-badge-*`) and dynamic count updates to `sqmRefreshMultiCounts()` for real-time badge polling.
+- **Version Bump**: Incremented version from `1.5.26` to `1.5.27`.
+
+### Version 1.5.26
+- **Message Filter Plugin & Automation Engine**:
+  - **Incoming Mail Auto-Filtering**: Enabled and modernized the `filters` plugin (`plugins/filters/`), allowing users to create custom rules to automatically organize incoming email from `INBOX` into destination folders based on criteria (`From`, `To`, `Cc`, `To or Cc`, `Subject`, `Header`, `Message Body`, or `Header and Body`).
+  - **Pre-Mailbox Selection Hook**: Added the `right_main_before_select` hook in `src/right_main.php` to execute filtering before `sqm_api_mailbox_select()` runs. This eliminates folder cache corruption, avoids ghost messages, and guarantees that mailbox counts and listings are 100% synchronized and up-to-date upon viewing.
+  - **Modern Options & Management Interface**: Re-engineered `plugins/filters/options.php` with a sleek, responsive card-and-table interface matching the SquirrelMail Modern Responsive design system (`--sm-*` variables, dark mode support, and crisp badge chips for rule criteria and destination folders).
+  - **Instant Filter Execution**: Added a dedicated "⚡ Run Filters Now" button in Options to execute filter rules against `INBOX` on demand with instant feedback reporting the exact number of messages moved.
+  - **SPA-Compatible Routing & CSRF Protection**: Enforced `sqm_baseuri()` on all plugin URLs, links, and forms to eliminate SPA router breakage, and integrated CSRF security token validation (`smtoken`) across rule creation, edits, and deletions.
+  - **IMAP Search & Character Set Resilience**: Modernized `filter_search_and_delete()` in `plugins/filters/filters.php` to use `sqimap_run_command_list()` with RFC 3501 compliant charset fallback (UTF-8 -> US-ASCII -> unencoded search) and safe IMAP argument quoting.
+  - **Enabled by Default**: Added `filters` to the active `$plugins` array in `config/config.php`.
+- **Version Bump**: Incremented version from `1.5.25` to `1.5.26`.
 
 ### Version 1.5.25
 - **VCALENDAR & iCalendar Appointment Adding to Calendar**:

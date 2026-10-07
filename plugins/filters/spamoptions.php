@@ -24,6 +24,8 @@ sqgetGlobalVar('delimiter', $delimiter, SQ_SESSION);
 
 sqgetGlobalVar('action', $action, SQ_GET);
 global $imap_stream_options; // in case not defined in config
+$baseUri = function_exists('sqm_baseuri') ? sqm_baseuri() : (defined('SM_PATH') ? SM_PATH : '../../');
+$spamOptUrl = $baseUri . 'plugins/filters/spamoptions.php';
 /* end globals */
 
 displayPageHeader($color);
@@ -91,7 +93,7 @@ if (isset($action) && $action == 'spam') {
         }
     }
 
-    echo '<form method="post" action="spamoptions.php">'.
+    echo '<form method="post" action="' . $spamOptUrl . '">'.
         '<div style="text-align: center;">'.
         html_tag( 'table', '', '', '', 'width="85%" border="0" cellpadding="2" cellspacing="0"' ) .
             html_tag( 'tr' ) .
@@ -174,8 +176,8 @@ if (isset($action) && $action == 'spam') {
 } else {
     // action is not set or action is not spam
     echo html_tag( 'p', '', 'center' ) .
-         '[<a href="spamoptions.php?action=spam">' . _("Edit") . '</a>]' .
-         ' - [<a href="../../src/options.php">' . _("Done") . '</a>]</div><br /><br />';
+         '[<a href="' . $spamOptUrl . '?action=spam">' . _("Edit") . '</a>]' .
+         ' - [<a href="' . $baseUri . 'src/options.php">' . _("Done") . '</a>]</div><br /><br />';
     printf( _("Spam is sent to %s."), ($filters_spam_folder?'<b>'.sm_encode_html_special_chars(imap_utf7_decode_local($filters_spam_folder)).'</b>':'[<i>'._("not set yet").'</i>]' ) );
     echo '<br />';
     printf( _("Spam scan is limited to %s."), '<b>' . ( ($filters_spam_scan == 'new')?_("Unread messages only"):_("All messages") ) . '</b>' );

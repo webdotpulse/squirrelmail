@@ -756,6 +756,45 @@ img[src$=".svg"],
   text-decoration: none !important;
 }
 
+/* Multi-Account Sidebar Widget */
+.sqm-account-link {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  flex-wrap: nowrap !important;
+  white-space: nowrap !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  gap: 6px;
+}
+
+.sqm-acc-info {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap !important;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.sqm-acc-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap !important;
+}
+
+.sqm-acc-badge {
+  flex-shrink: 0 !important;
+  white-space: nowrap !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+}
+
 /* Sidebar Footer */
 .sm-sidebar-footer {
   margin-top: auto;
