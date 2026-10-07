@@ -189,8 +189,8 @@ body.sqm_leftMain {
 .leftspecial,
 .leftspecial a:link,
 .leftspecial a:visited {
-    color: #e11d48 !important;
-    font-weight: 600 !important;
+    /*    color: #e11d48 !important;
+    font-weight: 600 !important;*/
 }
 
 .sqm_folderHeader {
