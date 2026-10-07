@@ -421,6 +421,10 @@
             // Execute any scripts in the fragment safely
             container.querySelectorAll('script').forEach(script => {
                 try {
+                    const type = (script.getAttribute('type') || '').toLowerCase().trim();
+                    if (type && type !== 'text/javascript' && type !== 'application/javascript' && type !== 'module') {
+                        return;
+                    }
                     if (script.src) {
                         const newScript = document.createElement('script');
                         newScript.src = script.src;

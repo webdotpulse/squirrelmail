@@ -1,4 +1,4 @@
-# SquirrelMail 1.5.49
+# SquirrelMail 1.5.50
 
 A modernized, responsive edition of SquirrelMail engineered for PHP 7.0 through 8.2+ with a Single-Page Application (SPA) interface, modern UI styling, and extensive feature enhancements.
 
@@ -57,6 +57,15 @@ This repository includes an [AGENTS.md](file:///home/koen/Git/squirrelmail/AGENT
 ---
 
 ## 📝 Changelog
+
+### Version 1.5.50
+- **Calendar Share Modal & Fragment Script Routing Fix**:
+  - **Unclosed Script Tag Resolution**: Fixed an unclosed `<script>` tag in `plugins/calendar/calendar.php` that encapsulated the HTML share modal markup (`#cal-share-modal-backdrop`), which caused `SyntaxError: Unexpected token '<'` when evaluated by the SPA workspace router (`app.js`) and prevented calendar modal functions from loading.
+  - **Explicit Global Window Binding**: Bound calendar event handler functions (`calOpenShareModal`, `calCloseShareModal`, `calCopyFeedUrl`, `calResetShareToken`, `openEventModal`, `openEventEdit`, `closeEventModal`, `saveCalendarEvent`, `deleteCalendarEvent`) to the global `window` object to eliminate `ReferenceError: calOpenShareModal is not defined`.
+  - **SPA Router Script Type Guard**: Enhanced `renderWorkspace()` in `assets/js/app.js` to inspect `<script>` tag `type` attributes and skip non-JavaScript types (such as `application/json` or `text/template`).
+  - **Qualified Calendar & AJAX URLs**: Updated calendar navigation links and AJAX endpoints to use fully qualified `sqm_baseuri()` paths, ensuring reliable asynchronous event operations regardless of SPA routing depth.
+  - **SPA-Aware Modal Auto-Opening**: Updated calendar appointment auto-open handlers to execute immediately if the document has already loaded in SPA navigation context.
+- **Version Bump**: Incremented version from `1.5.49` to `1.5.50`.
 
 ### Version 1.5.49
 - **MIME Image Sanitization & Message Body Rendering Fix**:

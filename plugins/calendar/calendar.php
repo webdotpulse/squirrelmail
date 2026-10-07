@@ -37,6 +37,8 @@ $highlightEventId = null;
 $autoOpenModal = false;
 $autoEventData = null;
 $feedUrls = calendar_get_feed_urls();
+$calUrl = (function_exists('sqm_baseuri') ? sqm_baseuri() : '../../') . 'plugins/calendar/calendar.php';
+$calAjaxUrl = (function_exists('sqm_baseuri') ? sqm_baseuri() : '../../') . 'plugins/calendar/ajax.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['ics_file']) && $_FILES['ics_file']['error'] === UPLOAD_ERR_OK) {
     $content = file_get_contents($_FILES['ics_file']['tmp_name']);
@@ -494,7 +496,7 @@ displayPageHeader($color, 'None');
                 <span>➕</span>
                 <span><?php echo _("New Event"); ?></span>
             </button>
-            <a href="calendar.php?view=<?php echo $view; ?>&year=<?php echo date('Y'); ?>&month=<?php echo date('n'); ?>&day=<?php echo date('j'); ?>" class="cal-btn">
+            <a href="<?php echo $calUrl; ?>?view=<?php echo $view; ?>&year=<?php echo date('Y'); ?>&month=<?php echo date('n'); ?>&day=<?php echo date('j'); ?>" class="cal-btn">
                 <?php echo _("Today"); ?>
             </a>
 
@@ -502,26 +504,26 @@ displayPageHeader($color, 'None');
             $prevMonthDate = mktime(0, 0, 0, $month - 1, 1, $year);
             $nextMonthDate = mktime(0, 0, 0, $month + 1, 1, $year);
             ?>
-            <a href="calendar.php?view=<?php echo $view; ?>&year=<?php echo date('Y', $prevMonthDate); ?>&month=<?php echo date('n', $prevMonthDate); ?>" class="cal-btn">&larr;</a>
-            <a href="calendar.php?view=<?php echo $view; ?>&year=<?php echo date('Y', $nextMonthDate); ?>&month=<?php echo date('n', $nextMonthDate); ?>" class="cal-btn">&rarr;</a>
+            <a href="<?php echo $calUrl; ?>?view=<?php echo $view; ?>&year=<?php echo date('Y', $prevMonthDate); ?>&month=<?php echo date('n', $prevMonthDate); ?>" class="cal-btn">&larr;</a>
+            <a href="<?php echo $calUrl; ?>?view=<?php echo $view; ?>&year=<?php echo date('Y', $nextMonthDate); ?>&month=<?php echo date('n', $nextMonthDate); ?>" class="cal-btn">&rarr;</a>
 
             <h2 class="cal-title"><?php echo date('F Y', $currentDate); ?></h2>
         </div>
 
         <div class="cal-nav-group">
             <div class="cal-view-pills">
-                <a href="calendar.php?view=month&year=<?php echo $year; ?>&month=<?php echo $month; ?>" class="cal-view-pill <?php if ($view==='month') echo 'active'; ?>"><?php echo _("Month"); ?></a>
-                <a href="calendar.php?view=agenda&year=<?php echo $year; ?>&month=<?php echo $month; ?>" class="cal-view-pill <?php if ($view==='agenda') echo 'active'; ?>"><?php echo _("Agenda"); ?></a>
+                <a href="<?php echo $calUrl; ?>?view=month&year=<?php echo $year; ?>&month=<?php echo $month; ?>" class="cal-view-pill <?php if ($view==='month') echo 'active'; ?>"><?php echo _("Month"); ?></a>
+                <a href="<?php echo $calUrl; ?>?view=agenda&year=<?php echo $year; ?>&month=<?php echo $month; ?>" class="cal-view-pill <?php if ($view==='agenda') echo 'active'; ?>"><?php echo _("Agenda"); ?></a>
             </div>
 
-            <a href="calendar.php?export=ics" class="cal-btn" title="<?php echo _("Export to iCalendar (.ics)"); ?>">
+            <a href="<?php echo $calUrl; ?>?export=ics" class="cal-btn" title="<?php echo _("Export to iCalendar (.ics)"); ?>">
                 <span>📤</span> <span><?php echo _("Export .ics"); ?></span>
             </a>
 
             <button type="button" class="cal-btn" onclick="document.getElementById('cal_ics_input').click()" title="<?php echo _("Import iCalendar (.ics)"); ?>">
                 <span>📥</span> <span><?php echo _("Import .ics"); ?></span>
             </button>
-            <form id="cal_ics_form" method="post" enctype="multipart/form-data" style="display:none;">
+            <form id="cal_ics_form" method="post" action="<?php echo $calUrl; ?>" enctype="multipart/form-data" style="display:none;">
                 <input type="file" id="cal_ics_input" name="ics_file" accept=".ics" onchange="document.getElementById('cal_ics_form').submit()">
             </form>
 
@@ -714,6 +716,8 @@ displayPageHeader($color, 'None');
 </div>
 
 <script>
+var calAjaxEndpoint = <?php echo json_encode($calAjaxUrl); ?>;
+
 function openEventModal(dateStr) {
     document.getElementById('cal-event-form').reset();
     document.getElementById('ev-id').value = '';
@@ -752,7 +756,7 @@ function saveCalendarEvent(e) {
     var formData = new FormData(form);
     formData.append('action', 'save_event');
 
-    fetch('ajax.php', {
+    fetch(calAjaxEndpoint, {
         method: 'POST',
         body: formData
     })
@@ -777,7 +781,7 @@ function deleteCalendarEvent() {
     formData.append('action', 'delete_event');
     formData.append('id', id);
 
-    fetch('ajax.php', {
+    fetch(calAjaxEndpoint, {
         method: 'POST',
         body: formData
     })
@@ -792,10 +796,21 @@ function deleteCalendarEvent() {
 }
 
 <?php if (!empty($autoOpenModal) && !empty($autoEventData)): ?>
-document.addEventListener('DOMContentLoaded', function() {
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+        openEventEdit(<?php echo json_encode($autoEventData); ?>);
+    });
+} else {
     openEventEdit(<?php echo json_encode($autoEventData); ?>);
-});
+}
 <?php endif; ?>
+
+window.openEventModal = openEventModal;
+window.openEventEdit = openEventEdit;
+window.closeEventModal = closeEventModal;
+window.saveCalendarEvent = saveCalendarEvent;
+window.deleteCalendarEvent = deleteCalendarEvent;
+</script>
 <!-- SHARE / GOOGLE CALENDAR MODAL -->
 <div id="cal-share-modal-backdrop" class="cal-modal-backdrop" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:100; align-items:center; justify-content:center;">
     <div class="cal-modal" style="background:var(--cal-bg-surface); color:var(--cal-text-main); border-radius:12px; width:95%; max-width:540px; box-shadow:0 10px 30px rgba(0,0,0,0.2); overflow:hidden; border:1px solid var(--cal-border);">
@@ -891,7 +906,7 @@ function calResetShareToken() {
     var formData = new FormData();
     formData.append('action', 'reset_share_token');
 
-    fetch('ajax.php', {
+    fetch(calAjaxEndpoint, {
         method: 'POST',
         body: formData
     })
@@ -909,6 +924,11 @@ function calResetShareToken() {
         alert('Request failed: ' + err);
     });
 }
+
+window.calOpenShareModal = calOpenShareModal;
+window.calCloseShareModal = calCloseShareModal;
+window.calCopyFeedUrl = calCopyFeedUrl;
+window.calResetShareToken = calResetShareToken;
 </script>
 <?php
 echo "</body></html>\n";
