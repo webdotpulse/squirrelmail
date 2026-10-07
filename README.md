@@ -1,4 +1,4 @@
-# SquirrelMail 1.5.56
+# SquirrelMail 1.5.57
 
 A modernized, responsive edition of SquirrelMail engineered for PHP 7.0 through 8.2+ with a Single-Page Application (SPA) interface, modern UI styling, and extensive feature enhancements.
 
@@ -57,6 +57,13 @@ This repository includes an [AGENTS.md](file:///home/koen/Git/squirrelmail/AGENT
 ---
 
 ## 📝 Changelog
+
+### Version 1.5.57
+- **Fix Mailbox Header Loss ("Unknown sender" / "(no subject)" / Missing Dates) (`functions/imap_messages.php` & `functions/mailbox_display.php`)**:
+  - Removed erroneous `$aMessages = array_reverse($aMessages)` in `sqimap_get_small_header_list()`. Because PHP's `array_reverse()` without explicit key preservation strips numeric keys and re-indexes them to `0, 1, 2...`, message UIDs were obliterated. This caused `prepareMessageList()` to fail UID lookups (`$aHeaders[$aId[$i]]`), leaving every message header object null and rendering all inbox rows as "Unknown sender", "(no subject)", blank date, and unread.
+  - Hardened `parseFetch()` UID, FLAGS, and RFC822.SIZE parser error escapes from `break 3` to `break 2`, ensuring a token issue on one message never prematurely aborts processing the remaining messages in a batch.
+  - Enhanced cache validation in `fetchMessageHeaders()` (`functions/mailbox_display.php`) to verify that cached headers strictly match their stored UID key (`(string)$iUid === (string)$aValue['UID']`), automatically purging any stale or corrupted session cache entries from previous requests.
+- **Version Bump**: Incremented version from `1.5.56 [SVN]` to `1.5.57 [SVN]`.
 
 ### Version 1.5.56
 - **Fix Calendar Google Share Modal Transparency & Text Contrast (`plugins/calendar`)**:

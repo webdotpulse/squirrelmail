@@ -366,7 +366,7 @@ function fetchMessageHeaders($imapConnection, &$aMailbox) {
         if (isset($aMailbox['MSG_HEADERS']) && is_array($aMailbox['MSG_HEADERS'])) {
             // temp code, read_body del / next links fo not update fields.
             foreach ($aMailbox['MSG_HEADERS'] as $iUid => $aValue) {
-                if (!isset($aValue['UID'])) {
+                if (!isset($aValue['UID']) || (string)$iUid !== (string)$aValue['UID']) {
                     unset($aMailbox['MSG_HEADERS'][$iUid]);
                 }
             }

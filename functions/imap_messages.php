@@ -657,7 +657,6 @@ function sqimap_get_small_header_list($imap_stream, $msg_list,
     $query .= trim($sFetchItems) . ')';
     $aResponse = sqimap_run_command_list ($imap_stream, $query, true, $response, $message, $bUidFetch);
     $aMessages = parseFetch($aResponse,$aMessageList);
-    $aMessages = array_reverse($aMessages);
     return $aMessages;
 }
 
@@ -732,12 +731,12 @@ function parseFetch(&$aResponse,$aMessageList = array()) {
                     $unique_id = substr($read,$i,$i_pos-$i);
                     $i = $i_pos+1;
                 } else {
-                    break 3;
+                    break 2;
                 }
                 break;
             case 'FLAGS':
                 $flags = parseArray($read,$i);
-                if (!$flags) break 3;
+                if (!$flags) break 2;
                 $aFlags = array();
                 foreach ($flags as $flag) {
                     $flag = strtolower($flag);
@@ -754,7 +753,7 @@ function parseFetch(&$aResponse,$aMessageList = array()) {
                     $aMsg['SIZE'] = substr($read,$i,$i_pos-$i);
                     $i = $i_pos+1;
                 } else {
-                    break 3;
+                    break 2;
                 }
                 break;
             case 'ENVELOPE':
