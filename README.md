@@ -1,4 +1,4 @@
-# SquirrelMail 1.5.6
+# SquirrelMail 1.5.8
 
 A modernized, responsive edition of SquirrelMail engineered for PHP 7.0 through 8.2+ with a Single-Page Application (SPA) interface, modern UI styling, and extensive feature enhancements.
 
@@ -43,6 +43,27 @@ This repository includes an [AGENTS.md](file:///home/koen/Git/squirrelmail/AGENT
 ---
 
 ## 📝 Changelog
+
+### Version 1.5.8
+- **AI Agent Background Cron IMAP Credentials Resolution**:
+  - Fixed account skipping in `plugins/ai_agent/cron.php` (`[SKIP] No IMAP password specified`) by implementing a multi-tier credential resolver in `plugins/ai_agent/credentials.php`.
+  - Added automatic credential capture on webmail login (`login_verified` hook), encrypting user IMAP passwords with AES-128 for seamless background cron processing without manual setup.
+  - Added IMAP server and password configuration fields to the AI Agent Options page (`plugins/ai_agent/options.php`) with an interactive "Test IMAP Connection" validator and automatic session pre-fill.
+  - Fixed a configuration bug in `plugins/ai_agent/config.php` where `$cron_accounts` was inadvertently overwritten after local configuration loading.
+  - Added CLI credential arguments to `cron.php` (`--password=<pass>` and `--set-pass=<pass> --user=<email>`), allowing administrators to test and store credentials directly from the command line.
+- **Version Bump**: Incremented version from `1.5.7` to `1.5.8`.
+
+### Version 1.5.7
+- **Priority Selector Dropdown in Compose**:
+  - Restored the Priority selector dropdown in the Compose options toolbar (`templates/default/compose_buttons.tpl`) next to Read Receipt and Delivery Receipt, eliminating the previous conditional suppression.
+  - Added a dedicated, clean Priority field row in the Compose header (`templates/default/compose_header.tpl`) beneath Subject with visual indicators (🔴 High, ⚪ Normal, 🔵 Low) bidirectionally synced with the toolbar.
+  - Restored full-width layout for the Subject input field.
+- **Spam & Not Spam Buttons Execution**:
+  - Fixed the "🚫 Spam" and "✅ Not Spam" batch buttons in the mailbox controls toolbar (`plugins/spam_buttons/setup.php`). Replaced hardcoded form selector checks with direct checkbox queries across standard and dynamic form names (`FormMsgs*`).
+  - Added missing `$imap_stream_options` parameter to `sqimap_login()` in `plugins/spam_buttons/action.php` to prevent SSL/TLS connection failures.
+  - Implemented batch IMAP move (`sqimap_msgs_list_move`) and source mailbox expunge (`sqimap_mailbox_expunge`) to immediately remove reported emails from the source mailbox and train local heuristics/Gemini AI model.
+  - Integrated SPA router reload, toast notifications, and unread folder count badge refresh.
+- **Version Bump**: Incremented version from `1.5.6` to `1.5.7`.
 
 ### Version 1.5.6
 - **Folder Management Quick Access**: Integrated convenient shortcuts to the Folder Manager (`src/folders.php`):

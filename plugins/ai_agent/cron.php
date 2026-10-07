@@ -53,21 +53,51 @@ require_once(SM_PATH . 'class/deliver/Deliver_IMAP.class.php');
 // Load AI Agent config & Gemini Client
 require_once(SM_PATH . 'plugins/ai_agent/config.php');
 require_once(SM_PATH . 'plugins/ai_agent/gemini_client.php');
+require_once(SM_PATH . 'plugins/ai_agent/credentials.php');
 
 // Parse CLI arguments
-$options = getopt('', ['user:', 'limit:', 'dry-run', 'help']);
+$options = getopt('', ['user:', 'limit:', 'dry-run', 'help', 'pass:', 'password:', 'set-pass:', 'host:', 'port:']);
 if (isset($options['help'])) {
     echo "SquirrelMail AI Agent Cron Automation (Gemini 3.8)\n";
     echo "Usage: php cron.php [options]\n";
-    echo "  --user=<name>    Inspect specific user account\n";
-    echo "  --limit=<n>      Maximum unseen messages to process (default 20)\n";
-    echo "  --dry-run        Simulate analysis without moving or writing messages\n";
+    echo "  --user=<name>         Inspect specific user account (e.g. user@domain.com)\n";
+    echo "  --password=<secret>   Specify IMAP password for this execution\n";
+    echo "  --set-pass=<secret>   Securely save IMAP password for --user and exit\n";
+    echo "  --host=<server>       Override IMAP server host\n";
+    echo "  --port=<port>         Override IMAP server port\n";
+    echo "  --limit=<n>           Maximum unseen messages to process (default 20)\n";
+    echo "  --dry-run             Simulate analysis without moving or writing messages\n";
     exit(0);
 }
 
 $cli_user   = isset($options['user']) ? trim($options['user']) : '';
+$cli_pass   = isset($options['password']) ? trim($options['password']) : (isset($options['pass']) ? trim($options['pass']) : '');
 $scan_limit = isset($options['limit']) ? intval($options['limit']) : ($cron_scan_limit ?: 20);
 $dry_run    = isset($options['dry-run']);
+
+// Handle --set-pass command: save credentials from CLI and exit
+if (!empty($options['set-pass'])) {
+    if (empty($cli_user)) {
+        echo "[ERROR] Please specify --user=<username> when saving password with --set-pass.\n";
+        exit(1);
+    }
+    $targetPass = trim($options['set-pass']);
+    $targetHost = !empty($options['host']) ? trim($options['host']) : $imapServerAddress;
+    $targetPort = !empty($options['port']) ? intval($options['port']) : $imapPort;
+
+    echo "Testing IMAP connection for '$cli_user' on $targetHost:$targetPort...\n";
+    $test = ai_agent_test_imap_login($cli_user, $targetPass, $targetHost, $targetPort);
+    if (!$test['success']) {
+        echo "[WARNING] IMAP connection test failed: " . $test['message'] . "\n";
+        echo "Saving credentials anyway...\n";
+    } else {
+        echo "[SUCCESS] " . $test['message'] . "\n";
+    }
+
+    ai_agent_save_account_credentials($cli_user, $targetPass, $targetHost, $targetPort);
+    echo "[SUCCESS] Password for '$cli_user' securely encrypted and saved.\n";
+    exit(0);
+}
 
 // Prepare data directory for state and logs
 $data_folder = SM_PATH . 'plugins/ai_agent/data/';
@@ -96,20 +126,62 @@ if (empty($gemini->getApiKey())) {
     exit(1);
 }
 
-// Determine target accounts
+// Determine target accounts across all sources
 $accounts_to_process = [];
+
+// A. Explicit CLI user
+if (!empty($cli_user)) {
+    $accounts_to_process[] = [
+        'username' => $cli_user,
+        'password' => $cli_pass,
+        'host'     => !empty($options['host']) ? trim($options['host']) : null,
+        'port'     => !empty($options['port']) ? intval($options['port']) : null,
+    ];
+}
+
+// B. Configured $cron_accounts from config.php or config_local.php
 if (!empty($cron_accounts) && is_array($cron_accounts)) {
-    $accounts_to_process = $cron_accounts;
-} else {
-    // If no explicit accounts configured, check data_dir for existing users
-    if (!empty($cli_user)) {
-        $accounts_to_process[] = ['username' => $cli_user];
-    } else {
-        $pref_files = glob($data_dir . '*.pref');
-        if (!empty($pref_files)) {
-            foreach ($pref_files as $pf) {
-                $u = basename($pf, '.pref');
-                if ($u !== 'default' && $u !== 'default_pref') {
+    foreach ($cron_accounts as $k => $v) {
+        if (is_array($v)) {
+            $u = !empty($v['username']) ? $v['username'] : (is_string($k) ? $k : '');
+            if (!empty($u)) {
+                $accounts_to_process[] = array_merge(['username' => $u], $v);
+            }
+        } elseif (is_string($v) && is_string($k)) {
+            $accounts_to_process[] = ['username' => $k, 'password' => $v];
+        }
+    }
+}
+
+// C. Saved accounts from plugins/ai_agent/data/cron_accounts.json
+$storeFile = SM_PATH . 'plugins/ai_agent/data/cron_accounts.json';
+if (file_exists($storeFile) && is_readable($storeFile)) {
+    $savedAccs = json_decode(@file_get_contents($storeFile), true);
+    if (!empty($savedAccs) && is_array($savedAccs)) {
+        foreach ($savedAccs as $u => $inf) {
+            if (!empty($u) && is_array($inf)) {
+                $accounts_to_process[] = [
+                    'username' => $u,
+                    'password' => !empty($inf['password']) ? ai_agent_decrypt($inf['password']) : '',
+                    'host'     => $inf['host'] ?? null,
+                    'port'     => $inf['port'] ?? null,
+                ];
+            }
+        }
+    }
+}
+
+// D. Discover accounts from active preference files
+if (empty($accounts_to_process) || empty($cli_user)) {
+    $pref_files = glob($data_dir . '*.pref');
+    if (!empty($pref_files)) {
+        foreach ($pref_files as $pf) {
+            $u = basename($pf, '.pref');
+            if ($u !== 'default' && $u !== 'default_pref') {
+                $cred = ai_agent_get_account_credentials($u);
+                if ($cred && !empty($cred['password'])) {
+                    $accounts_to_process[] = $cred;
+                } elseif (!empty($cli_user) && $cli_user === $u) {
                     $accounts_to_process[] = ['username' => $u];
                 }
             }
@@ -117,9 +189,20 @@ if (!empty($cron_accounts) && is_array($cron_accounts)) {
     }
 }
 
+// Deduplicate accounts by username
+$unique_accounts = [];
+foreach ($accounts_to_process as $acc) {
+    if (empty($acc['username'])) continue;
+    $u = $acc['username'];
+    if (!isset($unique_accounts[$u]) || empty($unique_accounts[$u]['password'])) {
+        $unique_accounts[$u] = $acc;
+    }
+}
+$accounts_to_process = array_values($unique_accounts);
+
 if (empty($accounts_to_process)) {
-    cron_log("[NOTICE] No accounts configured in \$cron_accounts and no active users found in $data_dir.");
-    cron_log("To monitor specific mailboxes, add credentials to \$cron_accounts in plugins/ai_agent/config.php.");
+    cron_log("[NOTICE] No configured AI Agent accounts found.");
+    cron_log("To monitor mailboxes, configure credentials in Options -> AI Agent, via 'php cron.php --user=<email> --set-pass=\"<pass>\"', or in \$cron_accounts.");
     exit(0);
 }
 
@@ -128,15 +211,29 @@ foreach ($accounts_to_process as $acc) {
     $user = $acc['username'];
     if (!empty($cli_user) && $user !== $cli_user) continue;
 
-    cron_log("--- Processing Account: $user ---");
-
     $host = !empty($acc['host']) ? $acc['host'] : $imapServerAddress;
     $port = !empty($acc['port']) ? $acc['port'] : $imapPort;
     $pass = !empty($acc['password']) ? $acc['password'] : '';
 
-    // If password not stored in config, note requirement
+    if (!empty($cli_pass)) {
+        $pass = $cli_pass;
+    }
+
+    // Resolve credentials if password not already in $acc
     if (empty($pass)) {
-        cron_log("[SKIP] No IMAP password specified for account '$user'. Configure \$cron_accounts in config.php with host/user/pass.");
+        $resolved = ai_agent_get_account_credentials($user);
+        if ($resolved && !empty($resolved['password'])) {
+            $pass = $resolved['password'];
+            if (!empty($resolved['host'])) $host = $resolved['host'];
+            if (!empty($resolved['port'])) $port = $resolved['port'];
+        }
+    }
+
+    cron_log("--- Processing Account: $user ---");
+
+    // If password not found, notify with concrete action steps
+    if (empty($pass)) {
+        cron_log("[SKIP] No IMAP password specified for account '$user'. Configure in Options -> AI Agent, via 'php cron.php --user=$user --set-pass=\"password\"', or in \$cron_accounts in config.php.");
         continue;
     }
 

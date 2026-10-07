@@ -16,18 +16,14 @@ extract($t);
   <section class="sm-compose-toolbar" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--sm-border); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;">
     <!-- Options: Priority, Receipts -->
     <div class="sm-compose-meta-options" style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
-      <?php if ($allow_priority && empty($mailprio_in_header)): ?>
       <div style="display: flex; align-items: center; gap: 6px;">
-        <label for="mailprio" style="font-size: 13px; color: var(--sm-text-muted);"><?php echo _("Priority"); ?>:</label>
-        <select name="mailprio" id="mailprio" class="sm-compose-select" <?php if ($accesskey_compose_priority != 'NONE') echo ' accesskey="' . $accesskey_compose_priority . '"'; ?>>
-          <?php
-          foreach ($priority_list as $value=>$name) {
-              echo '<option value="'.$value.'"'. ($value==$current_priority ? ' selected="selected"' : '') .'>'.$name.'</option>';
-          }
-          ?>
+        <label for="mailprio" style="font-size: 13px; color: var(--sm-text-muted); font-weight: 500;"><?php echo _("Priority"); ?>:</label>
+        <select name="mailprio" id="mailprio" class="sm-compose-select" onchange="var hp=document.getElementById('header_mailprio'); if(hp) hp.value=this.value;" <?php if (!empty($accesskey_compose_priority) && $accesskey_compose_priority != 'NONE') echo ' accesskey="' . $accesskey_compose_priority . '"'; ?> style="padding: 4px 10px; font-size: 13px; font-weight: 500; border-radius: var(--sm-radius-sm, 6px); border: 1px solid var(--sm-border); background: var(--sm-bg-surface); color: var(--sm-text-primary); cursor: pointer;">
+          <option value="1" <?php if (($current_priority ?? ($mailprio ?? 3)) == 1) echo 'selected="selected"'; ?>>🔴 <?php echo _("High"); ?></option>
+          <option value="3" <?php if (($current_priority ?? ($mailprio ?? 3)) == 3 || empty($current_priority)) echo 'selected="selected"'; ?>>⚪ <?php echo _("Normal"); ?></option>
+          <option value="5" <?php if (($current_priority ?? ($mailprio ?? 3)) == 5) echo 'selected="selected"'; ?>>🔵 <?php echo _("Low"); ?></option>
         </select>
       </div>
-      <?php endif; ?>
 
       <?php if ($notifications_enabled): ?>
       <div style="display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--sm-text-secondary);">

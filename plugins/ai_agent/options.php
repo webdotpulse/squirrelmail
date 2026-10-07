@@ -11,8 +11,9 @@
 require('../../include/init.php');
 include_once(SM_PATH . 'plugins/ai_agent/config.php');
 include_once(SM_PATH . 'plugins/ai_agent/gemini_client.php');
+include_once(SM_PATH . 'plugins/ai_agent/credentials.php');
 
-global $data_dir, $username, $color;
+global $data_dir, $username, $color, $imapServerAddress, $imapPort;
 
 // Security check: Must be authenticated
 if (empty($username)) {
@@ -21,6 +22,29 @@ if (empty($username)) {
 
 $updated = false;
 $test_result = null;
+$imap_test_result = null;
+
+// Read active session password if available
+$session_pass = '';
+if (function_exists('sqauth_read_password')) {
+    $session_pass = sqauth_read_password();
+} elseif (!empty($_SESSION['key']) && !empty($_SESSION['onetimepad']) && function_exists('OneTimePadDecrypt')) {
+    $session_pass = OneTimePadDecrypt($_SESSION['key'], $_SESSION['onetimepad']);
+}
+
+// Check existing credentials
+$existing_cred = ai_agent_get_account_credentials($username);
+$has_saved_pass = !empty($existing_cred) && !empty($existing_cred['password']);
+
+// Automatically seed saved credentials from active session if not yet configured
+if (!$has_saved_pass && !empty($session_pass)) {
+    ai_agent_save_account_credentials($username, $session_pass, $imapServerAddress, $imapPort);
+    $existing_cred = ai_agent_get_account_credentials($username);
+    $has_saved_pass = true;
+}
+
+$current_imap_host = !empty($existing_cred['host']) ? $existing_cred['host'] : (!empty($imapServerAddress) ? $imapServerAddress : 'localhost');
+$current_imap_port = !empty($existing_cred['port']) ? $existing_cred['port'] : (!empty($imapPort) ? $imapPort : 993);
 
 function ai_agent_persist_key($apiKey, $model = 'gemini-3.8-flash') {
     global $data_dir, $username;
@@ -61,13 +85,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $autoLabel = isset($_POST['ai_agent_auto_label']) && $_POST['ai_agent_auto_label'] === '1' ? '1' : '0';
         $autoDraft = isset($_POST['ai_agent_auto_draft']) && $_POST['ai_agent_auto_draft'] === '1' ? '1' : '0';
 
+        $imapPass  = isset($_POST['ai_agent_imap_password']) ? trim($_POST['ai_agent_imap_password']) : '';
+        $imapHost  = isset($_POST['ai_agent_imap_host']) ? trim($_POST['ai_agent_imap_host']) : $imapServerAddress;
+        $imapPort  = isset($_POST['ai_agent_imap_port']) ? intval($_POST['ai_agent_imap_port']) : $imapPort;
+
         ai_agent_persist_key($apiKey, $model);
         setPref($data_dir, $username, 'ai_agent_spam_filter', $spamFilt);
         setPref($data_dir, $username, 'ai_agent_spam_action', $spamAct);
         setPref($data_dir, $username, 'ai_agent_auto_label', $autoLabel);
         setPref($data_dir, $username, 'ai_agent_auto_draft', $autoDraft);
 
+        if (!empty($imapPass)) {
+            ai_agent_save_account_credentials($username, $imapPass, $imapHost, $imapPort);
+            $has_saved_pass = true;
+        } elseif (!empty($session_pass) && !$has_saved_pass) {
+            ai_agent_save_account_credentials($username, $session_pass, $imapHost, $imapPort);
+            $has_saved_pass = true;
+        }
+
         $updated = true;
+    }
+
+    // Handle IMAP Test Connection
+    if (isset($_POST['test_imap_agent'])) {
+        $testHost = !empty($_POST['ai_agent_imap_host']) ? trim($_POST['ai_agent_imap_host']) : $imapServerAddress;
+        $testPort = !empty($_POST['ai_agent_imap_port']) ? intval($_POST['ai_agent_imap_port']) : $imapPort;
+        $testPass = !empty($_POST['ai_agent_imap_password']) ? trim($_POST['ai_agent_imap_password']) : '';
+
+        if (empty($testPass) && $has_saved_pass && !empty($existing_cred['password'])) {
+            $testPass = $existing_cred['password'];
+        }
+        if (empty($testPass) && !empty($session_pass)) {
+            $testPass = $session_pass;
+        }
+
+        if (empty($testPass)) {
+            $imap_test_result = [
+                'success' => false,
+                'message' => 'Please enter your IMAP password to test connection.'
+            ];
+        } else {
+            $imap_test_result = ai_agent_test_imap_login($username, $testPass, $testHost, $testPort);
+            if ($imap_test_result['success']) {
+                ai_agent_save_account_credentials($username, $testPass, $testHost, $testPort);
+                $has_saved_pass = true;
+            }
+        }
     }
 
     // Handle Test Connection
@@ -132,6 +195,12 @@ displayPageHeader($color, 'None');
     <?php if ($test_result): ?>
         <div style="background: <?php echo $test_result['success'] ? '#e6f4ea' : '#fce8e6'; ?>; color: <?php echo $test_result['success'] ? '#137333' : '#c5221f'; ?>; padding: 12px 16px; border-radius: 6px; margin-bottom: 20px; font-size: 14px; border: 1px solid <?php echo $test_result['success'] ? '#ceead6' : '#fad2cf'; ?>;">
             <?php echo ($test_result['success'] ? '✓ ' : '✗ ') . $test_result['message']; ?>
+        </div>
+    <?php endif; ?>
+
+    <?php if ($imap_test_result): ?>
+        <div style="background: <?php echo $imap_test_result['success'] ? '#e6f4ea' : '#fce8e6'; ?>; color: <?php echo $imap_test_result['success'] ? '#137333' : '#c5221f'; ?>; padding: 12px 16px; border-radius: 6px; margin-bottom: 20px; font-size: 14px; border: 1px solid <?php echo $imap_test_result['success'] ? '#ceead6' : '#fad2cf'; ?>;">
+            <?php echo ($imap_test_result['success'] ? '✓ ' : '✗ ') . htmlspecialchars($imap_test_result['message']); ?>
         </div>
     <?php endif; ?>
 
@@ -218,6 +287,46 @@ displayPageHeader($color, 'None');
                     <input type="checkbox" name="ai_agent_auto_draft" value="1" <?php if ($current_draft === '1') echo 'checked'; ?>>
                     <span>Enable Auto-Draft Replies (Pre-draft answers in Drafts folder for unanswered questions)</span>
                 </label>
+            </div>
+
+            <div style="margin-top: 16px; padding-top: 16px; border-top: 1px dashed #e0c878;">
+                <div style="font-weight: 600; font-size: 13px; color: #b06000; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                    <span>🔐</span> Background IMAP Account Credentials
+                </div>
+                <div style="font-size: 12px; color: #5f6368; margin-bottom: 12px;">
+                    The server background cronjob requires IMAP credentials to inspect and process your emails. Credentials are encrypted using AES-128 and stored locally on this server.
+                </div>
+
+                <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 12px; margin-bottom: 12px;">
+                    <div>
+                        <label for="ai_agent_imap_host" style="display: block; font-size: 12px; font-weight: 600; color: #3c4043; margin-bottom: 4px;">IMAP Server Host</label>
+                        <input type="text" id="ai_agent_imap_host" name="ai_agent_imap_host" value="<?php echo htmlspecialchars($current_imap_host); ?>" style="width: 100%; box-sizing: border-box; padding: 6px 10px; border: 1px solid #dadce0; border-radius: 4px; font-size: 13px;" placeholder="localhost">
+                    </div>
+                    <div>
+                        <label for="ai_agent_imap_port" style="display: block; font-size: 12px; font-weight: 600; color: #3c4043; margin-bottom: 4px;">IMAP Port</label>
+                        <input type="number" id="ai_agent_imap_port" name="ai_agent_imap_port" value="<?php echo htmlspecialchars($current_imap_port); ?>" style="width: 100%; box-sizing: border-box; padding: 6px 10px; border: 1px solid #dadce0; border-radius: 4px; font-size: 13px;" placeholder="993">
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 12px;">
+                    <label for="ai_agent_imap_password" style="display: block; font-size: 12px; font-weight: 600; color: #3c4043; margin-bottom: 4px;">
+                        IMAP Password (for <?php echo htmlspecialchars($username); ?>)
+                        <?php if ($has_saved_pass): ?>
+                            <span style="font-size: 11px; font-weight: normal; color: #137333; margin-left: 6px;">✓ Configured &amp; Encrypted</span>
+                        <?php endif; ?>
+                    </label>
+                    <input type="password" id="ai_agent_imap_password" name="ai_agent_imap_password" value="" style="width: 100%; box-sizing: border-box; padding: 6px 10px; border: 1px solid #dadce0; border-radius: 4px; font-size: 13px;" placeholder="<?php echo $has_saved_pass ? '•••••••••••• (Leave blank to keep current saved password)' : 'Enter IMAP account password'; ?>">
+                    <div style="font-size: 12px; color: #70757a; margin-top: 4px; display: flex; justify-content: space-between;">
+                        <span>Used strictly on this server by <code>cron.php</code> to authenticate to IMAP.</span>
+                        <label style="cursor: pointer; user-select: none;">
+                            <input type="checkbox" onclick="const f=document.getElementById('ai_agent_imap_password'); f.type=this.checked?'text':'password';"> Show Password
+                        </label>
+                    </div>
+                </div>
+
+                <div style="margin-top: 10px;">
+                    <input type="submit" name="test_imap_agent" value="Test IMAP Connection" style="background: #ffffff; color: #b06000; border: 1px solid #b06000; padding: 6px 14px; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: pointer;">
+                </div>
             </div>
         </div>
 

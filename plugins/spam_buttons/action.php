@@ -24,6 +24,7 @@ if (is_array($passed_id)) {
 } elseif (!empty($passed_id)) {
     $uids = array(intval($passed_id));
 }
+$uids = array_values(array_filter($uids, function($v) { return $v > 0; }));
 
 if (empty($uids)) {
     if ($isAjax) {
@@ -31,11 +32,12 @@ if (empty($uids)) {
         echo json_encode(array('success' => false, 'error' => 'No message specified.'));
         exit;
     }
-    header('Location: ' . SM_PATH . 'src/right_main.php?mailbox=' . urlencode($mailbox));
+    header('Location: ' . sqm_baseuri() . 'src/right_main.php?mailbox=' . urlencode($mailbox));
     exit;
 }
 
-$imapConnection = sqimap_login($username, false, $imapServerAddress, $imapPort, 0);
+global $username, $imapServerAddress, $imapPort, $imap_stream_options;
+$imapConnection = sqimap_login($username, false, $imapServerAddress, $imapPort, 0, $imap_stream_options);
 
 // Find target mailbox
 $boxes = sqimap_mailbox_list($imapConnection);
@@ -47,7 +49,7 @@ foreach ($boxes as $b) {
 $targetBox = 'INBOX';
 if ($type === 'spam') {
     // Look for Junk or Spam folder
-    $junkCandidates = array('Junk', 'Spam', 'INBOX.Junk', 'INBOX.Spam', 'Trash');
+    $junkCandidates = array('Junk', 'Spam', 'INBOX.Junk', 'INBOX.Spam', 'INBOX/Junk', 'INBOX/Spam', 'Trash', 'INBOX.Trash');
     $targetBox = 'Trash'; // fallback
     foreach ($junkCandidates as $cand) {
         if (in_array($cand, $boxNames)) {
@@ -79,12 +81,13 @@ foreach ($uids as $uid) {
     } else {
         sb_learn_ham($sender, $subject, '');
     }
-
-    // 2. Move message to target mailbox
-    if ($mailbox !== $targetBox) {
-        sqimap_msgs_list_move($imapConnection, array($uid), $targetBox);
-    }
     $processed++;
+}
+
+// 2. Batch move to target mailbox and expunge source
+if ($mailbox !== $targetBox && !empty($uids)) {
+    sqimap_msgs_list_move($imapConnection, $uids, $targetBox, true, $mailbox);
+    sqimap_mailbox_expunge($imapConnection, $mailbox, true);
 }
 
 sqimap_logout($imapConnection);
@@ -103,5 +106,5 @@ if ($isAjax) {
     exit;
 }
 
-header('Location: ' . SM_PATH . 'src/right_main.php?mailbox=' . urlencode($mailbox));
+header('Location: ' . sqm_baseuri() . 'src/right_main.php?mailbox=' . urlencode($mailbox));
 exit;

