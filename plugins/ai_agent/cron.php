@@ -200,6 +200,145 @@ function cron_assign_message_label($user, $mailbox, $uid, $category) {
     }
 }
 
+/**
+ * Run a UID SEARCH command on the active IMAP stream.
+ *
+ * @param resource $imap_stream
+ * @param string $searchString
+ * @return array Array of matching message UIDs
+ */
+function cron_run_uid_search($imap_stream, $searchString) {
+    if (function_exists('cv_run_uid_search')) {
+        return cv_run_uid_search($imap_stream, $searchString);
+    }
+    if (!$imap_stream || empty($searchString)) {
+        return array();
+    }
+    $query = 'SEARCH ' . $searchString;
+    $response = '';
+    $message = '';
+    $readin = sqimap_run_command_list($imap_stream, $query, false, $response, $message, true);
+    if (strtoupper((string)$response) !== 'OK' || empty($readin) || !is_array($readin)) {
+        return array();
+    }
+    return function_exists('parseUidList') ? parseUidList($readin, 'SEARCH') : array();
+}
+
+/**
+ * Clean subject line of reply/forward prefixes for thread matching.
+ *
+ * @param string $subject
+ * @return string
+ */
+function cron_clean_subject($subject) {
+    if (function_exists('cv_clean_subject')) {
+        return cv_clean_subject($subject);
+    }
+    return trim(preg_replace('/^\s*(?:\[[^\]]+\]\s*)?(?:(?:re|fwd|fw|aw|antw|rif|sv)\s*:\s*)+/i', '', (string)$subject));
+}
+
+/**
+ * Check whether a draft or sent reply already exists for an email, or if it has the \Answered flag.
+ * Prevents AI from creating duplicate drafts.
+ *
+ * @param resource $imap_stream
+ * @param string $user
+ * @param int $id UID of incoming message in INBOX
+ * @param string $orig_message_id Message-ID of incoming message
+ * @param array $hdr_entry Header entry with flags
+ * @param string $cleanSubj Normalized subject
+ * @param string $target_drafts Target Drafts folder name
+ * @param string $target_sent Target Sent folder name
+ * @return array ['exists' => bool, 'reason' => string]
+ */
+function cron_check_existing_draft_or_reply($imap_stream, $user, $id, $orig_message_id, $hdr_entry, $cleanSubj, $target_drafts, $target_sent) {
+    // 1. Check if original message in INBOX already has \Answered flag
+    if (!empty($hdr_entry['flags']['\\answered']) || !empty($hdr_entry['flags']['answered'])) {
+        return ['exists' => true, 'reason' => "Incoming message #$id already has \\Answered flag (already replied)"];
+    }
+
+    $clean_mid = !empty($orig_message_id) ? trim($orig_message_id, "<> \t\n\r") : '';
+    $esc_mid = !empty($clean_mid) ? addcslashes($clean_mid, '"\\') : '';
+
+    // 2. Check Drafts folder
+    if (!empty($target_drafts) && sqimap_mailbox_exists($imap_stream, $target_drafts)) {
+        sqimap_mailbox_select($imap_stream, $target_drafts);
+
+        // 2a. Search by In-Reply-To
+        if (!empty($esc_mid)) {
+            $uids = cron_run_uid_search($imap_stream, 'HEADER In-Reply-To "' . $esc_mid . '"');
+            if (!empty($uids)) {
+                sqimap_mailbox_select($imap_stream, 'INBOX');
+                return ['exists' => true, 'reason' => "Draft already exists in '$target_drafts' (In-Reply-To: $orig_message_id, Draft UID: " . reset($uids) . ")"];
+            }
+
+            // 2b. Search by References
+            $uids = cron_run_uid_search($imap_stream, 'HEADER References "' . $esc_mid . '"');
+            if (!empty($uids)) {
+                sqimap_mailbox_select($imap_stream, 'INBOX');
+                return ['exists' => true, 'reason' => "Draft already exists in '$target_drafts' (References: $orig_message_id, Draft UID: " . reset($uids) . ")"];
+            }
+        }
+
+        // 2c. Search by SquirrelMail reply flag (e.g. reply::$id::INBOX)
+        if (!empty($id)) {
+            $uids = cron_run_uid_search($imap_stream, 'HEADER X-SM-Flag-Reply "::' . addcslashes((string)$id, '"\\') . '::"');
+            if (!empty($uids)) {
+                sqimap_mailbox_select($imap_stream, 'INBOX');
+                return ['exists' => true, 'reason' => "Draft already exists in '$target_drafts' (X-SM-Flag-Reply for msg #$id, Draft UID: " . reset($uids) . ")"];
+            }
+        }
+
+        // 2d. Search by clean Subject in Drafts
+        if (!empty($cleanSubj) && mb_strlen($cleanSubj, 'UTF-8') >= 3) {
+            $safe_subj = trim(preg_replace('/[\r\n\x00-\x1F\x7F]+/', '', $cleanSubj));
+            if (strlen($safe_subj) >= 3) {
+                $uids = cron_run_uid_search($imap_stream, 'SUBJECT "' . addcslashes($safe_subj, '"\\') . '"');
+                if (!empty($uids)) {
+                    $d_hdrs = sqimap_get_small_header_list($imap_stream, $uids, array('To', 'Subject', 'In-Reply-To', 'References', 'X-SM-Flag-Reply'));
+                    foreach ($d_hdrs as $duid => $dentry) {
+                        if (!empty($dentry['x-sm-flag-reply']) && strpos($dentry['x-sm-flag-reply'], '::' . $id . '::') !== false) {
+                            sqimap_mailbox_select($imap_stream, 'INBOX');
+                            return ['exists' => true, 'reason' => "Draft already exists in '$target_drafts' (matching subject and reply flag, Draft UID: $duid)"];
+                        }
+                        if (!empty($clean_mid)) {
+                            $inrep = !empty($dentry['in-reply-to']) ? (string)$dentry['in-reply-to'] : '';
+                            $refs  = !empty($dentry['references']) ? (string)$dentry['references'] : '';
+                            if (strpos($inrep, $clean_mid) !== false || strpos($refs, $clean_mid) !== false) {
+                                sqimap_mailbox_select($imap_stream, 'INBOX');
+                                return ['exists' => true, 'reason' => "Draft already exists in '$target_drafts' (matching subject and Message-ID, Draft UID: $duid)"];
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // 3. Check Sent folder
+    if (!empty($target_sent) && sqimap_mailbox_exists($imap_stream, $target_sent)) {
+        sqimap_mailbox_select($imap_stream, $target_sent);
+
+        if (!empty($esc_mid)) {
+            $uids = cron_run_uid_search($imap_stream, 'HEADER In-Reply-To "' . $esc_mid . '"');
+            if (!empty($uids)) {
+                sqimap_mailbox_select($imap_stream, 'INBOX');
+                return ['exists' => true, 'reason' => "Sent reply already exists in '$target_sent' (In-Reply-To: $orig_message_id, Sent UID: " . reset($uids) . ")"];
+            }
+
+            $uids = cron_run_uid_search($imap_stream, 'HEADER References "' . $esc_mid . '"');
+            if (!empty($uids)) {
+                sqimap_mailbox_select($imap_stream, 'INBOX');
+                return ['exists' => true, 'reason' => "Sent reply already exists in '$target_sent' (References: $orig_message_id, Sent UID: " . reset($uids) . ")"];
+            }
+        }
+    }
+
+    // Always restore INBOX selection
+    sqimap_mailbox_select($imap_stream, 'INBOX');
+    return ['exists' => false, 'reason' => ''];
+}
+
 cron_log("=== SquirrelMail Background Automation & AI Cron Started (Gemini Model: $gemini_model) ===");
 if ($dry_run) cron_log("[INFO] Running in DRY-RUN mode. No emails will be moved or modified.");
 if ($filter_only) cron_log("[INFO] Running in FILTER-ONLY mode. AI analysis will be skipped.");
@@ -399,15 +538,20 @@ foreach ($accounts_to_process as $acc) {
 
     cron_log("[INFO] Found " . count($msg_ids) . " unseen messages to inspect.");
 
-    if (!isset($state[$user])) $state[$user] = [];
+    if (!isset($state[$user]) || !is_array($state[$user])) {
+        $state[$user] = ['uids' => [], 'msg_ids' => []];
+    } elseif (!isset($state[$user]['uids'])) {
+        $legacy = array_values($state[$user]);
+        $state[$user] = ['uids' => $legacy, 'msg_ids' => []];
+    }
 
     $stat_scam = 0;
     $stat_labeled = 0;
     $stat_drafts = 0;
 
     foreach ($msg_ids as $id) {
-        // Check if already processed
-        if (in_array($id, $state[$user])) {
+        // Check if already processed by UID
+        if (in_array($id, $state[$user]['uids'], true)) {
             continue;
         }
 
@@ -449,6 +593,11 @@ foreach ($accounts_to_process as $acc) {
             $orig_message_id = '<' . trim($orig_message_id) . '>';
         }
 
+        // Check if already processed by globally unique Message-ID
+        if (!empty($orig_message_id) && in_array($orig_message_id, $state[$user]['msg_ids'], true)) {
+            continue;
+        }
+
         // Fetch snippet of body
         $body_part = sqimap_run_command($imap_stream, "FETCH $id (BODY.PEEK[TEXT]<0.4000>)", true, $resp, $msg, true);
         $body_text = is_array($body_part) ? implode("\n", $body_part) : '';
@@ -486,7 +635,12 @@ foreach ($accounts_to_process as $acc) {
                     cron_log("     [ACTION] Flagged msg #$id as Spam.");
                 }
             }
-            $state[$user][] = $id;
+            if (!in_array($id, $state[$user]['uids'], true)) {
+                $state[$user]['uids'][] = $id;
+            }
+            if (!empty($orig_message_id) && !in_array($orig_message_id, $state[$user]['msg_ids'], true)) {
+                $state[$user]['msg_ids'][] = $orig_message_id;
+            }
             @file_put_contents($state_file, json_encode($state, JSON_PRETTY_PRINT));
             continue; // Skip further labeling/drafting on spam
         }
@@ -507,109 +661,152 @@ foreach ($accounts_to_process as $acc) {
 
         // 3. AUTO-DRAFT CREATION
         if ($cron_auto_draft && $needs_reply && !empty($suggested_reply)) {
-            $stat_drafts++;
-            cron_log("     [AUTO-DRAFT] Generating smart reply draft...");
-            if (!$dry_run) {
-                try {
-                    // Resolve user draft target folder preference
-                    $user_draft_folder = function_exists('getPref') ? getPref($data_dir, $user, 'draft_folder', '') : '';
-                    $target_drafts = !empty($user_draft_folder) ? $user_draft_folder : (!empty($draft_folder) ? $draft_folder : 'Drafts');
-                    if (!sqimap_mailbox_exists($imap_stream, $target_drafts)) {
-                        if (sqimap_mailbox_exists($imap_stream, 'INBOX.Drafts')) {
-                            $target_drafts = 'INBOX.Drafts';
-                        } elseif (sqimap_mailbox_exists($imap_stream, 'Drafts')) {
-                            $target_drafts = 'Drafts';
-                        } else {
-                            @sqimap_mailbox_create($imap_stream, $target_drafts, '');
-                        }
-                    }
+            // Resolve user draft target folder preference
+            $user_draft_folder = function_exists('getPref') ? getPref($data_dir, $user, 'draft_folder', '') : '';
+            $target_drafts = !empty($user_draft_folder) ? $user_draft_folder : (!empty($draft_folder) ? $draft_folder : 'Drafts');
+            if (!sqimap_mailbox_exists($imap_stream, $target_drafts)) {
+                if (sqimap_mailbox_exists($imap_stream, 'INBOX.Drafts')) {
+                    $target_drafts = 'INBOX.Drafts';
+                } elseif (sqimap_mailbox_exists($imap_stream, 'Drafts')) {
+                    $target_drafts = 'Drafts';
+                } else {
+                    @sqimap_mailbox_create($imap_stream, $target_drafts, '');
+                }
+            }
 
-                    // Keep user preference synchronized with real drafts mailbox if unset
-                    if (empty($user_draft_folder) && function_exists('setPref')) {
-                        setPref($data_dir, $user, 'draft_folder', $target_drafts);
-                    }
+            // Keep user preference synchronized with real drafts mailbox if unset
+            if (empty($user_draft_folder) && function_exists('setPref')) {
+                setPref($data_dir, $user, 'draft_folder', $target_drafts);
+            }
 
-                    if (sqimap_mailbox_exists($imap_stream, $target_drafts)) {
-                        $draftMsg = new Message();
-                        $rfcHeader = new Rfc822Header();
-                        $rfcHeader->to = $rfcHeader->parseAddress($from, true);
-                        $rfcHeader->from = $rfcHeader->parseAddress($user, true);
+            // Resolve target sent folder
+            $user_sent_folder = function_exists('getPref') ? getPref($data_dir, $user, 'sent_folder', '') : '';
+            $target_sent = !empty($user_sent_folder) ? $user_sent_folder : (!empty($sent_folder) ? $sent_folder : 'Sent');
+            if (!sqimap_mailbox_exists($imap_stream, $target_sent)) {
+                if (sqimap_mailbox_exists($imap_stream, 'INBOX.Sent')) {
+                    $target_sent = 'INBOX.Sent';
+                } elseif (sqimap_mailbox_exists($imap_stream, 'Sent Items')) {
+                    $target_sent = 'Sent Items';
+                } elseif (sqimap_mailbox_exists($imap_stream, 'INBOX.Sent Items')) {
+                    $target_sent = 'INBOX.Sent Items';
+                }
+            }
 
-                        // Normalize and prepare subject
-                        if (function_exists('cv_clean_subject')) {
-                            $cleanSubj = cv_clean_subject($subject);
-                        } else {
-                            $cleanSubj = trim(preg_replace('/^\s*(?:\[[^\]]+\]\s*)?(?:(?:re|fwd|fw|aw|antw|rif|sv)\s*:\s*)+/i', '', $subject));
-                        }
-                        $rfcHeader->subject = 'Re: ' . (!empty($cleanSubj) ? $cleanSubj : $subject);
-                        $rfcHeader->date = time();
-                        $rfcHeader->content_type = new ContentType('text/plain');
-                        $rfcHeader->content_type->properties['charset'] = 'utf-8';
-                        $rfcHeader->encoding = '8bit';
+            // Normalize and prepare clean subject
+            $cleanSubj = cron_clean_subject($subject);
 
-                        // Build unique Message-ID for the draft
-                        $userHost = !empty($domain) ? $domain : 'localhost';
-                        if (strpos($user, '@') !== false) {
-                            $userHost = substr($user, strpos($user, '@') + 1);
-                        }
-                        $draftMsgId = '<sm-ai-' . bin2hex(random_bytes(12)) . '@' . $userHost . '>';
-                        $rfcHeader->message_id = $draftMsgId;
+            // Duplicate prevention: check if draft, sent reply, or \Answered flag already exists
+            $dup_check = cron_check_existing_draft_or_reply(
+                $imap_stream,
+                $user,
+                $id,
+                $orig_message_id,
+                $hdr_entry,
+                $cleanSubj,
+                $target_drafts,
+                $target_sent
+            );
 
-                        // Thread linking: In-Reply-To & References
-                        if (!empty($orig_message_id)) {
-                            $rfcHeader->in_reply_to = $orig_message_id;
-                            $rfcHeader->more_headers['In-Reply-To'] = $orig_message_id;
-                        }
+            if ($dup_check['exists']) {
+                cron_log("     [SKIP AUTO-DRAFT] " . $dup_check['reason'] . ". No duplicate draft created.");
+            } else {
+                $stat_drafts++;
+                cron_log("     [AUTO-DRAFT] Generating smart reply draft...");
+                if (!$dry_run) {
+                    try {
+                        if (sqimap_mailbox_exists($imap_stream, $target_drafts)) {
+                            $draftMsg = new Message();
+                            $rfcHeader = new Rfc822Header();
+                            $rfcHeader->to = $rfcHeader->parseAddress($from, true);
+                            $rfcHeader->from = $rfcHeader->parseAddress($user, true);
 
-                        $draft_references = !empty($orig_references) ? trim($orig_references) : '';
-                        if (!empty($orig_message_id) && strpos($draft_references, $orig_message_id) === false) {
-                            $draft_references = trim($draft_references . ' ' . $orig_message_id);
-                        }
-                        if (!empty($draft_references)) {
-                            $rfcHeader->references = $draft_references;
-                            $rfcHeader->more_headers['References'] = $draft_references;
-                        }
+                            $rfcHeader->subject = 'Re: ' . (!empty($cleanSubj) ? $cleanSubj : $subject);
+                            $rfcHeader->date = time();
+                            $rfcHeader->content_type = new ContentType('text/plain');
+                            $rfcHeader->content_type->properties['charset'] = 'utf-8';
+                            $rfcHeader->encoding = '8bit';
 
-                        // SquirrelMail reply tracking flag
-                        $rfcHeader->more_headers['X-SM-Flag-Reply'] = 'reply::' . $id . '::INBOX';
-                        $rfcHeader->more_headers['X-Mailer'] = 'SquirrelMail AI Assistant';
-
-                        // Build draft body with original citation
-                        $orig_quote = '';
-                        if (!empty($body_text)) {
-                            $quoted_lines = array();
-                            $raw_lines = explode("\n", trim($body_text));
-                            foreach (array_slice($raw_lines, 0, 30) as $l) {
-                                $quoted_lines[] = '> ' . rtrim($l);
+                            // Build unique Message-ID for the draft
+                            $userHost = !empty($domain) ? $domain : 'localhost';
+                            if (strpos($user, '@') !== false) {
+                                $userHost = substr($user, strpos($user, '@') + 1);
                             }
-                            $orig_date_str = !empty($hdr_entry['date']) ? $hdr_entry['date'] : (isset($header->date) ? $header->date : date('r'));
-                            $orig_quote = "\r\n\r\n" . sprintf(_("On %s, %s wrote:"), $orig_date_str, $from) . "\r\n" . implode("\r\n", $quoted_lines);
+                            $draftMsgId = '<sm-ai-' . bin2hex(random_bytes(12)) . '@' . $userHost . '>';
+                            $rfcHeader->message_id = $draftMsgId;
+
+                            // Thread linking: In-Reply-To & References
+                            if (!empty($orig_message_id)) {
+                                $rfcHeader->in_reply_to = $orig_message_id;
+                                $rfcHeader->more_headers['In-Reply-To'] = $orig_message_id;
+                            }
+
+                            $draft_references = !empty($orig_references) ? trim($orig_references) : '';
+                            if (!empty($orig_message_id) && strpos($draft_references, $orig_message_id) === false) {
+                                $draft_references = trim($draft_references . ' ' . $orig_message_id);
+                            }
+                            if (!empty($draft_references)) {
+                                $rfcHeader->references = $draft_references;
+                                $rfcHeader->more_headers['References'] = $draft_references;
+                            }
+
+                            // SquirrelMail reply tracking flag
+                            $rfcHeader->more_headers['X-SM-Flag-Reply'] = 'reply::' . $id . '::INBOX';
+                            $rfcHeader->more_headers['X-Mailer'] = 'SquirrelMail AI Assistant';
+
+                            // Build draft body with original citation
+                            $orig_quote = '';
+                            if (!empty($body_text)) {
+                                $quoted_lines = array();
+                                $raw_lines = explode("\n", trim($body_text));
+                                foreach (array_slice($raw_lines, 0, 30) as $l) {
+                                    $quoted_lines[] = '> ' . rtrim($l);
+                                }
+                                $orig_date_str = !empty($hdr_entry['date']) ? $hdr_entry['date'] : (isset($header->date) ? $header->date : date('r'));
+                                $orig_quote = "\r\n\r\n" . sprintf(_("On %s, %s wrote:"), $orig_date_str, $from) . "\r\n" . implode("\r\n", $quoted_lines);
+                            }
+
+                            $draftMsg->rfc822_header = $rfcHeader;
+                            $draftMsg->body_part = $suggested_reply . "\r\n\r\n-- \r\n[Auto-drafted by Gemini 3.8 AI Assistant. Review before sending.]" . $orig_quote . "\r\n";
+                            $draftMsg->is_draft = true;
+
+                            $deliver = new Deliver_IMAP();
+                            $deliver->mail($draftMsg, $imap_stream, 0, 0, $imap_stream, $target_drafts);
+                            cron_log("     [ACTION] Saved draft response into $target_drafts (Msg-ID: $draftMsgId).");
+                        } else {
+                            cron_log("     [WARNING] Could not locate or create drafts folder '$target_drafts'.");
                         }
-
-                        $draftMsg->rfc822_header = $rfcHeader;
-                        $draftMsg->body_part = $suggested_reply . "\r\n\r\n-- \r\n[Auto-drafted by Gemini 3.8 AI Assistant. Review before sending.]" . $orig_quote . "\r\n";
-                        $draftMsg->is_draft = true;
-
-                        $deliver = new Deliver_IMAP();
-                        $deliver->mail($draftMsg, $imap_stream, 0, 0, $imap_stream, $target_drafts);
-                        cron_log("     [ACTION] Saved draft response into $target_drafts (Msg-ID: $draftMsgId).");
-                    } else {
-                        cron_log("     [WARNING] Could not locate or create drafts folder '$target_drafts'.");
+                    } catch (\Throwable $e) {
+                        cron_log("     [ERROR] Failed to save draft for msg #$id: " . $e->getMessage());
                     }
-                } catch (\Throwable $e) {
-                    cron_log("     [ERROR] Failed to save draft for msg #$id: " . $e->getMessage());
                 }
             }
         }
 
-        // Mark this UID as processed and immediately persist state
-        $state[$user][] = $id;
-        @file_put_contents($state_file, json_encode($state, JSON_PRETTY_PRINT));
+        // Mark this UID and Message-ID as processed and immediately persist state
+        if (!in_array($id, $state[$user]['uids'], true)) {
+            $state[$user]['uids'][] = $id;
+        }
+        if (!empty($orig_message_id) && !in_array($orig_message_id, $state[$user]['msg_ids'], true)) {
+            $state[$user]['msg_ids'][] = $orig_message_id;
+        }
+        if (count($state[$user]['uids']) > 1500) {
+            $state[$user]['uids'] = array_slice($state[$user]['uids'], -750);
+        }
+        if (count($state[$user]['msg_ids']) > 1500) {
+            $state[$user]['msg_ids'] = array_slice($state[$user]['msg_ids'], -750);
+        }
+        $written = @file_put_contents($state_file, json_encode($state, JSON_PRETTY_PRINT));
+        if ($written === false) {
+            cron_log("     [WARNING] Could not save state to $state_file. Check directory write permissions.");
+        }
     }
 
     // Keep state file bounded
-    if (count($state[$user]) > 1000) {
-        $state[$user] = array_slice($state[$user], -500);
+    if (isset($state[$user]['uids']) && count($state[$user]['uids']) > 1500) {
+        $state[$user]['uids'] = array_slice($state[$user]['uids'], -750);
+    }
+    if (isset($state[$user]['msg_ids']) && count($state[$user]['msg_ids']) > 1500) {
+        $state[$user]['msg_ids'] = array_slice($state[$user]['msg_ids'], -750);
     }
 
     sqimap_mailbox_expunge($imap_stream, 'INBOX');

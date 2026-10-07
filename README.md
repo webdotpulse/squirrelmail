@@ -1,4 +1,4 @@
-# SquirrelMail 1.5.66
+# SquirrelMail 1.5.67
 
 A modernized, responsive edition of SquirrelMail engineered for PHP 7.0 through 8.2+ with a Single-Page Application (SPA) interface, modern UI styling, and extensive feature enhancements.
 
@@ -57,6 +57,15 @@ This repository includes an [AGENTS.md](file:///home/koen/Git/squirrelmail/AGENT
 ---
 
 ## 📝 Changelog
+
+### Version 1.5.67
+- **AI Agent Auto-Draft Duplicate Prevention & Resilient State Tracking (`plugins/ai_agent/cron.php`)**:
+  - **Pre-Draft IMAP Verification**: Added `cron_check_existing_draft_or_reply()` to probe both configured/standard `Drafts` and `Sent` mailboxes directly on the IMAP connection before calling Gemini or generating reply drafts.
+  - **Multi-Vector Duplicate Detection**: Searches target folders by `In-Reply-To`, `References`, SquirrelMail reply flag (`X-SM-Flag-Reply: reply::$id::INBOX`), and normalized subjects. If any draft or sent reply already exists for the email, auto-drafting is skipped and logged (`[SKIP AUTO-DRAFT]`).
+  - **Answered Flag Awareness**: Evaluates IMAP `\Answered` flag on incoming INBOX messages. Emails already answered by the user via webmail or external clients are immediately skipped.
+  - **Dual State Architecture (UID & Message-ID)**: Upgraded `$state[$user]` from a flat UID array to track both volatile IMAP UIDs and immutable RFC 2822 `Message-ID`s (`msg_ids`). Prevents re-processing of unread emails even when IMAP sequence numbers or UIDs change.
+  - **State Write Validation & Logging**: Added error detection and log warnings when `state.json` write fails due to filesystem permissions.
+- **Version Bump**: Incremented version from `1.5.66` to `1.5.67`.
 
 ### Version 1.5.66
 - **Conversation View Thread Discovery & Draft Link Modernization (`plugins/conversation_view/functions.php`, `functions/imap_mailbox.php`)**:
