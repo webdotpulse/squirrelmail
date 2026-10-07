@@ -1,4 +1,4 @@
-# SquirrelMail 1.5.55
+# SquirrelMail 1.5.56
 
 A modernized, responsive edition of SquirrelMail engineered for PHP 7.0 through 8.2+ with a Single-Page Application (SPA) interface, modern UI styling, and extensive feature enhancements.
 
@@ -57,6 +57,13 @@ This repository includes an [AGENTS.md](file:///home/koen/Git/squirrelmail/AGENT
 ---
 
 ## 📝 Changelog
+
+### Version 1.5.56
+- **Fix Calendar Google Share Modal Transparency & Text Contrast (`plugins/calendar`)**:
+  - Resolved transparent modal background by setting explicit `#ffffff !important` background on `#cal-share-modal-backdrop .cal-modal` and its modal body, and defining previously missing `:root` variables `--cal-bg-surface` (`#ffffff`), `--cal-bg-canvas` (`#f8fafc`), and `--cal-text-main` (`#202124`).
+  - Fixed dark text and low contrast on `#btn-gcal-link` ("Add to Google Calendar") by adding explicit high-specificity `color: #ffffff !important`, `text-decoration: none !important`, and white stroke/fill styling across all link pseudo-classes (`:link`, `:visited`, `:hover`, `:active`) and inline styling, preventing theme link rules from overriding button text.
+  - Updated backdrop to include click-to-close behavior (`onclick="if(event.target===this) calCloseShareModal();"`) and standard `z-index: 10000;`.
+- **Version Bump**: Incremented version from `1.5.55 [SVN]` to `1.5.56 [SVN]`.
 
 ### Version 1.5.55
 - **Disable Administrator Plugin (`plugins/administrator`)**:

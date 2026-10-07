@@ -135,8 +135,11 @@ displayPageHeader($color, 'None');
     --cal-primary: #1a73e8;
     --cal-primary-hover: #1557b0;
     --cal-bg: #ffffff;
+    --cal-bg-surface: #ffffff;
+    --cal-bg-canvas: #f8fafc;
     --cal-border: #dadce0;
     --cal-text: #202124;
+    --cal-text-main: #202124;
     --cal-text-muted: #5f6368;
     --cat-work: #1a73e8;
     --cat-personal: #1e8e3e;
@@ -196,14 +199,34 @@ displayPageHeader($color, 'None');
     background: #f1f3f4;
     border-color: #c6c9ce;
 }
-.cal-btn-primary {
+.cal-btn-primary,
+a.cal-btn-primary,
+a.cal-btn-primary:link,
+a.cal-btn-primary:visited {
     background: var(--cal-primary);
-    color: #ffffff;
+    color: #ffffff !important;
     border-color: var(--cal-primary);
+    text-decoration: none !important;
 }
-.cal-btn-primary:hover {
+.cal-btn-primary:hover,
+a.cal-btn-primary:hover,
+a.cal-btn-primary:active {
     background: var(--cal-primary-hover);
-    color: #ffffff;
+    color: #ffffff !important;
+    text-decoration: none !important;
+}
+#btn-gcal-link,
+#btn-gcal-link:link,
+#btn-gcal-link:visited,
+#btn-gcal-link:hover,
+#btn-gcal-link:active {
+    color: #ffffff !important;
+    text-decoration: none !important;
+}
+#btn-gcal-link *,
+#btn-gcal-link svg,
+#btn-gcal-link span {
+    color: #ffffff !important;
 }
 
 .cal-view-pills {
@@ -527,10 +550,21 @@ displayPageHeader($color, 'None');
     color: var(--sm-primary, #3b82f6);
     border-color: var(--sm-border-hover, #374151);
 }
-[data-theme="dark"] .cal-btn-primary {
+[data-theme="dark"] .cal-btn-primary,
+[data-theme="dark"] a.cal-btn-primary,
+[data-theme="dark"] a.cal-btn-primary:link,
+[data-theme="dark"] a.cal-btn-primary:visited {
     background-color: var(--sm-primary, #3b82f6);
-    color: #ffffff;
+    color: #ffffff !important;
     border-color: var(--sm-primary, #3b82f6);
+    text-decoration: none !important;
+}
+[data-theme="dark"] .cal-btn-primary:hover,
+[data-theme="dark"] a.cal-btn-primary:hover,
+[data-theme="dark"] a.cal-btn-primary:active {
+    background-color: var(--sm-primary-hover, #60a5fa);
+    color: #ffffff !important;
+    text-decoration: none !important;
 }
 [data-theme="dark"] .cal-input,
 [data-theme="dark"] .cal-select,
@@ -878,64 +912,64 @@ window.saveCalendarEvent = saveCalendarEvent;
 window.deleteCalendarEvent = deleteCalendarEvent;
 </script>
 <!-- SHARE / GOOGLE CALENDAR MODAL -->
-<div id="cal-share-modal-backdrop" class="cal-modal-backdrop" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:100; align-items:center; justify-content:center;">
-    <div class="cal-modal" style="background:var(--cal-bg-surface); color:var(--cal-text-main); border-radius:12px; width:95%; max-width:540px; box-shadow:0 10px 30px rgba(0,0,0,0.2); overflow:hidden; border:1px solid var(--cal-border);">
-        <div class="cal-modal-header" style="display:flex; justify-content:space-between; align-items:center; padding:16px 20px; border-bottom:1px solid var(--cal-border);">
-            <h3 style="margin:0; font-size:16px; font-weight:600; display:flex; align-items:center; gap:8px;">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--cal-primary);"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+<div id="cal-share-modal-backdrop" class="cal-modal-backdrop" onclick="if(event.target===this) calCloseShareModal();" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(32,33,36,0.5); z-index:10000; align-items:center; justify-content:center; backdrop-filter:blur(2px);">
+    <div class="cal-modal" style="background:#ffffff !important; color:#202124; border-radius:12px; width:95%; max-width:540px; box-shadow:0 10px 30px rgba(0,0,0,0.2); overflow:hidden; border:1px solid #dadce0;">
+        <div class="cal-modal-header" style="display:flex; justify-content:space-between; align-items:center; padding:16px 20px; border-bottom:1px solid #dadce0; background:#fafbfc;">
+            <h3 style="margin:0; font-size:16px; font-weight:600; display:flex; align-items:center; gap:8px; color:#202124;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--cal-primary, #1a73e8);"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
                 <span><?php echo _("Share with Google Calendar & iCal"); ?></span>
             </h3>
-            <button type="button" class="cal-btn" style="padding:4px 8px; font-size:16px;" onclick="calCloseShareModal()">&times;</button>
+            <button type="button" class="cal-modal-close" style="padding:4px 8px; font-size:20px; cursor:pointer;" onclick="calCloseShareModal()">&times;</button>
         </div>
 
-        <div class="cal-modal-body" style="padding:20px; display:flex; flex-direction:column; gap:16px;">
-            <p style="margin:0; font-size:13px; color:var(--cal-text-muted); line-height:1.5;">
+        <div class="cal-modal-body" style="padding:20px; display:flex; flex-direction:column; gap:16px; background:#ffffff !important;">
+            <p style="margin:0; font-size:13px; color:#5f6368; line-height:1.5;">
                 <?php echo _("Subscribe to your live SquirrelMail calendar to keep all your events, meetings, and appointments automatically in sync across Google Calendar, Apple Calendar, Outlook, and mobile devices."); ?>
             </p>
 
             <!-- 1-Click Google Calendar Button -->
-            <div style="background:var(--cal-bg-canvas); border:1px solid var(--cal-border); border-radius:8px; padding:14px; display:flex; flex-direction:column; gap:8px;">
-                <div style="font-weight:600; font-size:13px; display:flex; align-items:center; gap:6px;">
+            <div style="background:#f8fafc; border:1px solid #dadce0; border-radius:8px; padding:14px; display:flex; flex-direction:column; gap:8px;">
+                <div style="font-weight:600; font-size:13px; display:flex; align-items:center; gap:6px; color:#202124;">
                     <span>📅</span> <span><?php echo _("Direct Google Calendar Sync"); ?></span>
                 </div>
-                <div style="font-size:12px; color:var(--cal-text-muted);">
+                <div style="font-size:12px; color:#5f6368;">
                     <?php echo _("Open Google Calendar directly with your live subscription feed pre-filled:"); ?>
                 </div>
                 <div>
-                    <a id="btn-gcal-link" href="<?php echo htmlspecialchars($feedUrls['google']); ?>" target="_blank" rel="noopener noreferrer" class="cal-btn cal-btn-primary" style="display:inline-flex; align-items:center; gap:8px; font-weight:600; text-decoration:none;">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
-                        <span><?php echo _("Add to Google Calendar"); ?></span>
+                    <a id="btn-gcal-link" href="<?php echo htmlspecialchars($feedUrls['google']); ?>" target="_blank" rel="noopener noreferrer" class="cal-btn cal-btn-primary" style="display:inline-flex; align-items:center; gap:8px; font-weight:600; text-decoration:none !important; color:#ffffff !important; background-color:var(--cal-primary, #1a73e8);">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#ffffff !important; stroke:#ffffff !important;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                        <span style="color:#ffffff !important;"><?php echo _("Add to Google Calendar"); ?></span>
                     </a>
                 </div>
             </div>
 
             <!-- Manual iCal Feed URL -->
             <div style="display:flex; flex-direction:column; gap:6px;">
-                <label style="font-size:12px; font-weight:600; color:var(--cal-text-muted);"><?php echo _("iCalendar (.ics / Webcal) Feed URL"); ?></label>
+                <label style="font-size:12px; font-weight:600; color:#5f6368;"><?php echo _("iCalendar (.ics / Webcal) Feed URL"); ?></label>
                 <div style="display:flex; gap:8px;">
-                    <input type="text" id="cal-feed-url-input" class="cal-input" value="<?php echo htmlspecialchars($feedUrls['http']); ?>" readonly onclick="this.select()" style="font-family:monospace; font-size:11px;">
-                    <button type="button" class="cal-btn" onclick="calCopyFeedUrl()" id="btn-copy-feed" style="white-space:nowrap;">
+                    <input type="text" id="cal-feed-url-input" class="cal-input" value="<?php echo htmlspecialchars($feedUrls['http']); ?>" readonly onclick="this.select()" style="font-family:monospace; font-size:11px; background:#ffffff; color:#202124;">
+                    <button type="button" class="cal-btn" onclick="calCopyFeedUrl()" id="btn-copy-feed" style="white-space:nowrap; background:#ffffff; color:#202124;">
                         <span>📋</span> <span id="copy-btn-text"><?php echo _("Copy URL"); ?></span>
                     </button>
                 </div>
-                <small style="color:var(--cal-text-muted); font-size:11px; line-height:1.4;">
+                <small style="color:#5f6368; font-size:11px; line-height:1.4;">
                     <?php echo _("In Google Calendar: click '+' next to 'Other calendars' &rarr; 'From URL' &rarr; paste this link."); ?>
                 </small>
             </div>
 
             <!-- Security & Token Reset -->
-            <div style="border-top:1px solid var(--cal-border); padding-top:12px; display:flex; justify-content:space-between; align-items:center;">
-                <small style="color:var(--cal-text-muted); font-size:11px; max-width:70%;">
+            <div style="border-top:1px solid #dadce0; padding-top:12px; display:flex; justify-content:space-between; align-items:center;">
+                <small style="color:#5f6368; font-size:11px; max-width:70%;">
                     <?php echo _("Feed access is secured by a unique private token. If you ever need to revoke access, reset your token below."); ?>
                 </small>
-                <button type="button" class="cal-btn" style="font-size:11px; color:#d93025; border-color:#fad2cf;" onclick="calResetShareToken()">
+                <button type="button" class="cal-btn" style="font-size:11px; color:#d93025; border-color:#fad2cf; background:#ffffff;" onclick="calResetShareToken()">
                     <?php echo _("Reset Token"); ?>
                 </button>
             </div>
         </div>
 
-        <div class="cal-modal-footer" style="padding:12px 20px; border-top:1px solid var(--cal-border); display:flex; justify-content:flex-end;">
-            <button type="button" class="cal-btn" onclick="calCloseShareModal()"><?php echo _("Close"); ?></button>
+        <div class="cal-modal-footer" style="padding:12px 20px; border-top:1px solid #dadce0; display:flex; justify-content:flex-end; background:#fafbfc;">
+            <button type="button" class="cal-btn" onclick="calCloseShareModal()" style="background:#ffffff; color:#202124;"><?php echo _("Close"); ?></button>
         </div>
     </div>
 </div>
