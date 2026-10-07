@@ -19,7 +19,7 @@
  * SquirrelMail version number -- DO NOT CHANGE
  * @since 1.5.2
  */
-define('SM_VERSION', '1.5.10 [SVN]');
+define('SM_VERSION', '1.5.11 [SVN]');
 
 /**
  * Year interval for copyright notices in the interface

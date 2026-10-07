@@ -1,4 +1,4 @@
-# SquirrelMail 1.5.10
+# SquirrelMail 1.5.11
 
 A modernized, responsive edition of SquirrelMail engineered for PHP 7.0 through 8.2+ with a Single-Page Application (SPA) interface, modern UI styling, and extensive feature enhancements.
 
@@ -43,6 +43,12 @@ This repository includes an [AGENTS.md](file:///home/koen/Git/squirrelmail/AGENT
 ---
 
 ## 📝 Changelog
+
+### Version 1.5.11
+- **Missing `images/blank.png` 404 Resolution**:
+  - Restored `images/blank.png` 1x1 transparent PNG in the root `images/` directory, resolving HTTP 404 errors when viewing emails with empty/missing image sources, broken CID attachments, or security-sanitized image blocks.
+  - Updated `functions/mime.php` (`sq_fixuri()` and `sq_cid2http()`) to dynamically resolve `blank.png` and `spacer.png` using `sqm_baseuri()`, ensuring proper URL resolution across deep plugin endpoints and the Single-Page Application (SPA) frontend.
+- **Version Bump**: Incremented version from `1.5.10` to `1.5.11`.
 
 ### Version 1.5.10
 - **AI Agent "Test IMAP Connection" Bad Request: Missing '"' Fix**:

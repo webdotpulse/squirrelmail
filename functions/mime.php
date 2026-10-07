@@ -1973,8 +1973,10 @@ function sq_fix_url($attname, &$attvalue, $message, $id, $mailbox,$sQuote = '"')
     sqgetGlobalVar('view_unsafe_images', $view_unsafe_images, SQ_GET, FALSE);
 
     global $use_transparent_security_image;
-    if ($use_transparent_security_image) $secremoveimg = '../images/spacer.png';
-    else $secremoveimg = '../images/' . _("sec_remove_eng.png");
+    $baseUri = function_exists('sqm_baseuri') ? sqm_baseuri() : (defined('SM_PATH') ? SM_PATH : '../');
+    if ($use_transparent_security_image) $secremoveimg = $baseUri . 'images/spacer.png';
+    else $secremoveimg = $baseUri . 'images/' . _("sec_remove_eng.png");
+    $blank_img = $baseUri . 'images/blank.png';
 
     /**
      * Replace empty src tags with the blank image.  src is only used
@@ -1983,7 +1985,7 @@ function sq_fix_url($attname, &$attvalue, $message, $id, $mailbox,$sQuote = '"')
      * IE from being kicked off when src for img tags are not set
      */
     if ($attvalue == '') {
-        $attvalue = '"' . SM_PATH . 'images/blank.png"';
+        $attvalue = '"' . $blank_img . '"';
     } else {
         // first, disallow 8 bit characters and control characters
         if (preg_match('/[\0-\37\200-\377]+/',$attvalue)) {
@@ -1992,7 +1994,7 @@ function sq_fix_url($attname, &$attvalue, $message, $id, $mailbox,$sQuote = '"')
                     $attvalue = $sQuote . 'http://invalid-stuff-detected.example.com' . $sQuote;
                     break;
                 default:
-                    $attvalue = $sQuote . SM_PATH . 'images/blank.png'. $sQuote;
+                    $attvalue = $sQuote . $blank_img . $sQuote;
                     break;
             }
         } else {
@@ -2069,7 +2071,7 @@ function sq_fix_url($attname, &$attvalue, $message, $id, $mailbox,$sQuote = '"')
                                     }
                                     --------------------------------- */
                                 } else {
-                                    $attvalue = $sQuote . SM_PATH . 'images/blank.png'. $sQuote;
+                                    $attvalue = $sQuote . $blank_img . $sQuote;
                                 }
                             }
                         } else {
@@ -2091,13 +2093,13 @@ function sq_fix_url($attname, &$attvalue, $message, $id, $mailbox,$sQuote = '"')
                         $attvalue = $sQuote . sq_cid2http($message, $id, $attvalue, $mailbox) . $sQuote;
                         break;
                     default:
-                        $attvalue = $sQuote . SM_PATH . 'images/blank.png' . $sQuote;
+                        $attvalue = $sQuote . $blank_img . $sQuote;
                         break;
                 }
             } else {
                 if (!isset($aUrl['path']) || $aUrl['path'] != $secremoveimg) {
                     // parse_url did not lead to satisfying result
-                    $attvalue = $sQuote . SM_PATH . 'images/blank.png' . $sQuote;
+                    $attvalue = $sQuote . $blank_img . $sQuote;
                 }
             }
         }
@@ -2330,7 +2332,8 @@ function sq_cid2http($message, $id, $cidurl, $mailbox){
          * If we couldn't generate a proper img url, drop in a blank image
          * instead of sending back empty, otherwise it causes unusual behaviour
          */
-        $httpurl = $quotchar . SM_PATH . 'images/blank.png' . $quotchar;
+        $blank_img = (function_exists('sqm_baseuri') ? sqm_baseuri() : (defined('SM_PATH') ? SM_PATH : '../')) . 'images/blank.png';
+        $httpurl = $quotchar . $blank_img . $quotchar;
     }
 
     return $httpurl;
