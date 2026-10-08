@@ -1,4 +1,4 @@
-# SquirrelMail 1.5.70
+# SquirrelMail 1.5.71
 
 A modernized, responsive edition of SquirrelMail engineered for PHP 7.0 through 8.2+ with a Single-Page Application (SPA) interface, modern UI styling, and extensive feature enhancements.
 
@@ -56,6 +56,15 @@ This repository includes an [AGENTS.md](file:///home/koen/Git/squirrelmail/AGENT
 ---
 
 ## 📝 Changelog
+
+### Version 1.5.71
+- **Modern App Icon & Multi-Resolution Favicon Suite**:
+  - **New Multi-Resolution `favicon.ico`**: Created and installed an optimized multi-resolution `favicon.ico` in the root directory embedding 16×16, 32×32, 48×48, 64×64 (standard 32-bit BMP), and 128×128, 256×256 (modern PNG compression) layers from the new iOS-styled app icon asset featuring a vibrant blue gradient squircle, white rounded vector envelope, and soft elevation depth shadows.
+  - **High-DPI Web & Touch Assets**: Generated `images/favicon-32x32.png`, `images/favicon-16x16.png`, `apple-touch-icon.png`, and `images/apple-touch-icon.png` (180×180) for modern mobile home screen bookmarks and high-density browser tabs.
+  - **Core Header Links (`functions/page_header.php`)**: Enhanced the default `<head>` injection to output `<link rel="icon">` tags with explicit sizes and `<link rel="apple-touch-icon">` alongside `<link rel="shortcut icon">`.
+  - **Installer & Configtest Icon Integration (`install.php`, `src/configtest.php`)**: Added favicon and apple-touch-icon `<link>` tags to installer and diagnostics page headers.
+  - **Synchronized Brand Logo (`images/sm_logo.png`)**: Updated the default brand logo image to match the modern squircle app icon for seamless brand consistency across login screens, desktop notifications, and browser tabs.
+- **Version Bump**: Incremented version from `1.5.70` to `1.5.71`.
 
 ### Version 1.5.70
 - **Reader View Cleanup (Removed In-Message Conversation Thread)**:

@@ -13,7 +13,7 @@
  */
 
 define('SM_PATH', './');
-define('INSTALLER_VERSION', '1.5.70');
+define('INSTALLER_VERSION', '1.5.71');
 
 // Ensure core constants (such as SM_DEBUG_MODE_OFF) are loaded before config.php
 if (file_exists(SM_PATH . 'include/constants.php')) {
@@ -582,6 +582,10 @@ if (empty($existing_admins)) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="SquirrelMail Web Installer and Configuration Assistant">
     <title>SquirrelMail Web Installer</title>
+    <link rel="shortcut icon" href="favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="images/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="images/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="images/apple-touch-icon.png">
     <style>
         :root {
             --primary: #1a73e8;

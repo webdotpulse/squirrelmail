@@ -153,6 +153,9 @@ $test_location = get_location();
 <head>
   <meta name="robots" content="noindex,nofollow">
   <title>SquirrelMail configtest</title>
+  <link rel="shortcut icon" href="../favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="../images/favicon-32x32.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="../images/apple-touch-icon.png">
 </head>
 <body>
 <h1>SquirrelMail configtest</h1>

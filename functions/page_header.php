@@ -109,7 +109,10 @@ function displayHtmlHeader( $title = 'SquirrelMail', $xtra = '', $do_hook = TRUE
     // following in your $head_tag_extra string:
     // $head_tag_extra = '<link rel="shortcut icon" href="###SM BASEURI###favicon.ico" />...<YOUR CONTENT HERE>...';
     //
-    . (empty($head_tag_extra) ? '<link rel="shortcut icon" href="' . sqm_baseuri() . 'favicon.ico" />'
+    . (empty($head_tag_extra) ? '<link rel="shortcut icon" href="' . sqm_baseuri() . 'favicon.ico" />' . "\n"
+                              . '<link rel="icon" type="image/png" sizes="32x32" href="' . sqm_baseuri() . 'images/favicon-32x32.png" />' . "\n"
+                              . '<link rel="icon" type="image/png" sizes="16x16" href="' . sqm_baseuri() . 'images/favicon-16x16.png" />' . "\n"
+                              . '<link rel="apple-touch-icon" sizes="180x180" href="' . sqm_baseuri() . 'images/apple-touch-icon.png" />'
     : str_replace('###SM BASEURI###', sqm_baseuri(), $head_tag_extra));
 
     $used_fontset = (!empty($chosen_fontset) ? $chosen_fontset : $default_fontset);
