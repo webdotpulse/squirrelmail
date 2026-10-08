@@ -596,3 +596,53 @@
     color: #d8b4fe !important;
     border-color: rgba(168, 85, 247, 0.4);
 }
+
+/* Mailbox Thread View Rows, Branches & Badges */
+.sm-thread-child-row {
+    background-color: rgba(59, 130, 246, 0.02) !important;
+}
+
+[data-theme="dark"] .sm-thread-child-row {
+    background-color: rgba(255, 255, 255, 0.03) !important;
+}
+
+.cv-thread-sent-reply {
+    border-left: 3px solid #10b981 !important;
+}
+
+.cv-thread-draft {
+    border-left: 3px solid #f59e0b !important;
+}
+
+.col_thread_branch {
+    text-align: center;
+    vertical-align: middle;
+    width: 32px;
+}
+
+.cv-thread-branch-glyph {
+    display: inline-block;
+    color: var(--sm-text-secondary, #64748b);
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.cv-thread-branch {
+    display: inline-block;
+    color: var(--sm-text-secondary, #64748b);
+    font-weight: 600;
+}
+
+.sm-paginator-thread.active {
+    background-color: var(--sm-primary, #3b82f6) !important;
+    border-color: var(--sm-primary, #3b82f6) !important;
+    color: #ffffff !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="dark"] .sm-paginator-thread.active {
+    background-color: var(--sm-primary, #3b82f6) !important;
+    border-color: var(--sm-primary, #3b82f6) !important;
+    color: #ffffff !important;
+}
+

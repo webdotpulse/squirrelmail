@@ -110,6 +110,7 @@ if ($aMailboxPrefSer) {
 }
 if (isset($srt)) {
     $aMailboxPref[MBX_PREF_SORT] = (int) $srt;
+    setUserPref($username, 'pref_'.$account.'_'.$mailbox, serialize($aMailboxPref));
 }
 
 $trash_folder = (isset($trash_folder)) ? $trash_folder : false;

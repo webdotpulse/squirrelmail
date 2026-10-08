@@ -33,20 +33,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_settings'])) {
         $msg_type = 'error';
     } else {
         $cv_enabled     = !empty($_POST['cv_enabled']) ? 1 : 0;
-        $cv_position    = in_array($_POST['cv_position'], array('bottom', 'top', 'both')) ? $_POST['cv_position'] : 'bottom';
         $search_sent    = !empty($_POST['search_sent']) ? 1 : 0;
         $search_drafts  = !empty($_POST['search_drafts']) ? 1 : 0;
         $search_current = !empty($_POST['search_current']) ? 1 : 0;
         $cv_mailbox_badges = !empty($_POST['cv_mailbox_badges']) ? 1 : 0;
 
         setPref($data_dir, $username, 'conversation_view_enabled', $cv_enabled);
-        setPref($data_dir, $username, 'conversation_view_position', $cv_position);
         setPref($data_dir, $username, 'cv_search_sent', $search_sent);
         setPref($data_dir, $username, 'cv_search_drafts', $search_drafts);
         setPref($data_dir, $username, 'cv_search_current', $search_current);
         setPref($data_dir, $username, 'cv_mailbox_badges', $cv_mailbox_badges);
 
-        $msg = _("Conversation View preferences saved successfully!");
+        $msg = _("Thread View preferences saved successfully!");
         $msg_type = 'success';
     }
 }
@@ -184,8 +182,8 @@ $token = function_exists('sm_generate_security_token') ? sm_generate_security_to
                 <div class="cv-opts-item">
                     <input type="checkbox" id="cv_enabled" name="cv_enabled" value="1" <?php if ($cv_enabled) echo 'checked'; ?>>
                     <div class="cv-opts-item-content">
-                        <label for="cv_enabled" class="cv-opts-item-label"><?php echo _("Enable Conversation View in Message Reader"); ?></label>
-                        <div class="cv-opts-item-sub"><?php echo _("Display the conversation thread timeline and related drafts/replies when viewing an email."); ?></div>
+                        <label for="cv_enabled" class="cv-opts-item-label"><?php echo _("Enable Mailbox Thread View with Drafts &amp; Replies"); ?></label>
+                        <div class="cv-opts-item-sub"><?php echo _("When Thread View is active in the mailbox view (inbox and subfolders), include related sent replies and drafts under each email."); ?></div>
                     </div>
                 </div>
 
@@ -194,7 +192,7 @@ $token = function_exists('sm_generate_security_token') ? sm_generate_security_to
                     <input type="checkbox" id="search_sent" name="search_sent" value="1" <?php if ($search_sent) echo 'checked'; ?>>
                     <div class="cv-opts-item-content">
                         <label for="search_sent" class="cv-opts-item-label"><?php echo _("Include Sent Replies (from Sent Folder)"); ?></label>
-                        <div class="cv-opts-item-sub"><?php echo _("Scans your Sent folder via IMAP References and In-Reply-To headers to attach your replies to the conversation."); ?></div>
+                        <div class="cv-opts-item-sub"><?php echo _("Nests your sent replies directly under the corresponding email in the mailbox view with quick links to view them."); ?></div>
                     </div>
                 </div>
 
@@ -203,16 +201,7 @@ $token = function_exists('sm_generate_security_token') ? sm_generate_security_to
                     <input type="checkbox" id="search_drafts" name="search_drafts" value="1" <?php if ($search_drafts) echo 'checked'; ?>>
                     <div class="cv-opts-item-content">
                         <label for="search_drafts" class="cv-opts-item-label"><?php echo _("Include Pending Drafts (from Drafts Folder)"); ?></label>
-                        <div class="cv-opts-item-sub"><?php echo _("Displays any un-sent draft replies for this conversation with a direct 'Resume Draft' button."); ?></div>
-                    </div>
-                </div>
-
-                <!-- Search Current Folder -->
-                <div class="cv-opts-item">
-                    <input type="checkbox" id="search_current" name="search_current" value="1" <?php if ($search_current) echo 'checked'; ?>>
-                    <div class="cv-opts-item-content">
-                        <label for="search_current" class="cv-opts-item-label"><?php echo _("Include Other Incoming Replies in Current Folder"); ?></label>
-                        <div class="cv-opts-item-sub"><?php echo _("Discovers prior or subsequent incoming emails in the same folder that belong to the same conversation thread."); ?></div>
+                        <div class="cv-opts-item-sub"><?php echo _("Nests pending draft responses directly under the email with a one-click action to resume editing."); ?></div>
                     </div>
                 </div>
 
@@ -220,27 +209,8 @@ $token = function_exists('sm_generate_security_token') ? sm_generate_security_to
                 <div class="cv-opts-item">
                     <input type="checkbox" name="cv_mailbox_badges" id="cv_mailbox_badges" value="1" <?php if ($cv_mailbox_badges) echo 'checked'; ?> class="cv-opts-checkbox">
                     <div class="cv-opts-item-content">
-                        <label for="cv_mailbox_badges" class="cv-opts-item-label"><?php echo _("Show Conversation Badges in Mailbox View"); ?></label>
-                        <div class="cv-opts-item-sub"><?php echo _("Displays interactive '📝 Draft', '📤 Replied', and '↩️ Draft Reply' indicators directly in the message list."); ?></div>
-                    </div>
-                </div>
-
-                <!-- Placement Preference -->
-                <div class="cv-opts-item" style="flex-direction: column; gap: 8px;">
-                    <div class="cv-opts-item-label"><?php echo _("Thread View Placement"); ?></div>
-                    <div style="display: flex; gap: 16px; margin-top: 4px; flex-wrap: wrap;">
-                        <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer;">
-                            <input type="radio" name="cv_position" value="bottom" <?php if ($cv_position === 'bottom') echo 'checked'; ?>>
-                            <?php echo _("Below message body (Recommended)"); ?>
-                        </label>
-                        <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer;">
-                            <input type="radio" name="cv_position" value="top" <?php if ($cv_position === 'top') echo 'checked'; ?>>
-                            <?php echo _("Above message body"); ?>
-                        </label>
-                        <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer;">
-                            <input type="radio" name="cv_position" value="both" <?php if ($cv_position === 'both') echo 'checked'; ?>>
-                            <?php echo _("Both top and bottom"); ?>
-                        </label>
+                        <label for="cv_mailbox_badges" class="cv-opts-item-label"><?php echo _("Show Conversation Badges in Unthread View"); ?></label>
+                        <div class="cv-opts-item-sub"><?php echo _("Displays '📝 Draft' and '📤 Replied' badges on message subjects when unthread view is active."); ?></div>
                     </div>
                 </div>
             </div>

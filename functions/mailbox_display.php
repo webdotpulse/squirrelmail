@@ -255,11 +255,7 @@ function sqm_api_mailbox_select($imapConnection,$account,$mailbox,$aConfig,$aPro
 
     /* decide if we are thread sorting or not */
     if ($aMailbox['SORT'] & SQSORT_THREAD) {
-        if (!sqimap_capability($imapConnection,'THREAD')) {
-            $aMailbox['SORT'] ^= SQSORT_THREAD;
-        } else {
-            $aMailbox['THREAD_INDENT'] = $aCachedMailbox['THREAD_INDENT'];
-        }
+        $aMailbox['THREAD_INDENT'] = isset($aCachedMailbox['THREAD_INDENT']) ? $aCachedMailbox['THREAD_INDENT'] : false;
     } else {
         $aMailbox['THREAD_INDENT'] = false;
     }
@@ -332,6 +328,13 @@ function fetchMessageHeaders($imapConnection, &$aMailbox) {
         default: break;
       }
     }
+
+    // Always retrieve threading headers for thread discovery
+    $aHeaderFields[] = 'Message-ID';
+    $aHeaderFields[] = 'In-Reply-To';
+    $aHeaderFields[] = 'References';
+    $aHeaderFields[] = 'X-SM-Flag-Reply';
+    $aHeaderFields = array_values(array_unique($aHeaderFields));
 
     /**
      * A uidset with sorted uid's is available. We can use the cache
@@ -719,6 +722,7 @@ function prepareMessageList(&$aMailbox, $aProps) {
                 }
             }
             $aFormattedMessages[$iUid]['columns'] = $aColumns;
+            $aFormattedMessages[$iUid]['header']  = $aMsg;
 
         } else {
             break;
@@ -801,14 +805,22 @@ function _get_sorted_msgs_list($imapConnection,&$aMailbox) {
     if (!$aMailbox['SEARCH'][$iSetIndx]) {
         $aMailbox['SEARCH'][$iSetIndx] = 'ALL';
     }
-    if (($aMailbox['SORT'] & SQSORT_THREAD) && sqimap_capability($imapConnection,'THREAD')) {
-        $aRes = get_thread_sort($imapConnection,$aMailbox['SEARCH'][$iSetIndx]);
-        if ($aRes === false) {
-            $aMailbox['SORT'] -= SQSORT_THREAD;
-            $error = 1; // fix me, define an error code;
-        } else {
-            $aMailbox['UIDSET'][$iSetIndx] = $aRes[0];
-            $aMailbox['THREAD_INDENT'][$iSetIndx] = $aRes[1];
+    if ($aMailbox['SORT'] & SQSORT_THREAD) {
+        $threaded = false;
+        if (sqimap_capability($imapConnection,'THREAD')) {
+            $aRes = get_thread_sort($imapConnection,$aMailbox['SEARCH'][$iSetIndx]);
+            if ($aRes !== false && !empty($aRes[0])) {
+                $aMailbox['UIDSET'][$iSetIndx] = $aRes[0];
+                $aMailbox['THREAD_INDENT'][$iSetIndx] = $aRes[1];
+                $threaded = true;
+            }
+        }
+        if (!$threaded) {
+            $id = sqimap_run_search($imapConnection, $aMailbox['SEARCH'][$iSetIndx], $aMailbox['CHARSET'][$iSetIndx]);
+            if ($id !== false) {
+                $aMailbox['UIDSET'][$iSetIndx] = array_reverse($id);
+                $aMailbox['TOTAL'][$iSetIndx] = count($id);
+            }
         }
     } else if ($aMailbox['SORT'] === SQSORT_NONE) {
         $id = sqimap_run_search($imapConnection, 'ALL' , '');
@@ -1039,20 +1051,15 @@ function showMessagesForMailbox($imapConnection, &$aMailbox,$aProps, &$iError) {
 
     /* build thread sorting links */
     $newsort = $aMailbox['SORT'];
-    if (sqimap_capability($imapConnection,'THREAD')) {
-        if ($aMailbox['SORT'] & SQSORT_THREAD) {
-            $newsort -= SQSORT_THREAD;
-            $thread_name = _("Unthread View");
-        } else {
-            $thread_name = _("Thread View");
-            $newsort = $aMailbox['SORT'] + SQSORT_THREAD;
-        }
-        $thread_link_uri = $baseurl . '&amp;srt=' . $newsort 
-                         . '&amp;startMessage=1';
+    if ($aMailbox['SORT'] & SQSORT_THREAD) {
+        $newsort -= SQSORT_THREAD;
+        $thread_name = _("Unthread View");
     } else {
-        $thread_link_uri ='';
-        $thread_name = '';
+        $thread_name = _("Thread View");
+        $newsort = $aMailbox['SORT'] + SQSORT_THREAD;
     }
+    $thread_link_uri = $baseurl . '&amp;srt=' . $newsort 
+                     . '&amp;startMessage=1';
     $sort = $aMailbox['SORT'];
 
     /* FIX ME ADD CHECKBOX CONTROL. No checkbox => no buttons */

@@ -1,4 +1,4 @@
-# SquirrelMail 1.5.69
+# SquirrelMail 1.5.70
 
 A modernized, responsive edition of SquirrelMail engineered for PHP 7.0 through 8.2+ with a Single-Page Application (SPA) interface, modern UI styling, and extensive feature enhancements.
 
@@ -11,12 +11,11 @@ A modernized, responsive edition of SquirrelMail engineered for PHP 7.0 through 
   - Curated modern design system in `assets/css/app.css` with CSS custom properties (`--sm-*`).
   - Native Light and Dark mode toggle with persistent preferences.
   - Crisp, modern SVG iconography throughout the application.
-- **Conversation View & Threading (Drafts & Replies)** (`plugins/conversation_view`):
-  - Cross-mailbox conversation discovery: dynamically inspects `Message-ID`, `In-Reply-To`, `References`, and normalized base subjects across `Sent`, `Drafts`, and active mailboxes.
-  - Displays sent replies and pending drafts directly in the message reader (`src/read_body.php`) in an interactive chronological timeline with clean, unquoted body previews.
-  - One-click actions: "Resume Draft" (`read_body.php?account=0&mailbox=Drafts&passed_id=$uid&startMessage=1`), async "Discard Draft", "View Sent Message", and quick "Reply" / "Reply All".
-  - Asynchronous inline message expansion (`ajax.php?action=get_body`) to read full replies without navigating away from the current email.
-  - Header toolbar indicator badge (`💬 Thread (#)`) with smooth-scrolling anchor navigation.
+- **Mailbox Conversation Threading (Drafts & Replies)** (`plugins/conversation_view`):
+  - Cross-mailbox conversation discovery: dynamically discovers `Message-ID`, `In-Reply-To`, `References`, and base subjects across `Sent`, `Drafts`, and active mailboxes.
+  - Mailbox Thread View: in the inbox and subfolders, groups emails into conversation threads, nesting related sent replies and pending drafts directly under each email with visual branch connectors (`↳`) and clear indentation.
+  - One-click actions: direct draft resumption (`compose.php?mailbox=Drafts&passed_id=$uid&smaction=draft`) and sent reply reader (`read_body.php?mailbox=Sent&passed_id=$uid`).
+  - Safe cross-folder rendering preventing bulk folder actions from impacting cross-mailbox thread items.
 - **Signature Creator & Templates Studio** (`plugins/signature_creator`):
   - Interactive visual designer with 6 ready-made professional HTML signature templates (Modern Clean, Corporate Two-Column, Minimalist Chic, Executive Classic, Tech & Developer, Creative Card).
   - Dynamic live real-time preview updating on keystroke.
@@ -57,6 +56,22 @@ This repository includes an [AGENTS.md](file:///home/koen/Git/squirrelmail/AGENT
 ---
 
 ## 📝 Changelog
+
+### Version 1.5.70
+- **Reader View Cleanup (Removed In-Message Conversation Thread)**:
+  - Removed the conversation thread timeline, card elements, and `💬 Thread` jump toolbar button when opening and viewing an email (`src/read_body.php`), allowing messages to load cleanly and directly.
+  - Deprecated and safely neutralized `read_body_header_right`, `read_body_top`, `template_construct_read_message_body.tpl`, and `read_body_bottom` hooks in `plugins/conversation_view/setup.php`, `functions.php`, and `config/plugin_hooks.php`.
+- **Mailbox Thread View Overhaul (Replies & Drafts Nested in Inbox and Subfolders)**:
+  - **Universal Mailbox Thread View Toggle**: Made the "Thread View" / "Unthread View" toggle button in the mailbox header (`functions/mailbox_display.php`, `templates/default/message_list.tpl`) universally available across all folders (inbox and subfolders) regardless of whether the IMAP server advertises the `THREAD` capability.
+  - **Cross-Folder Thread Weaving (`plugins/conversation_view/functions.php` `cv_mailbox_thread_view`)**: When Thread View is active in the inbox or any subfolder, automatically discovers and nests related sent replies (from user's Sent folder) and pending drafts (from user's Drafts folder), as well as in-folder replies, directly under each email in the conversation thread.
+  - **Visual Hierarchy & Branch Indentation**: Rendered clear indentation with branch indicators (`↳`) for replies and drafts under their parent email, with distinct color badges (`📤 Sent`, `📝 Draft`, `↩️ Reply`) and custom child row styling.
+  - **Direct Actions for Replies and Drafts**:
+    - Clicking a draft row in the thread directly launches `src/compose.php?mailbox=Drafts&passed_id=...&smaction=draft` to resume editing and sending with one click.
+    - Clicking a sent reply row directly opens `src/read_body.php?mailbox=Sent&passed_id=...` to inspect the sent reply.
+  - **Bulk Action Safety on Cross-Folder Items**: Replaced the checkbox column on cross-folder thread rows with a dedicated branch indicator glyph (`↳` / `📝`), preventing accidental inclusion in bulk operations (Delete, Move) targeted at the current folder.
+  - **Persistent Thread View State**: Ensured toggling Thread View / Unthread View saves the user's folder preference in `src/right_main.php` via `setUserPref()`.
+  - **Updated Options Page (`plugins/conversation_view/options.php`)**: Realigned options to focus on mailbox thread view settings (Sent and Drafts inclusion toggles) and removed obsolete reader placement settings.
+- **Version Bump**: Incremented version from `1.5.69` to `1.5.70`.
 
 ### Version 1.5.69
 - **Conversation Thread Discovery & Timeline UX Overhaul (`plugins/conversation_view/functions.php`, `setup.php`, `conversation.css`, `functions/imap_mailbox.php`)**:

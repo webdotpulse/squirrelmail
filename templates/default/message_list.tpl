@@ -135,11 +135,12 @@ if ($iNumberOfMessages == 0) {
           $paginator_str = $this->fetch('paginator.tpl');
           echo $paginator_str;
           if (!empty($thread_name)) {
+              $threadActive = (!empty($sort) && ($sort & SQSORT_THREAD));
               echo '<a href="' . $thread_link_uri
                   . ($accesskey_mailbox_thread != 'NONE'
                   ? '" accesskey="' . $accesskey_mailbox_thread . '"'
                   : '"')
-                  . ' class="sm-paginator-btn sm-paginator-thread">' . $thread_name . '</a>';
+                  . ' class="sm-paginator-btn sm-paginator-thread' . ($threadActive ? ' active' : '') . '">' . $thread_name . '</a>';
           }
           if (!empty($plugin_output['mailbox_paginator_after'])) echo $plugin_output['mailbox_paginator_after'];
       ?>
@@ -410,6 +411,12 @@ if (isset($aColumns[SQM_COL_FLAGS])) {
     }
 }
 $row_class = trim((empty($class) ? '' : $class) . ' sm-message-row' . ($is_unread ? ' unread' : ''));
+if (!empty($aMsg['is_cross_folder'])) {
+    $row_class .= ' sm-thread-child-row';
+}
+if (!empty($aMsg['row_class'])) {
+    $row_class .= ' ' . $aMsg['row_class'];
+}
 ?>
 <tr class="<?php echo $row_class; ?>" <?php echo $row_extra;?>>
 <?php
@@ -434,7 +441,7 @@ $row_class = trim((empty($class) ? '' : $class) . ' sm-message-row' . ($is_unrea
      * we have to do some php coding to display the columns in the right order
      */
     foreach ($aOrder as $iCol) {
-        if (in_array($iCol, $show_label_columns)) {
+        if (in_array($iCol, $show_label_columns) && empty($aMsg['is_cross_folder'])) {
             $sLabelStart = '<label for="'.$form_id."_msg$i\">";
             $sLabelEnd = '</label>';
         } else {
@@ -466,6 +473,12 @@ $row_class = trim((empty($class) ? '' : $class) . ' sm-message-row' . ($is_unrea
 
         switch ($iCol) {
           case SQM_COL_CHECK:
+            if (!empty($aMsg['is_cross_folder'])) {
+                $icon = !empty($aMsg['is_draft']) ? '📝' : '↳';
+                $tip = !empty($aMsg['is_draft']) ? _("Pending Draft in Drafts folder") : _("Sent Reply in Sent folder");
+                echo '<td class="col_check col_thread_branch" style="text-align:center; padding: 0 4px;" title="' . htmlspecialchars($tip, ENT_QUOTES, 'UTF-8') . '"><span class="cv-thread-branch-glyph" style="opacity:0.75; font-size:13px; font-weight:bold;">' . $icon . '</span></td>';
+                break;
+            }
             $checked = (($checkall || in_array($iUid, $preselected)) ? ' checked="checked" ' : '');
             if ($javascript_on) {
                 echo '<td class="col_check"'. $javascript_auto_click. '>' ?>
@@ -480,21 +493,25 @@ $row_class = trim((empty($class) ? '' : $class) . ' sm-message-row' . ($is_unrea
             $indent = $aCol['indent'];
             $sText = "    <td class=\"col_subject\" $javascript_auto_click>";
             if ($align['left'] == 'left') {
-                $sText .= str_repeat('&nbsp;&nbsp;',$indent);
+                if ($indent > 0) {
+                    $sText .= str_repeat('&nbsp;&nbsp;&nbsp;', $indent - 1) . '<span class="cv-thread-branch" style="opacity:0.65;margin-right:4px;font-size:12px;font-weight:bold;">↳</span>';
+                }
             }
             $sText .= "<a href=\"$link\"";
             if ($target)     { $sText .= " target=\"$target\"";   }
             if ($title)      { $sText .= " title=\"$title\"";     }
             if ($onclick)    { $sText .= " onclick=\"$onclick\""; }
             if ($link_extra) { $sText .= " $link_extra";          }
-            if ($javascript_on && $fancy_index_highlite) {
+            if ($javascript_on && $fancy_index_highlite && empty($aMsg['is_cross_folder'])) {
                   $sText .= " onmousedown=\"row_click('$form_id"."_msg$i', event, '$form_name', 'msg[' + $i + ']', '$row_click_extra'); setPointer(this." . (empty($bold) ? '' : 'parentNode.') .
                             'parentNode.parentNode, ' . $i . ', \'click\', \''. $non_clicked_class. '\', \'mouse_over\', \'clicked\', event);"';
             }
             $sText .= ">"
                    . $value . '</a>';
             if ($align['left'] == 'right') {
-                $sText .= str_repeat('&nbsp;&nbsp;',$indent);
+                if ($indent > 0) {
+                    $sText .= '<span class="cv-thread-branch" style="opacity:0.65;margin-left:4px;font-size:12px;font-weight:bold;">↲</span>' . str_repeat('&nbsp;&nbsp;&nbsp;', $indent - 1);
+                }
             }
             echo $sText."</td>\n";
             break;

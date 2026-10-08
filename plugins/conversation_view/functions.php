@@ -968,181 +968,8 @@ function cv_get_conversation_thread($imapConnection, $currentMailbox, $currentUi
  */
 function cv_render_thread_view($imapConnection, $currentMailbox, $currentUid, $currentMessage, $placement = 'bottom')
 {
-    try {
-        $threadData = cv_get_conversation_thread($imapConnection, $currentMailbox, $currentUid, $currentMessage);
-        $messages = !empty($threadData['messages']) ? $threadData['messages'] : array();
-        $stats = !empty($threadData['stats']) ? $threadData['stats'] : array(
-            'total_count'    => 0,
-            'sent_count'     => 0,
-            'draft_count'    => 0,
-            'received_count' => 0,
-        );
-        $cleanSubject = !empty($threadData['subject']) ? $threadData['subject'] : '';
-
-        $baseUri = sqm_baseuri();
-        $cssUrl = $baseUri . 'plugins/conversation_view/conversation.css';
-        $jsUrl = $baseUri . 'plugins/conversation_view/conversation.js';
-        $ajaxUrl = $baseUri . 'plugins/conversation_view/ajax.php';
-        $token = function_exists('sm_generate_security_token') ? sm_generate_security_token() : '';
-
-        $replyAllUrl = $baseUri . 'src/compose.php?smaction_reply_all=1&passed_id=' . $currentUid . '&mailbox=' . urlencode($currentMailbox);
-        $replyUrl = $baseUri . 'src/compose.php?smaction_reply=1&passed_id=' . $currentUid . '&mailbox=' . urlencode($currentMailbox);
-
-    ?>
-    <!-- Conversation View Plugin CSS & JS -->
-    <link rel="stylesheet" type="text/css" href="<?php echo htmlspecialchars($cssUrl, ENT_QUOTES, 'UTF-8'); ?>">
-    <script type="text/javascript" src="<?php echo htmlspecialchars($jsUrl, ENT_QUOTES, 'UTF-8'); ?>"></script>
-
-    <div id="cv-conversation-thread" class="cv-thread-container" data-ajax-url="<?php echo htmlspecialchars($ajaxUrl, ENT_QUOTES, 'UTF-8'); ?>" data-token="<?php echo htmlspecialchars($token, ENT_QUOTES, 'UTF-8'); ?>">
-        <!-- Header -->
-        <div class="cv-thread-header">
-            <div class="cv-header-left">
-                <span class="cv-thread-icon">💬</span>
-                <span class="cv-thread-title"><?php echo _("Conversation Thread"); ?></span>
-                <span class="cv-badge cv-badge-total"><?php echo count($messages); ?> <?php echo count($messages) === 1 ? _("message") : _("messages"); ?></span>
-                
-                <?php if ($stats['sent_count'] > 0): ?>
-                    <span class="cv-badge cv-badge-sent">📤 <?php echo $stats['sent_count']; ?> <?php echo $stats['sent_count'] === 1 ? _("sent reply") : _("sent replies"); ?></span>
-                <?php endif; ?>
-
-                <?php if ($stats['draft_count'] > 0): ?>
-                    <span class="cv-badge cv-badge-draft">📝 <?php echo $stats['draft_count']; ?> <?php echo $stats['draft_count'] === 1 ? _("pending draft") : _("pending drafts"); ?></span>
-                <?php endif; ?>
-
-                <?php if ($stats['received_count'] > 0 && ($stats['sent_count'] > 0 || $stats['draft_count'] > 0)): ?>
-                    <span class="cv-badge cv-badge-total">📥 <?php echo $stats['received_count']; ?> <?php echo _("received"); ?></span>
-                <?php endif; ?>
-            </div>
-
-            <div class="cv-header-actions">
-                <a href="<?php echo htmlspecialchars($replyUrl, ENT_QUOTES, 'UTF-8'); ?>" class="cv-btn cv-btn-primary">
-                    <span>↩️</span> <?php echo _("Reply"); ?>
-                </a>
-                <a href="<?php echo htmlspecialchars($replyAllUrl, ENT_QUOTES, 'UTF-8'); ?>" class="cv-btn cv-btn-secondary">
-                    <span>👥</span> <?php echo _("Reply All"); ?>
-                </a>
-            </div>
-        </div>
-
-        <!-- Timeline List -->
-        <div class="cv-timeline">
-            <?php foreach ($messages as $idx => $m):
-                $cardClass = 'cv-card cv-card-' . $m['type'];
-                if ($m['is_current']) {
-                    $cardClass .= ' cv-card-current';
-                }
-                $cardId = 'cv-card-' . preg_replace('/[^a-zA-Z0-9_-]/', '', $m['mailbox']) . '-' . $m['uid'];
-            ?>
-            <div id="<?php echo $cardId; ?>" class="<?php echo $cardClass; ?>" data-mailbox="<?php echo htmlspecialchars($m['mailbox'], ENT_QUOTES, 'UTF-8'); ?>" data-uid="<?php echo $m['uid']; ?>">
-                <div class="cv-card-timeline-indicator">
-                    <div class="cv-indicator-dot"></div>
-                    <?php if ($idx < count($messages) - 1): ?>
-                        <div class="cv-indicator-line"></div>
-                    <?php endif; ?>
-                </div>
-
-                <div class="cv-card-inner">
-                    <!-- Card Header Summary -->
-                    <div class="cv-card-header" onclick="cvToggleCard('<?php echo $cardId; ?>')">
-                        <div class="cv-card-type-pill">
-                            <?php if ($m['type'] === 'sent'): ?>
-                                <span class="cv-pill-tag cv-pill-sent">📤 <?php echo _("Sent Reply"); ?></span>
-                            <?php elseif ($m['type'] === 'draft'): ?>
-                                <span class="cv-pill-tag cv-pill-draft">📝 <?php echo _("Draft Reply"); ?></span>
-                            <?php else: ?>
-                                <span class="cv-pill-tag cv-pill-received">📥 <?php echo htmlspecialchars($m['mailbox'], ENT_QUOTES, 'UTF-8'); ?></span>
-                            <?php endif; ?>
-
-                            <?php if ($m['is_current']): ?>
-                                <span class="cv-pill-tag cv-pill-current">● <?php echo _("Currently Viewing"); ?></span>
-                            <?php endif; ?>
-                        </div>
-
-                        <div class="cv-card-meta">
-                            <span class="cv-card-author">
-                                <?php if ($m['type'] === 'sent' || $m['type'] === 'draft'): ?>
-                                    <span class="cv-meta-label"><?php echo _("To:"); ?></span> <strong><?php echo htmlspecialchars($m['to_name'], ENT_QUOTES, 'UTF-8'); ?></strong>
-                                <?php else: ?>
-                                    <span class="cv-meta-label"><?php echo _("From:"); ?></span> <strong><?php echo htmlspecialchars($m['from_name'], ENT_QUOTES, 'UTF-8'); ?></strong>
-                                <?php endif; ?>
-                            </span>
-                            <span class="cv-card-date"><?php echo htmlspecialchars($m['date_str'], ENT_QUOTES, 'UTF-8'); ?></span>
-                            <span class="cv-card-expand-icon">▼</span>
-                        </div>
-                    </div>
-
-                    <!-- Card Preview Snippet -->
-                    <?php if (!empty($m['snippet'])): ?>
-                        <div class="cv-card-snippet">
-                            &ldquo;<?php echo htmlspecialchars($m['snippet'], ENT_QUOTES, 'UTF-8'); ?>&rdquo;
-                        </div>
-                    <?php endif; ?>
-
-                    <!-- Full Message Body (Expandable) -->
-                    <div class="cv-card-body" style="display: none;">
-                        <div class="cv-body-content">
-                            <div class="cv-loading-spinner"><?php echo _("Loading message body..."); ?></div>
-                        </div>
-                    </div>
-
-                    <!-- Card Actions Bar -->
-                    <div class="cv-card-footer">
-                        <div class="cv-footer-actions">
-                            <?php if ($m['type'] === 'draft'): ?>
-                                <a href="<?php echo htmlspecialchars($m['resume_url'], ENT_QUOTES, 'UTF-8'); ?>" class="cv-btn cv-btn-primary cv-btn-sm">
-                                    <span>✏️</span> <?php echo _("Resume Draft"); ?>
-                                </a>
-                                <button type="button" class="cv-btn cv-btn-danger cv-btn-sm" onclick="cvDiscardDraft(event, '<?php echo htmlspecialchars($m['mailbox'], ENT_QUOTES, 'UTF-8'); ?>', <?php echo $m['uid']; ?>, '<?php echo $cardId; ?>')">
-                                    <span>🗑️</span> <?php echo _("Discard Draft"); ?>
-                                </button>
-                            <?php elseif (!$m['is_current']): ?>
-                                <a href="<?php echo htmlspecialchars($m['view_url'], ENT_QUOTES, 'UTF-8'); ?>" class="cv-btn cv-btn-outline cv-btn-sm">
-                                    <span>👁️</span> <?php echo _("View Message"); ?>
-                                </a>
-                                <a href="<?php echo htmlspecialchars($m['reply_url'], ENT_QUOTES, 'UTF-8'); ?>" class="cv-btn cv-btn-outline cv-btn-sm">
-                                    <span>↩️</span> <?php echo _("Reply"); ?>
-                                </a>
-                            <?php else: ?>
-                                <a href="<?php echo htmlspecialchars($replyUrl, ENT_QUOTES, 'UTF-8'); ?>" class="cv-btn cv-btn-primary cv-btn-sm">
-                                    <span>↩️</span> <?php echo _("Reply"); ?>
-                                </a>
-                                <a href="<?php echo htmlspecialchars($replyAllUrl, ENT_QUOTES, 'UTF-8'); ?>" class="cv-btn cv-btn-secondary cv-btn-sm">
-                                    <span>👥</span> <?php echo _("Reply All"); ?>
-                                </a>
-                            <?php endif; ?>
-
-                            <button type="button" class="cv-btn cv-btn-ghost cv-btn-sm cv-toggle-btn" onclick="cvToggleCard('<?php echo $cardId; ?>')">
-                                <span>🔍</span> <?php echo _("Toggle Body"); ?>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <?php endforeach; ?>
-        </div>
-
-        <?php if (count($messages) <= 1 && empty($stats['sent_count']) && empty($stats['draft_count'])): ?>
-            <!-- Initial message hint -->
-            <div class="cv-single-message-hint">
-                <div class="cv-hint-left">
-                    <div class="cv-hint-icon">💬</div>
-                    <div class="cv-hint-content">
-                        <div class="cv-hint-title"><?php echo _("Initial message in this conversation"); ?></div>
-                        <div class="cv-hint-desc"><?php echo _("No sent replies or pending drafts have been linked to this thread yet. When you reply or save a draft, it will automatically appear here."); ?></div>
-                    </div>
-                </div>
-                <div class="cv-hint-action">
-                    <a href="<?php echo htmlspecialchars($replyUrl, ENT_QUOTES, 'UTF-8'); ?>" class="cv-btn cv-btn-primary cv-btn-sm">
-                        <span>↩️</span> <?php echo _("Send Reply"); ?>
-                    </a>
-                </div>
-            </div>
-        <?php endif; ?>
-    </div>
-    <?php
-    } catch (\Throwable $e) {
-        error_log('cv_render_thread_view error: ' . $e->getMessage());
-    }
+    // Deprecated and removed: conversation thread when opening a mail is disabled per user request
+    return;
 }
 
 /**
@@ -1320,6 +1147,633 @@ function cv_mailbox_annotate_messages(&$aMessages, $currentMailbox, $imapConnect
 
     } catch (\Throwable $e) {
         error_log('cv_mailbox_annotate_messages error: ' . $e->getMessage());
+    } finally {
+        if ($imapConnection && !empty($currentMailbox)) {
+            @sqimap_mailbox_select($imapConnection, $currentMailbox, false);
+        }
+    }
+}
+
+/**
+ * Build interactive Mailbox Thread View with replies and drafts nested under emails.
+ *
+ * In the inbox and subfolders, groups messages by conversation thread.
+ * For each conversation thread, identifies and weaves:
+ * - Related sent replies from the user's Sent folder(s)
+ * - Related pending drafts from the user's Drafts folder(s)
+ * - In-folder reply chains within the current mailbox
+ *
+ * Formats every child reply and draft as a dedicated row nested directly under
+ * its parent message with visual branch connectors (↳), proper links (compose.php for drafts,
+ * read_body.php for sent replies), timestamps, senders, and thread indentation.
+ *
+ * @param array &$aMessages Reference to message rows in template
+ * @param string $currentMailbox Current mailbox name
+ * @param resource $imapConnection IMAP connection handle
+ * @param object|null $tpl Template instance
+ */
+function cv_mailbox_thread_view(&$aMessages, $currentMailbox, $imapConnection, $tpl = null)
+{
+    global $data_dir, $username, $iAccount;
+
+    if (empty($aMessages) || !is_array($aMessages) || !$imapConnection) {
+        return;
+    }
+
+    // Do not cross-pollinate if currently viewing Sent or Drafts folders directly
+    if (cv_is_draft_mailbox($currentMailbox) || cv_is_sent_mailbox($currentMailbox)) {
+        return;
+    }
+
+    $search_sent = (bool) getPref($data_dir, $username, 'cv_search_sent', 1);
+    $search_drafts = (bool) getPref($data_dir, $username, 'cv_search_drafts', 1);
+
+    $baseUri = sqm_baseuri();
+    $acctParam = isset($iAccount) ? (int)$iAccount : (isset($GLOBALS['account']) ? (int)$GLOBALS['account'] : 0);
+
+    // 1. Gather all message headers and identifiers for page messages
+    $pageUids = array();
+    foreach ($aMessages as $u => $msgData) {
+        if (is_numeric($u)) {
+            $pageUids[] = (int)$u;
+        }
+    }
+
+    if (empty($pageUids)) {
+        return;
+    }
+
+    try {
+        // Ensure we have complete threading headers for all page messages
+        $pageHeaders = array();
+        if (isset($GLOBALS['aMailbox']['MSG_HEADERS']) && is_array($GLOBALS['aMailbox']['MSG_HEADERS'])) {
+            foreach ($pageUids as $u) {
+                if (isset($GLOBALS['aMailbox']['MSG_HEADERS'][$u])) {
+                    $pageHeaders[$u] = $GLOBALS['aMailbox']['MSG_HEADERS'][$u];
+                }
+            }
+        }
+
+        // Check if any headers lack message-id / in-reply-to / references
+        $missingUids = array();
+        foreach ($pageUids as $u) {
+            if (empty($pageHeaders[$u]) || !isset($pageHeaders[$u]['message-id'])) {
+                $missingUids[] = $u;
+            }
+        }
+
+        if (!empty($missingUids)) {
+            $fetched = sqimap_get_small_header_list(
+                $imapConnection,
+                $missingUids,
+                array('Date', 'To', 'From', 'Subject', 'Message-ID', 'In-Reply-To', 'References', 'X-SM-Flag-Reply', 'Content-Type'),
+                array('FLAGS', 'RFC822.SIZE', 'INTERNALDATE')
+            );
+            if (!empty($fetched) && is_array($fetched)) {
+                foreach ($fetched as $fu => $fhdr) {
+                    $pageHeaders[$fu] = $fhdr;
+                    if (isset($GLOBALS['aMailbox']['MSG_HEADERS'])) {
+                        $GLOBALS['aMailbox']['MSG_HEADERS'][$fu] = $fhdr;
+                    }
+                }
+            }
+        }
+
+        // Map page messages
+        $pageNodes = array();
+        $midToUid = array();
+        $cleanSubjToUids = array();
+
+        foreach ($pageUids as $uid) {
+            $hdr = isset($pageHeaders[$uid]) ? $pageHeaders[$uid] : array();
+            $rawMid = !empty($hdr['message-id']) ? $hdr['message-id'] : '';
+            $mids = cv_extract_ids($rawMid);
+            $mid = !empty($mids[0]) ? $mids[0] : '';
+
+            $irts = !empty($hdr['in-reply-to']) ? cv_extract_ids($hdr['in-reply-to']) : array();
+            $refs = !empty($hdr['references']) ? cv_extract_ids($hdr['references']) : array();
+
+            $rawSubj = !empty($hdr['subject'])
+                ? decodeHeader($hdr['subject'], false, false, true)
+                : (isset($aMessages[$uid]['columns'][SQM_COL_SUBJ]['title']) ? $aMessages[$uid]['columns'][SQM_COL_SUBJ]['title'] : '');
+            $cleanSubj = mb_strtolower(cv_clean_subject($rawSubj), 'UTF-8');
+
+            $dateStr = !empty($hdr['date']) ? $hdr['date'] : '';
+            $timestamp = !empty($dateStr) ? strtotime($dateStr) : (isset($hdr['internaldate']) ? strtotime($hdr['internaldate']) : 0);
+            if ($timestamp <= 0) $timestamp = time();
+
+            $flagReply = !empty($hdr['x-sm-flag-reply']) ? trim($hdr['x-sm-flag-reply']) : '';
+
+            $pageNodes[$uid] = array(
+                'uid'         => $uid,
+                'mid'         => $mid,
+                'irts'        => $irts,
+                'refs'        => $refs,
+                'clean_subj'  => $cleanSubj,
+                'raw_subj'    => $rawSubj,
+                'timestamp'   => $timestamp,
+                'from'        => !empty($hdr['from']) ? $hdr['from'] : '',
+                'to'          => !empty($hdr['to']) ? $hdr['to'] : '',
+                'flag_reply'  => $flagReply,
+                'row'         => $aMessages[$uid],
+            );
+
+            if (!empty($mid)) {
+                $midToUid[$mid] = $uid;
+            }
+            if (mb_strlen($cleanSubj, 'UTF-8') >= 3) {
+                $cleanSubjToUids[$cleanSubj][] = $uid;
+            }
+        }
+
+        // 2. Discover related Sent Replies from Sent folder(s)
+        $sentRepliesByParent = array();
+        if ($search_sent) {
+            $sentBoxes = cv_resolve_all_special_folders($imapConnection, 'sent');
+            foreach ($sentBoxes as $sentBox) {
+                if (empty($sentBox) || strcasecmp($sentBox, $currentMailbox) === 0) continue;
+                $sInfo = sqimap_mailbox_select($imapConnection, $sentBox, false);
+                if (empty($sInfo) || empty($sInfo['EXISTS']) || $sInfo['EXISTS'] <= 0) continue;
+
+                $candSentUids = array();
+
+                // Recent sent UIDs
+                $allSent = cv_run_uid_search($imapConnection, 'ALL');
+                if (!empty($allSent) && is_array($allSent)) {
+                    $sliceSent = (count($allSent) > 60) ? array_slice($allSent, -60) : $allSent;
+                    foreach ($sliceSent as $su) {
+                        if (is_numeric($su)) $candSentUids[(int)$su] = true;
+                    }
+                }
+
+                // Search by Message-IDs in References or In-Reply-To
+                foreach (array_keys($midToUid) as $pmid) {
+                    if (strlen($pmid) < 4) continue;
+                    $escPmid = addcslashes($pmid, '"\\');
+                    $resIrt = cv_run_uid_search($imapConnection, 'HEADER In-Reply-To "' . $escPmid . '"');
+                    if (!empty($resIrt) && is_array($resIrt)) {
+                        foreach ($resIrt as $su) if (is_numeric($su)) $candSentUids[(int)$su] = true;
+                    }
+                    $resRef = cv_run_uid_search($imapConnection, 'HEADER References "' . $escPmid . '"');
+                    if (!empty($resRef) && is_array($resRef)) {
+                        foreach ($resRef as $su) if (is_numeric($su)) $candSentUids[(int)$su] = true;
+                    }
+                }
+
+                if (!empty($candSentUids)) {
+                    $targetSentUids = array_keys($candSentUids);
+                    $sentHdrs = sqimap_get_small_header_list(
+                        $imapConnection,
+                        $targetSentUids,
+                        array('Date', 'To', 'From', 'Subject', 'Message-ID', 'In-Reply-To', 'References', 'Content-Type', 'X-SM-Flag-Reply'),
+                        array('FLAGS', 'RFC822.SIZE', 'INTERNALDATE')
+                    );
+
+                    if (!empty($sentHdrs) && is_array($sentHdrs)) {
+                        foreach ($sentHdrs as $suid => $shdr) {
+                            $sRawMid = !empty($shdr['message-id']) ? $shdr['message-id'] : '';
+                            $sMids = cv_extract_ids($sRawMid);
+                            $sMid = !empty($sMids[0]) ? $sMids[0] : '';
+                            $sIrts = !empty($shdr['in-reply-to']) ? cv_extract_ids($shdr['in-reply-to']) : array();
+                            $sRefs = !empty($shdr['references']) ? cv_extract_ids($shdr['references']) : array();
+                            $sRawSubj = !empty($shdr['subject']) ? decodeHeader($shdr['subject'], false, false, true) : '';
+                            $sCleanSubj = mb_strtolower(cv_clean_subject($sRawSubj), 'UTF-8');
+                            $sDateStr = !empty($shdr['date']) ? $shdr['date'] : '';
+                            $sTimestamp = !empty($sDateStr) ? strtotime($sDateStr) : (isset($shdr['internaldate']) ? strtotime($shdr['internaldate']) : 0);
+                            if ($sTimestamp <= 0) $sTimestamp = time();
+                            $sFlagReply = !empty($shdr['x-sm-flag-reply']) ? trim($shdr['x-sm-flag-reply']) : '';
+
+                            // Determine which parent message on page this sent reply belongs to
+                            $matchedParentUid = null;
+
+                            // Match A: In-Reply-To
+                            foreach ($sIrts as $irt) {
+                                if (isset($midToUid[$irt])) {
+                                    $matchedParentUid = $midToUid[$irt];
+                                    break;
+                                }
+                            }
+
+                            // Match B: References
+                            if (!$matchedParentUid) {
+                                foreach ($sRefs as $ref) {
+                                if (isset($midToUid[$ref])) {
+                                    $matchedParentUid = $midToUid[$ref];
+                                    break;
+                                }
+                            }
+                        }
+
+                        // Match C: X-SM-Flag-Reply (origAction::origUid::origBox)
+                        if (!$matchedParentUid && !empty($sFlagReply)) {
+                            $fparts = explode('::', $sFlagReply, 3);
+                            if (!empty($fparts[1]) && is_numeric($fparts[1])) {
+                                $pCandidate = (int)$fparts[1];
+                                $pBox = isset($fparts[2]) ? trim($fparts[2]) : '';
+                                if (isset($pageNodes[$pCandidate]) && (empty($pBox) || strcasecmp($pBox, $currentMailbox) === 0)) {
+                                    $matchedParentUid = $pCandidate;
+                                }
+                            }
+                        }
+
+                        // Match D: Clean subject match (must be newer than parent)
+                        if (!$matchedParentUid && mb_strlen($sCleanSubj, 'UTF-8') >= 3 && isset($cleanSubjToUids[$sCleanSubj])) {
+                            $bestCandidate = null;
+                            $bestTimeDiff = PHP_INT_MAX;
+                            foreach ($cleanSubjToUids[$sCleanSubj] as $candUid) {
+                                $pTime = $pageNodes[$candUid]['timestamp'];
+                                if ($sTimestamp >= ($pTime - 60)) {
+                                    $diff = $sTimestamp - $pTime;
+                                    if ($diff < $bestTimeDiff) {
+                                        $bestTimeDiff = $diff;
+                                        $bestCandidate = $candUid;
+                                    }
+                                }
+                            }
+                            if ($bestCandidate !== null) {
+                                $matchedParentUid = $bestCandidate;
+                            }
+                        }
+
+                        if ($matchedParentUid !== null) {
+                            $hasAttach = (isset($shdr['content-type']) && is_array($shdr['content-type']) && $shdr['content-type'][0] === 'multipart');
+                            $sentRepliesByParent[$matchedParentUid][] = array(
+                                'uid'            => (int)$suid,
+                                'mailbox'        => $sentBox,
+                                'mid'            => $sMid,
+                                'raw_subj'       => $sRawSubj,
+                                'clean_subj'     => $sCleanSubj,
+                                'to'             => !empty($shdr['to']) ? $shdr['to'] : '',
+                                'from'           => !empty($shdr['from']) ? $shdr['from'] : '',
+                                'timestamp'      => $sTimestamp,
+                                'size'           => isset($shdr['rfc822.size']) ? (int)$shdr['rfc822.size'] : 0,
+                                'has_attachment' => $hasAttach,
+                            );
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // 3. Discover related Pending Drafts from Drafts folder(s)
+    $draftsByParent = array();
+    if ($search_drafts) {
+        $draftBoxes = cv_resolve_all_special_folders($imapConnection, 'draft');
+        foreach ($draftBoxes as $draftBox) {
+            if (empty($draftBox) || strcasecmp($draftBox, $currentMailbox) === 0) continue;
+            $dInfo = sqimap_mailbox_select($imapConnection, $draftBox, false);
+            if (empty($dInfo) || empty($dInfo['EXISTS']) || $dInfo['EXISTS'] <= 0) continue;
+
+            $allDrafts = cv_run_uid_search($imapConnection, 'ALL');
+            if (!empty($allDrafts) && is_array($allDrafts)) {
+                $targetDraftUids = (count($allDrafts) > 60) ? array_slice($allDrafts, -60) : $allDrafts;
+                $draftHdrs = sqimap_get_small_header_list(
+                    $imapConnection,
+                    $targetDraftUids,
+                    array('Date', 'To', 'From', 'Subject', 'Message-ID', 'In-Reply-To', 'References', 'X-SM-Flag-Reply', 'Content-Type'),
+                    array('FLAGS', 'RFC822.SIZE', 'INTERNALDATE')
+                );
+
+                if (!empty($draftHdrs) && is_array($draftHdrs)) {
+                    foreach ($draftHdrs as $duid => $dhdr) {
+                        $dRawMid = !empty($dhdr['message-id']) ? $dhdr['message-id'] : '';
+                        $dMids = cv_extract_ids($dRawMid);
+                        $dMid = !empty($dMids[0]) ? $dMids[0] : '';
+                        $dIrts = !empty($dhdr['in-reply-to']) ? cv_extract_ids($dhdr['in-reply-to']) : array();
+                        $dRefs = !empty($dhdr['references']) ? cv_extract_ids($dhdr['references']) : array();
+                        $dRawSubj = !empty($dhdr['subject']) ? decodeHeader($dhdr['subject'], false, false, true) : '';
+                        $dCleanSubj = mb_strtolower(cv_clean_subject($dRawSubj), 'UTF-8');
+                        $dDateStr = !empty($dhdr['date']) ? $dhdr['date'] : '';
+                        $dTimestamp = !empty($dDateStr) ? strtotime($dDateStr) : (isset($dhdr['internaldate']) ? strtotime($dhdr['internaldate']) : 0);
+                        if ($dTimestamp <= 0) $dTimestamp = time();
+                        $dFlagReply = !empty($dhdr['x-sm-flag-reply']) ? trim($dhdr['x-sm-flag-reply']) : '';
+
+                        $matchedParentUid = null;
+
+                        // Match A: X-SM-Flag-Reply
+                        if (!empty($dFlagReply)) {
+                            $fparts = explode('::', $dFlagReply, 3);
+                            if (!empty($fparts[1]) && is_numeric($fparts[1])) {
+                                $pCandidate = (int)$fparts[1];
+                                $pBox = isset($fparts[2]) ? trim($fparts[2]) : '';
+                                if (isset($pageNodes[$pCandidate]) && (empty($pBox) || strcasecmp($pBox, $currentMailbox) === 0)) {
+                                    $matchedParentUid = $pCandidate;
+                                }
+                            }
+                        }
+
+                        // Match B: In-Reply-To
+                        if (!$matchedParentUid) {
+                            foreach ($dIrts as $irt) {
+                                if (isset($midToUid[$irt])) {
+                                    $matchedParentUid = $midToUid[$irt];
+                                    break;
+                                }
+                            }
+                        }
+
+                        // Match C: References
+                        if (!$matchedParentUid) {
+                            foreach ($dRefs as $ref) {
+                                if (isset($midToUid[$ref])) {
+                                    $matchedParentUid = $midToUid[$ref];
+                                    break;
+                                }
+                            }
+                        }
+
+                        // Match D: Clean subject match
+                        if (!$matchedParentUid && mb_strlen($dCleanSubj, 'UTF-8') >= 3 && isset($cleanSubjToUids[$dCleanSubj])) {
+                            $matchedParentUid = end($cleanSubjToUids[$dCleanSubj]);
+                        }
+
+                        if ($matchedParentUid !== null) {
+                            $hasAttach = (isset($dhdr['content-type']) && is_array($dhdr['content-type']) && $dhdr['content-type'][0] === 'multipart');
+                            $draftsByParent[$matchedParentUid][] = array(
+                                'uid'            => (int)$duid,
+                                'mailbox'        => $draftBox,
+                                'mid'            => $dMid,
+                                'raw_subj'       => $dRawSubj,
+                                'clean_subj'     => $dCleanSubj,
+                                'to'             => !empty($dhdr['to']) ? $dhdr['to'] : '',
+                                'from'           => !empty($dhdr['from']) ? $dhdr['from'] : '',
+                                'timestamp'      => $dTimestamp,
+                                'size'           => isset($dhdr['rfc822.size']) ? (int)$dhdr['rfc822.size'] : 0,
+                                'has_attachment' => $hasAttach,
+                            );
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Always restore selection to current mailbox immediately!
+    @sqimap_mailbox_select($imapConnection, $currentMailbox, false);
+
+    // 4. Discover in-folder parent-child relationships between page messages
+    $inFolderChildren = array();
+    $hasInFolderParent = array();
+
+    foreach ($pageNodes as $uid => $node) {
+        $parentFound = null;
+
+        // Check In-Reply-To
+        foreach ($node['irts'] as $irt) {
+            if (isset($midToUid[$irt]) && $midToUid[$irt] !== $uid) {
+                $parentFound = $midToUid[$irt];
+                break;
+            }
+        }
+
+        // Check References
+        if (!$parentFound) {
+            foreach ($node['refs'] as $ref) {
+                if (isset($midToUid[$ref]) && $midToUid[$ref] !== $uid) {
+                    $parentFound = $midToUid[$ref];
+                    break;
+                }
+            }
+        }
+
+        // Check Subject matching (if starts with Re:/Fwd: and newer)
+        if (!$parentFound && mb_strlen($node['clean_subj'], 'UTF-8') >= 3 && isset($cleanSubjToUids[$node['clean_subj']])) {
+            $isRe = (bool) preg_match('/^\s*(re|fwd|fw|aw|antw|wg)\s*:/i', $node['raw_subj']);
+            if ($isRe) {
+                foreach ($cleanSubjToUids[$node['clean_subj']] as $candUid) {
+                    if ($candUid !== $uid && $pageNodes[$candUid]['timestamp'] < $node['timestamp']) {
+                        $parentFound = $candUid;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if ($parentFound !== null) {
+            $inFolderChildren[$parentFound][] = $uid;
+            $hasInFolderParent[$uid] = true;
+        }
+    }
+
+    // 5. Build final flattened thread list with indents and woven replies/drafts
+    $newFormattedMessages = array();
+    $processedPageUids = array();
+
+    $appendNodeAndChildren = function ($nodeUid, $indent) use (
+        &$appendNodeAndChildren,
+        &$newFormattedMessages,
+        &$processedPageUids,
+        &$pageNodes,
+        &$inFolderChildren,
+        &$sentRepliesByParent,
+        &$draftsByParent,
+        $baseUri,
+        $acctParam,
+        $currentMailbox
+    ) {
+        if (!isset($pageNodes[$nodeUid]) || isset($processedPageUids[$nodeUid])) {
+            return;
+        }
+        $processedPageUids[$nodeUid] = true;
+        $node = $pageNodes[$nodeUid];
+        $row = $node['row'];
+
+        // Set subject indentation
+        if (isset($row['columns'][SQM_COL_SUBJ])) {
+            $row['columns'][SQM_COL_SUBJ]['indent'] = $indent;
+        }
+
+        $newFormattedMessages[$nodeUid] = $row;
+
+        // Collect all direct children for this node:
+        // A) In-folder replies
+        // B) Sent replies
+        // C) Drafts
+        $children = array();
+
+        // In-folder replies
+        if (!empty($inFolderChildren[$nodeUid])) {
+            foreach ($inFolderChildren[$nodeUid] as $childUid) {
+                if (isset($pageNodes[$childUid])) {
+                    $children[] = array(
+                        'type'      => 'in_folder',
+                        'timestamp' => $pageNodes[$childUid]['timestamp'],
+                        'uid'       => $childUid,
+                    );
+                }
+            }
+        }
+
+        // Sent replies
+        if (!empty($sentRepliesByParent[$nodeUid])) {
+            foreach ($sentRepliesByParent[$nodeUid] as $sData) {
+                $children[] = array(
+                    'type'      => 'sent',
+                    'timestamp' => $sData['timestamp'],
+                    'data'      => $sData,
+                );
+            }
+        }
+
+        // Drafts
+        if (!empty($draftsByParent[$nodeUid])) {
+            foreach ($draftsByParent[$nodeUid] as $dData) {
+                $children[] = array(
+                    'type'      => 'draft',
+                    'timestamp' => $dData['timestamp'] + 999999, // position active drafts at end of subthread
+                    'data'      => $dData,
+                );
+            }
+        }
+
+        // Sort children chronologically
+        usort($children, function ($a, $b) {
+            return $a['timestamp'] - $b['timestamp'];
+        });
+
+        $childIndent = min(5, $indent + 1);
+
+        foreach ($children as $child) {
+            if ($child['type'] === 'in_folder') {
+                $appendNodeAndChildren($child['uid'], $childIndent);
+            } elseif ($child['type'] === 'sent') {
+                $s = $child['data'];
+                $sentKey = 'cv_sent_' . $s['uid'] . '_' . substr(md5($s['mailbox']), 0, 6);
+
+                $readUrl = $baseUri . 'src/read_body.php?account=' . $acctParam . '&mailbox=' . urlencode($s['mailbox']) . '&passed_id=' . (int)$s['uid'] . '&startMessage=1';
+
+                $toStr = !empty($s['to']) ? decodeHeader($s['to'], false, false, true) : _("Recipient");
+                $toParsed = cv_format_address($toStr);
+                $toName = !empty($toParsed['name']) ? $toParsed['name'] : (!empty($toParsed['email']) ? $toParsed['email'] : $toStr);
+
+                $fromHtml = '<span class="cv-mb-badge cv-mb-badge-sent">📤 ' . _("Sent") . '</span> ' . _("Me") . (!empty($toName) ? ' &rarr; ' . htmlspecialchars($toName, ENT_QUOTES, 'UTF-8') : '');
+                $subjTitle = !empty($s['raw_subj']) ? $s['raw_subj'] : _("(no subject)");
+                $subjHtml = '<span class="cv-mb-badge cv-mb-badge-sent">📤 ' . _("Sent") . '</span> ' . htmlspecialchars($subjTitle, ENT_QUOTES, 'UTF-8');
+
+                $sentRow = array(
+                    'is_cross_folder' => true,
+                    'is_sent_reply'   => true,
+                    'row_class'       => 'cv-thread-child-row cv-thread-sent-reply',
+                    'columns'         => array(
+                        SQM_COL_CHECK => array(
+                            'value'  => '',
+                            'indent' => $childIndent,
+                        ),
+                        SQM_COL_FROM => array(
+                            'value'  => $fromHtml,
+                            'title'  => sprintf(_("Sent reply to %s"), $toStr),
+                            'link'   => $readUrl,
+                        ),
+                        SQM_COL_SUBJ => array(
+                            'value'  => $subjHtml,
+                            'title'  => $subjTitle,
+                            'link'   => $readUrl,
+                            'indent' => $childIndent,
+                        ),
+                        SQM_COL_DATE => array(
+                            'value' => function_exists('getDateString') ? getDateString($s['timestamp']) : date('Y-m-d H:i', $s['timestamp']),
+                            'title' => function_exists('getDateString') ? getDateString($s['timestamp'], true) : date('r', $s['timestamp']),
+                        ),
+                        SQM_COL_FLAGS => array(
+                            'value' => array(
+                                'seen'      => true,
+                                'deleted'   => false,
+                                'answered'  => false,
+                                'forwarded' => false,
+                                'flagged'   => false,
+                                'draft'     => false,
+                            ),
+                        ),
+                        SQM_COL_SIZE => array(
+                            'value' => function_exists('show_readable_size') ? show_readable_size($s['size']) : '',
+                        ),
+                        SQM_COL_ATTACHMENT => array(
+                            'value' => $s['has_attachment'],
+                        ),
+                    ),
+                );
+
+                $newFormattedMessages[$sentKey] = $sentRow;
+
+            } elseif ($child['type'] === 'draft') {
+                $d = $child['data'];
+                $draftKey = 'cv_draft_' . $d['uid'] . '_' . substr(md5($d['mailbox']), 0, 6);
+
+                $resumeUrl = $baseUri . 'src/compose.php?mailbox=' . urlencode($d['mailbox']) . '&passed_id=' . (int)$d['uid'] . '&smaction=draft';
+
+                $subjTitle = !empty($d['raw_subj']) ? $d['raw_subj'] : _("(draft response)");
+                $subjHtml = '<span class="cv-mb-badge cv-mb-badge-draft">📝 ' . _("Draft") . '</span> ' . htmlspecialchars($subjTitle, ENT_QUOTES, 'UTF-8');
+                $fromHtml = '<span class="cv-mb-badge cv-mb-badge-draft">📝 ' . _("Draft") . '</span>';
+
+                $draftRow = array(
+                    'is_cross_folder' => true,
+                    'is_draft'        => true,
+                    'row_class'       => 'cv-thread-child-row cv-thread-draft',
+                    'columns'         => array(
+                        SQM_COL_CHECK => array(
+                            'value'  => '',
+                            'indent' => $childIndent,
+                        ),
+                        SQM_COL_FROM => array(
+                            'value'  => $fromHtml,
+                            'title'  => _("Pending draft response (click to resume)"),
+                            'link'   => $resumeUrl,
+                        ),
+                        SQM_COL_SUBJ => array(
+                            'value'  => $subjHtml,
+                            'title'  => sprintf(_("Click to resume draft: %s"), $subjTitle),
+                            'link'   => $resumeUrl,
+                            'indent' => $childIndent,
+                        ),
+                        SQM_COL_DATE => array(
+                            'value' => function_exists('getDateString') ? getDateString($d['timestamp']) : date('Y-m-d H:i', $d['timestamp']),
+                            'title' => function_exists('getDateString') ? getDateString($d['timestamp'], true) : date('r', $d['timestamp']),
+                        ),
+                        SQM_COL_FLAGS => array(
+                            'value' => array(
+                                'seen'      => true,
+                                'deleted'   => false,
+                                'answered'  => false,
+                                'forwarded' => false,
+                                'flagged'   => false,
+                                'draft'     => true,
+                            ),
+                        ),
+                        SQM_COL_SIZE => array(
+                            'value' => function_exists('show_readable_size') ? show_readable_size($d['size']) : '',
+                        ),
+                        SQM_COL_ATTACHMENT => array(
+                            'value' => $d['has_attachment'],
+                        ),
+                    ),
+                );
+
+                $newFormattedMessages[$draftKey] = $draftRow;
+            }
+        }
+    };
+
+    // Process roots in page order
+    foreach ($pageUids as $uid) {
+        if (empty($hasInFolderParent[$uid]) && !isset($processedPageUids[$uid])) {
+            $appendNodeAndChildren($uid, 0);
+        }
+    }
+
+    // Safety fallback: append any unprocessed messages
+    foreach ($pageUids as $uid) {
+        if (!isset($processedPageUids[$uid])) {
+            $appendNodeAndChildren($uid, 0);
+        }
+    }
+
+    $aMessages = $newFormattedMessages;
+    if ($tpl) {
+        $tpl->assign('aMessages', $newFormattedMessages);
+    }
+    } catch (\Throwable $e) {
+        error_log('cv_mailbox_thread_view error: ' . $e->getMessage());
     } finally {
         if ($imapConnection && !empty($currentMailbox)) {
             @sqimap_mailbox_select($imapConnection, $currentMailbox, false);
