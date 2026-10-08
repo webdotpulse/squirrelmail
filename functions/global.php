@@ -562,8 +562,20 @@ function sqsession_start() {
     // has become just a passthru to this function, so the sqsetcookie()
     // below is called every time, even after headers have already been sent
     //
-    if (!headers_sent())
-       sqsetcookie(session_name(),$session_id,false,$base_uri);
+    if (!headers_sent()) {
+       $cookie_lifetime = 0;
+       $is_remembered = !empty($_COOKIE['sm_remember']) || (isset($_SESSION['remember_me']) && $_SESSION['remember_me']);
+       if ($is_remembered) {
+           $cookie_lifetime = time() + 2592000;
+           if (isset($_COOKIE['key'])) {
+               sqsetcookie('key', $_COOKIE['key'], $cookie_lifetime, $base_uri);
+           }
+           if (isset($_COOKIE['sm_remember'])) {
+               sqsetcookie('sm_remember', '1', $cookie_lifetime, $base_uri);
+           }
+       }
+       sqsetcookie(session_name(), $session_id, $cookie_lifetime, $base_uri);
+    }
 }
 
 
@@ -611,10 +623,11 @@ function sqsetcookie($sName, $sValue='deleted', $iExpire=0, $sPath="", $sDomain=
     // naive per-request name/value cache and only set the cookie
     // if its value is changing (or never seen before)
     static $cookies = array();
-    if (isset($cookies[$sName]) && $cookies[$sName] === $sValue)
+    $cookie_cache_key = $sName . '|' . (int)$iExpire;
+    if (isset($cookies[$cookie_cache_key]) && $cookies[$cookie_cache_key] === $sValue)
         return;
     else
-        $cookies[$sName] = $sValue;
+        $cookies[$cookie_cache_key] = $sValue;
 
 
     // if we have a secure connection then limit the cookies to https only.

@@ -70,6 +70,23 @@ function logout_error( $errString, $errTitle = '' ) {
     $temp = array(&$errString, &$errTitle, &$login_link);
     do_hook('logout_error', $temp);
 
+    // If the error message is "You must be logged in to access this page." or session expired notice,
+    // skip the intermediate notice screen and go directly to the login page
+    if ($errString === _("You must be logged in to access this page.") ||
+        $errString === "You must be logged in to access this page." ||
+        $errString === _("Your session has expired, but will be resumed after logging in again.") ||
+        $errString === "Your session has expired, but will be resumed after logging in again.") {
+        $login_target = !empty($login_link['URI']) ? $login_link['URI'] : ($base_uri . 'src/login.php');
+        if (!headers_sent()) {
+            header('Location: ' . $login_target);
+            header('X-Redirect-Location: ' . $login_target);
+            exit;
+        } else {
+            echo '<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0;url=' . htmlspecialchars($login_target, ENT_QUOTES) . '"><script>top.location.href=' . json_encode($login_target) . ';</script></head><body></body></html>';
+            exit;
+        }
+    }
+
     if ( $errTitle == '' ) {
         $errTitle = $errString;
     }

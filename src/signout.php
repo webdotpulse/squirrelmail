@@ -37,6 +37,8 @@ $login_uri = 'login.php';
 
 do_hook('logout', $login_uri);
 
+sqsetcookie('sm_remember', '', 1, $base_uri);
+sqsetcookie('key', '', 1, $base_uri);
 sqsession_destroy();
 
 // Redirect directly to the login page, skipping the signout confirmation page

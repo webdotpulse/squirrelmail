@@ -3644,6 +3644,97 @@ body.sm-login-page {
   background-color: var(--sm-hover-bg);
 }
 
+/* Remember Me Checkbox */
+.sm-remember-group {
+  margin-top: 4px;
+  margin-bottom: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.sm-remember-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 13.5px;
+  color: var(--sm-text-secondary);
+  font-weight: 500;
+  transition: color var(--sm-transition-fast);
+}
+
+.sm-remember-label:hover {
+  color: var(--sm-text-primary);
+}
+
+.sm-remember-label input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  margin: 0;
+  pointer-events: none;
+}
+
+.sm-checkbox-box {
+  width: 19px;
+  height: 19px;
+  border-radius: var(--sm-radius-sm);
+  border: 1.5px solid var(--sm-border);
+  background-color: var(--sm-bg-canvas);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--sm-transition-fast);
+  flex-shrink: 0;
+}
+
+[data-theme="dark"] .sm-checkbox-box {
+  background-color: #0b0f19;
+  border-color: #26334d;
+}
+
+.sm-remember-label input[type="checkbox"]:focus-visible + .sm-checkbox-box {
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
+  border-color: var(--sm-primary);
+}
+
+.sm-remember-label input[type="checkbox"]:checked + .sm-checkbox-box {
+  background-color: var(--sm-primary);
+  border-color: var(--sm-primary);
+  color: #ffffff;
+}
+
+.sm-checkbox-box .sm-check-icon {
+  stroke-dasharray: 24;
+  stroke-dashoffset: 24;
+  transition: stroke-dashoffset 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0;
+}
+
+.sm-remember-label input[type="checkbox"]:checked + .sm-checkbox-box .sm-check-icon {
+  stroke-dashoffset: 0;
+  opacity: 1;
+}
+
+.sm-remember-text {
+  font-size: 13.5px;
+  line-height: 1.4;
+}
+
+.sm-login-install-btn {
+  background: rgba(37, 99, 235, 0.1);
+  color: var(--sm-primary);
+  border-color: var(--sm-primary);
+}
+
+.sm-login-install-btn:hover {
+  background: var(--sm-primary);
+  color: #ffffff;
+}
+
 /* Submit Button */
 .sm-btn-login {
   width: 100%;

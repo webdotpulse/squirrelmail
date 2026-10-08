@@ -41,20 +41,22 @@ if($imap_auth_mech == 'login') {
      * server address and not mapping. See sqimap_get_user_server()
      */
     if (substr($imapServerAddress, 0, 4) != "map:") {
-        $imap = sqimap_create_stream($imapServerAddress, $imapPort, $use_imap_tls);
-        $logindisabled = sqimap_capability($imap,'LOGINDISABLED');
-        sqimap_logout($imap);
-        if ($logindisabled) {
-            $string = _("The IMAP server is reporting that plain text logins are disabled.").'<br />'.
-                _("Using SCRAM, CRAM-MD5, or DIGEST-MD5 authentication instead may work.").'<br />';
-            if (!$use_imap_tls) {
-                $string .= _("Also, the use of TLS may allow SquirrelMail to login.").'<br />';
+        $imap = sqimap_create_stream($imapServerAddress, $imapPort, $use_imap_tls, array(), true);
+        if ($imap) {
+            $logindisabled = sqimap_capability($imap,'LOGINDISABLED');
+            sqimap_logout($imap);
+            if ($logindisabled) {
+                $string = _("The IMAP server is reporting that plain text logins are disabled.").'<br />'.
+                    _("Using SCRAM, CRAM-MD5, or DIGEST-MD5 authentication instead may work.").'<br />';
+                if (!$use_imap_tls) {
+                    $string .= _("Also, the use of TLS may allow SquirrelMail to login.").'<br />';
+                }
+                $string .= _("Please contact your system administrator and report this error.");
+                error_box($string);
+                // display footer (closes html tags) and stop script execution
+                $oTemplate->display('footer.tpl');
+                exit;
             }
-            $string .= _("Please contact your system administrator and report this error.");
-            error_box($string);
-            // display footer (closes html tags) and stop script execution
-            $oTemplate->display('footer.tpl');
-            exit;
         }
     }
 }
@@ -64,6 +66,9 @@ $password_form_name = 'secretkey';
 do_hook('login_cookie', $null);
 
 $loginname_value = (sqGetGlobalVar('loginname', $loginname) ? sm_encode_html_special_chars($loginname) : '');
+if (empty($loginname_value) && sqGetGlobalVar('squirrelmail_username', $saved_user, SQ_COOKIE)) {
+    $loginname_value = sm_encode_html_special_chars($saved_user);
+}
 
 //FIXME: should be part of the template, not the core!
 /* Output the javascript onload function. */

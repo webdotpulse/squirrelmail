@@ -1,4 +1,4 @@
-# SquirrelMail 1.5.71
+# SquirrelMail 1.5.72
 
 A modernized, responsive edition of SquirrelMail engineered for PHP 7.0 through 8.2+ with a Single-Page Application (SPA) interface, modern UI styling, and extensive feature enhancements.
 
@@ -6,6 +6,17 @@ A modernized, responsive edition of SquirrelMail engineered for PHP 7.0 through 
 
 ## 🚀 Key Features & Enhancements
 
+- **Progressive Web App (PWA) & Installability**:
+  - Full PWA compliance with web app manifest (`manifest.json`), service worker (`sw.js`), and high-resolution icons (192×192, 512×512, maskable icons).
+  - Standalone app experience installable on Desktop (Chrome, Edge) and Mobile (Android, iOS Home Screen).
+  - Offline fallback shell (`offline.html`) with network status auto-detection and reconnection retry.
+  - Native installation prompt buttons integrated into the workspace header and login top bar.
+- **Persistent Active Sessions ("Remember Me")**:
+  - Optional "Remember me" toggle on the login screen extending session cookies and OTP authentication tokens for 30 days.
+  - Automatic rolling lifetime extension and memory of recent login usernames for quick access.
+- **Direct Login Redirection & Seamless Auth**:
+  - Elimination of the legacy intermediate "You must be logged in to access this page." notice screen in favor of direct, immediate redirection to `src/login.php`.
+  - Intelligent root routing in `index.php` preserving active sessions and seamlessly entering the inbox.
 - **Modern Single-Page Application (SPA) Interface**:
   - Dynamic client-side routing via `assets/js/app.js` with instant workspace navigation, preserving session state and CSRF tokens.
   - Curated modern design system in `assets/css/app.css` with CSS custom properties (`--sm-*`).
@@ -56,6 +67,29 @@ This repository includes an [AGENTS.md](file:///home/koen/Git/squirrelmail/AGENT
 ---
 
 ## 📝 Changelog
+
+### Version 1.5.72
+- **Progressive Web App (PWA) & Standalone App Installability**:
+  - **Web App Manifest (`manifest.json`)**: Configured standard PWA manifest specifying `name`, `short_name`, `start_url` (`./index.php`), `scope`, `display: standalone`, `display_override`, background colors, theme colors, categories, and direct app shortcuts for "Compose Email" and "Inbox".
+  - **PWA Multi-Resolution Icons Suite**: Generated crisp 192×192 (`images/icon-192.png`, `assets/images/icons/icon-192.png`) and 512×512 (`images/icon-512.png`, `assets/images/icons/icon-512.png`) application icons along with safe-zone maskable icons (`icon-maskable-192.png`, `icon-maskable-512.png`) for Android adaptive icons and desktop app launchers.
+  - **Service Worker (`sw.js`)**: Implemented background Service Worker managing cache lifecycle (`squirrelmail-pwa-v1.5.72`), pre-caching core application shell assets (CSS, JS, logos, sanitizers), network-first caching strategy for dynamic HTML navigations, and cache-first/network-sync for static assets.
+  - **Offline Fallback Experience (`offline.html`)**: Created an offline fallback screen featuring modern typography, connection indicator animations, a manual "Retry Connection" action, and auto-refresh on network reconnection.
+  - **HTML `<head>` PWA Meta Tags (`functions/page_header.php`)**: Linked `manifest.json` and added mobile web app capability tags (`mobile-web-app-capable`, `apple-mobile-web-app-capable`, `apple-mobile-web-app-status-bar-style`, `theme-color`).
+  - **Dynamic Theme-Color Synchronization**: Updated `assets/js/app.js` to automatically synchronize the `<meta name="theme-color">` value with the active Light (`#2563eb`) and Dark (`#0f172a`) mode themes.
+  - **Native Install Buttons (`templates/default/webmail.tpl`, `templates/default/login.tpl`, `assets/js/app.js`, `assets/css/app.css`)**: Implemented install buttons in the main workspace header and login top bar that listen for the browser's `beforeinstallprompt` event and trigger the native install dialog with custom user feedback.
+- **Direct Login Redirection & Skipping Interstitial Notices**:
+  - **Eliminated Interstitial Login Notice**: Modified `include/init.php` and `functions/display_messages.php` (`logout_error`) to skip the legacy `"You must be logged in to access this page."` error screen and immediately redirect unauthenticated requests directly to `src/login.php`.
+  - **Clean Fallback Redirection (`src/redirect.php`)**: Updated authentication redirect handling to send visitors directly to `src/login.php` when credentials are absent rather than showing a notice card.
+  - **SPA Router Breakout Guard (`assets/js/app.js`)**: Added client-side router interception detecting redirects to `login.php` or `signout.php` during async navigations and form submissions, breaking cleanly out of `#sm-workspace` to render the full login page.
+  - **Root URL Forwarding (`index.php`)**: Upgraded `index.php` to inspect active session cookies; authenticated users are seamlessly forwarded to `src/webmail.php`, while logged-out visitors are routed straight to `src/login.php`.
+  - **Safe Session Preservation on Login (`include/init.php`)**: Prevented `include/init.php` from inadvertently wiping an active authenticated session when a logged-in user visits `login.php` directly, redirecting them back to `webmail.php`.
+- **"Remember Me" Option & Persistent Active Sessions**:
+  - **Login Form Checkbox (`templates/default/login.tpl`, `assets/css/app.css`)**: Added a styled, accessible "Remember me" checkbox with smooth micro-animations below the password field on the login screen.
+  - **Extended Session Duration (`src/redirect.php`, `include/init.php`, `functions/global.php`)**: When "Remember me" is checked, sets 30-day (`2592000` seconds) persistent lifetimes on the session cookie, OTP password key cookie (`key`), and `sm_remember` cookie, simultaneously extending PHP's `session.gc_maxlifetime`.
+  - **Rolling Cookie Refresh (`functions/global.php` `sqsession_start`)**: Automatically renews persistent session cookies on subsequent authenticated requests while active. Fixed cookie cache deduplication in `sqsetcookie()` to account for expiration timestamps.
+  - **Remembered Username Prefill (`src/login.php`)**: Saves and pre-populates remembered usernames in the login form for frictionless sign-in.
+  - **Explicit Logout Revocation (`src/signout.php`)**: Guarantees all persistent cookies (`sm_remember`, `key`, session) are revoked upon explicit logout.
+- **Version Bump**: Incremented version from `1.5.71` to `1.5.72`.
 
 ### Version 1.5.71
 - **Modern App Icon & Multi-Resolution Favicon Suite**:

@@ -109,6 +109,7 @@
         state: {
             currentUrl: window.location.href,
             isLoading: false,
+            deferredInstallPrompt: null,
             theme: localStorage.getItem('sm_theme') || 
                    (document.cookie.match(/(?:^|;\s*)sm_theme=([^;]*)/) ? decodeURIComponent(document.cookie.match(/(?:^|;\s*)sm_theme=([^;]*)/)[1]) : null) || 
                    (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
@@ -138,6 +139,7 @@
             this.setupFormInterception();
             this.setupMobileDrawer();
             this.setupThemeToggle();
+            this.setupPwa();
             this.enhanceWorkspace(document.getElementById(this.config.workspaceId) || document.body);
 
             // Expose globally for inline scripts or plugins
@@ -177,6 +179,12 @@
                 localStorage.setItem('sm_theme', theme);
                 document.cookie = 'sm_theme=' + encodeURIComponent(theme) + '; path=/; max-age=31536000; SameSite=Lax';
             } catch(e) {}
+
+            // Update mobile browser status bar / theme-color
+            const metaTheme = document.getElementById('sm-meta-theme-color');
+            if (metaTheme) {
+                metaTheme.setAttribute('content', theme === 'dark' ? '#0f172a' : '#2563eb');
+            }
 
             // Synchronize custom theme stylesheet link if present
             const customTheme = document.getElementById('sm-custom-theme-css');
@@ -246,6 +254,80 @@
                 if (window.innerWidth < 768 && e.target.closest('#sm-sidebar a')) {
                     close();
                 }
+            });
+        },
+
+        // -------------------------------------------------------------------------
+        // Progressive Web App (PWA) & Service Worker
+        // -------------------------------------------------------------------------
+        setupPwa() {
+            // Register Service Worker if supported
+            if ('serviceWorker' in navigator) {
+                const swUrl = this.getBaseUri() + 'sw.js';
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register(swUrl, { scope: this.getBaseUri() })
+                        .then(reg => {
+                            reg.onupdatefound = () => {
+                                const installingWorker = reg.installing;
+                                if (installingWorker) {
+                                    installingWorker.onstatechange = () => {
+                                        if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                            console.log('[SquirrelMail PWA] Service worker updated.');
+                                        }
+                                    };
+                                }
+                            };
+                        })
+                        .catch(err => {
+                            console.warn('[SquirrelMail PWA] Service Worker registration failed:', err);
+                        });
+                });
+            }
+
+            // Capture install prompt event for custom install button
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                this.state.deferredInstallPrompt = e;
+                this.updateInstallButtons(true);
+            });
+
+            window.addEventListener('appinstalled', () => {
+                this.state.deferredInstallPrompt = null;
+                this.updateInstallButtons(false);
+                if (typeof this.showToast === 'function') {
+                    this.showToast('SquirrelMail App installed successfully!', 'success');
+                }
+            });
+
+            // Delegate click for any install button in UI
+            document.addEventListener('click', (e) => {
+                const btn = e.target.closest('#sm-pwa-install-btn, #sm-login-install-btn, [data-action="pwa-install"]');
+                if (btn) {
+                    e.preventDefault();
+                    if (this.state.deferredInstallPrompt) {
+                        this.state.deferredInstallPrompt.prompt();
+                        this.state.deferredInstallPrompt.userChoice.then((choice) => {
+                            if (choice.outcome === 'accepted') {
+                                console.log('[SquirrelMail PWA] User accepted installation prompt');
+                            }
+                            this.state.deferredInstallPrompt = null;
+                            this.updateInstallButtons(false);
+                        });
+                    } else {
+                        if (typeof this.showToast === 'function') {
+                            this.showToast('To install SquirrelMail, use your browser\'s "Install App" or "Add to Home Screen" option.', 'info');
+                        } else {
+                            alert('To install SquirrelMail, use your browser\'s "Install App" or "Add to Home Screen" option.');
+                        }
+                    }
+                }
+            });
+        },
+
+        updateInstallButtons(show) {
+            const btns = document.querySelectorAll('#sm-pwa-install-btn, #sm-login-install-btn, [data-action="pwa-install"]');
+            btns.forEach(btn => {
+                btn.style.display = show ? 'inline-flex' : 'none';
             });
         },
 
@@ -380,6 +462,10 @@
                                        response.headers.get('HX-Redirect') || 
                                        response.headers.get('HX-Location');
                 if (redirectHeader) {
+                    if (redirectHeader.includes('/login.php') || redirectHeader.includes('/signout.php')) {
+                        window.location.href = redirectHeader;
+                        return;
+                    }
                     return this.navigate(redirectHeader, true);
                 }
 
@@ -388,18 +474,34 @@
                 if (contentType.includes('application/json')) {
                     const data = await response.json();
                     if (data.redirect) {
+                        if (data.redirect.includes('/login.php') || data.redirect.includes('/signout.php')) {
+                            window.location.href = data.redirect;
+                            return;
+                        }
                         return this.navigate(data.redirect, true);
                     }
                 }
 
-                // Safety guard: left_main.php is the sidebar fragment and must NEVER be rendered inside #sm-workspace
+                // Safety guard: if redirected to login.php, break out of SPA and navigate to full login
                 const effectiveUrl = response.url || url;
+                if (effectiveUrl.includes('/login.php') || effectiveUrl.includes('/signout.php')) {
+                    window.location.href = effectiveUrl;
+                    return;
+                }
+
+                // Safety guard: left_main.php is the sidebar fragment and must NEVER be rendered inside #sm-workspace
                 if (effectiveUrl.includes('/left_main.php')) {
                     this.refreshFolders();
                     return;
                 }
 
                 const html = await response.text();
+
+                // If response contains login screen or logout error notice, redirect immediately to login
+                if (html.includes('class="sm-login-page"') || html.includes('id="sqm_login"') || html.includes('id="sqm_errorLogout"') || html.includes('id="login_form"')) {
+                    window.location.href = this.getBaseUri() + 'src/login.php';
+                    return;
+                }
                 this.renderWorkspace(html, effectiveUrl);
 
                 if (pushState) {
@@ -584,6 +686,10 @@
                                            response.headers.get('HX-Redirect') || 
                                            response.headers.get('HX-Location');
                     if (redirectHeader) {
+                        if (redirectHeader.includes('/login.php') || redirectHeader.includes('/signout.php')) {
+                            window.location.href = redirectHeader;
+                            return;
+                        }
                         return this.navigate(redirectHeader, true);
                     }
 
@@ -596,12 +702,26 @@
                         }
                         this.refreshFolders();
                         if (data.redirect) {
+                            if (data.redirect.includes('/login.php') || data.redirect.includes('/signout.php')) {
+                                window.location.href = data.redirect;
+                                return;
+                            }
                             return this.navigate(data.redirect, true);
                         }
                         return;
                     }
 
+                    const effectiveUrl = response.url || action;
+                    if (effectiveUrl.includes('/login.php') || effectiveUrl.includes('/signout.php')) {
+                        window.location.href = effectiveUrl;
+                        return;
+                    }
+
                     const html = await response.text();
+                    if (html.includes('class="sm-login-page"') || html.includes('id="sqm_login"') || html.includes('id="sqm_errorLogout"') || html.includes('id="login_form"')) {
+                        window.location.href = this.getBaseUri() + 'src/login.php';
+                        return;
+                    }
                     this.renderWorkspace(html, response.url || action);
 
                     // Refresh folders unread badges (e.g. after moving/deleting/sending)

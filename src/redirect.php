@@ -53,8 +53,15 @@ sqsetcookie('squirrelmail_language', $squirrelmail_language, time()+2592000,
           $base_uri);
 
 if (!isset($login_username)) {
-    logout_error( _("You must be logged in to access this page.") );
-    exit;
+    $login_target = $base_uri . 'src/login.php';
+    if (!headers_sent()) {
+        header('Location: ' . $login_target);
+        header('X-Redirect-Location: ' . $login_target);
+        exit;
+    } else {
+        echo '<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0;url=' . htmlspecialchars($login_target, ENT_QUOTES) . '"><script>top.location.href=' . json_encode($login_target) . ';</script></head><body></body></html>';
+        exit;
+    }
 }
 
 do_hook('login_before', $null);
@@ -99,8 +106,23 @@ if (function_exists('session_regenerate_id')) {
 * function which gives us full control how the cookie is set. We do that
 * to add the HttpOnly cookie attribute which blocks javascript access.
 */
-sqsetcookie(session_name(),session_id(),false,$base_uri);
-sqsetcookie('key', $key, false, $base_uri);
+sqgetGlobalVar('remember_me', $remember_me, SQ_POST);
+if (!empty($remember_me)) {
+    $remember_duration = 30 * 86400; // 30 days
+    $cookie_expire = time() + $remember_duration;
+    ini_set('session.gc_maxlifetime', $remember_duration);
+    sqsession_register(true, 'remember_me');
+    sqsetcookie('sm_remember', '1', $cookie_expire, $base_uri);
+    sqsetcookie(session_name(), session_id(), $cookie_expire, $base_uri);
+    sqsetcookie('key', $key, $cookie_expire, $base_uri);
+    sqsetcookie('squirrelmail_username', $login_username, $cookie_expire, $base_uri);
+} else {
+    sqsession_unregister('remember_me');
+    sqsetcookie('sm_remember', '', 1, $base_uri);
+    sqsetcookie(session_name(), session_id(), false, $base_uri);
+    sqsetcookie('key', $key, false, $base_uri);
+    sqsetcookie('squirrelmail_username', '', 1, $base_uri);
+}
 
 sqsession_register($onetimepad, 'onetimepad');
 

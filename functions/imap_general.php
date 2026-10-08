@@ -695,7 +695,7 @@ function sqimap_read_data ($imap_stream, $tag_uid, $handle_errors,
  * @return imap-stream resource identifier
  * @since 1.5.0 (usable only in 1.5.1 or later)
  */
-function sqimap_create_stream($server,$port,$tls=0,$stream_options=array()) {
+function sqimap_create_stream($server,$port,$tls=0,$stream_options=array(),$hide_errors=false) {
     global $squirrelmail_language;
 
     if (strstr($server,':') && ! preg_match("/^\[.*\]$/",$server)) {
@@ -721,6 +721,7 @@ function sqimap_create_stream($server,$port,$tls=0,$stream_options=array()) {
                 $imap_stream = @fsockopen('ssl://' . $server, $port, $error_number, $error_string, 15);
             }
         } else {
+            if ($hide_errors) return false;
             require_once(SM_PATH . 'functions/display_messages.php');
             logout_error( sprintf(_("Error connecting to IMAP server: %s."), $server).
                 '<br />'.
@@ -736,6 +737,7 @@ function sqimap_create_stream($server,$port,$tls=0,$stream_options=array()) {
 
     /* Do some error correction */
     if (!$imap_stream) {
+        if ($hide_errors) return false;
         set_up_language($squirrelmail_language, true);
         require_once(SM_PATH . 'functions/display_messages.php');
         logout_error( sprintf(_("Error connecting to IMAP server: %s."), $server).

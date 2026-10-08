@@ -100,6 +100,13 @@ function displayHtmlHeader( $title = 'SquirrelMail', $xtra = '', $do_hook = TRUE
 
     $header_tags .= "<meta name=\"robots\" content=\"noindex,nofollow\" />\n"
                   . "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n"
+                  . "<meta name=\"theme-color\" content=\"#2563eb\" id=\"sm-meta-theme-color\" />\n"
+                  . "<meta name=\"mobile-web-app-capable\" content=\"yes\" />\n"
+                  . "<meta name=\"apple-mobile-web-app-capable\" content=\"yes\" />\n"
+                  . "<meta name=\"apple-mobile-web-app-status-bar-style\" content=\"black-translucent\" />\n"
+                  . "<meta name=\"apple-mobile-web-app-title\" content=\"SquirrelMail\" />\n"
+                  . "<meta name=\"application-name\" content=\"SquirrelMail\" />\n"
+                  . "<link rel=\"manifest\" href=\"" . sqm_baseuri() . "manifest.json\" />\n"
 
     // For adding a favicon or anything else that should be inserted in *ALL* <head> for *ALL* documents,
     // define $head_tag_extra in config/config_local.php
@@ -112,7 +119,7 @@ function displayHtmlHeader( $title = 'SquirrelMail', $xtra = '', $do_hook = TRUE
     . (empty($head_tag_extra) ? '<link rel="shortcut icon" href="' . sqm_baseuri() . 'favicon.ico" />' . "\n"
                               . '<link rel="icon" type="image/png" sizes="32x32" href="' . sqm_baseuri() . 'images/favicon-32x32.png" />' . "\n"
                               . '<link rel="icon" type="image/png" sizes="16x16" href="' . sqm_baseuri() . 'images/favicon-16x16.png" />' . "\n"
-                              . '<link rel="apple-touch-icon" sizes="180x180" href="' . sqm_baseuri() . 'images/apple-touch-icon.png" />'
+                              . '<link rel="apple-touch-icon" sizes="180x180" href="' . sqm_baseuri() . 'images/apple-touch-icon.png" />' . "\n"
     : str_replace('###SM BASEURI###', sqm_baseuri(), $head_tag_extra));
 
     $used_fontset = (!empty($chosen_fontset) ? $chosen_fontset : $default_fontset);

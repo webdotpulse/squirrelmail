@@ -356,8 +356,23 @@ if (!empty($sSessionAutostartID) && $sSessionAutostartName !== $session_name) {
  */
 require(SM_PATH . 'class/mime.class.php');
 
+// Ensure session save path is valid and writable
+$sSessionSavePath = ini_get('session.save_path');
+if (empty($sSessionSavePath) || !is_dir($sSessionSavePath) || !is_writable($sSessionSavePath)) {
+    $sTempDir = sys_get_temp_dir();
+    if (is_dir($sTempDir) && is_writable($sTempDir)) {
+        session_save_path($sTempDir);
+    }
+}
+
 ini_set('session.name' , $session_name);
-session_set_cookie_params (0, $base_uri);
+$is_remembered = !empty($_COOKIE['sm_remember']) || (isset($_SESSION['remember_me']) && $_SESSION['remember_me']);
+if ($is_remembered) {
+    ini_set('session.gc_maxlifetime', 2592000); // 30 days
+    session_set_cookie_params (2592000, $base_uri);
+} else {
+    session_set_cookie_params (0, $base_uri);
+}
 sqsession_is_active();
 
 /**
@@ -365,6 +380,12 @@ sqsession_is_active();
  * sure to save session restore data first
  */
 if (PAGE_NAME == 'login') {
+    // If user is already authenticated with a valid session and key cookie,
+    // forward directly to webmail.php instead of destroying their active session
+    if (sqsession_is_registered('user_is_logged_in') && !empty($_SESSION['user_is_logged_in']) && !empty($_COOKIE['key'])) {
+        header('Location: ' . $base_uri . 'src/webmail.php');
+        exit;
+    }
     if (!sqGetGlobalVar('session_expired_post', $sep, SQ_SESSION))
         $sep = '';
     if (!sqGetGlobalVar('session_expired_location', $sel, SQ_SESSION))
@@ -732,12 +753,19 @@ switch (PAGE_NAME) {
             $oTemplate = Template::construct_template($sTemplateID);
 
             set_up_language($squirrelmail_language, true);
-            if (!$message)
-                logout_error( _("You must be logged in to access this page.") );
-            else if ($message == 1)
-                logout_error( _("Your session has expired, but will be resumed after logging in again.") );
-            else if ($message == 2)
+            if ($message == 2) {
                 logout_error( _("The current page request appears to have originated from an unrecognized source.") );
+            } else {
+                $login_target = $base_uri . 'src/login.php';
+                if (!headers_sent()) {
+                    header('Location: ' . $login_target);
+                    header('X-Redirect-Location: ' . $login_target);
+                    exit;
+                } else {
+                    echo '<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0;url=' . htmlspecialchars($login_target, ENT_QUOTES) . '"><script>top.location.href=' . json_encode($login_target) . ';</script></head><body></body></html>';
+                    exit;
+                }
+            }
             exit;
         }
 

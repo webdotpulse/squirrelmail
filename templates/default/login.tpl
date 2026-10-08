@@ -46,8 +46,12 @@ extract($t);
   <div class="sm-login-glow-1"></div>
   <div class="sm-login-glow-2"></div>
 
-  <!-- Top bar with Theme Switcher -->
+  <!-- Top bar with Theme Switcher & Install Button -->
   <div class="sm-login-topbar">
+    <button type="button" class="sm-login-theme-btn sm-login-install-btn" id="sm-login-install-btn" style="display:none;" aria-label="<?php echo _("Install App"); ?>" title="<?php echo _("Install SquirrelMail Webmail App"); ?>">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+      <span class="sm-install-text"><?php echo _("Install App"); ?></span>
+    </button>
     <button type="button" class="sm-login-theme-btn" id="sm-login-theme-toggle" aria-label="<?php echo _("Toggle theme"); ?>">
       <svg class="sm-icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
       <svg class="sm-icon-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
@@ -126,6 +130,17 @@ extract($t);
               <svg class="sm-pw-eye-off" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
             </button>
           </div>
+        </div>
+
+        <!-- Remember Me Checkbox -->
+        <div class="sm-form-group sm-remember-group">
+          <label class="sm-remember-label" for="remember_me">
+            <input type="checkbox" name="remember_me" id="remember_me" value="1" class="sm-checkbox" <?php if (!empty($_COOKIE['sm_remember']) || !empty($_COOKIE['squirrelmail_username'])) echo 'checked="checked"'; ?> />
+            <span class="sm-checkbox-box">
+              <svg class="sm-check-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            </span>
+            <span class="sm-remember-text"><?php echo _("Remember me"); ?></span>
+          </label>
         </div>
 
         <?php echo $login_extra; ?>
