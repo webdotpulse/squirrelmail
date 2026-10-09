@@ -1,4 +1,4 @@
-# SquirrelMail 1.5.73
+# SquirrelMail 1.5.74
 
 A modernized, responsive edition of SquirrelMail engineered for PHP 7.0 through 8.2+ with a Single-Page Application (SPA) interface, modern UI styling, and extensive feature enhancements.
 
@@ -67,6 +67,15 @@ This repository includes an [AGENTS.md](file:///home/koen/Git/squirrelmail/AGENT
 ---
 
 ## 📝 Changelog
+
+### Version 1.5.74
+- **Service Worker FetchEvent Promise Rejection & TypeError Resolution (`sw.js`)**:
+  - **Resolved `Failed to convert value to 'Response'` Error**: Fixed an unhandled promise resolution issue where `event.respondWith()` caught network fetch failures on dynamic endpoints (such as `src/webmail.php`) and returned `caches.match(request)`—which evaluated to `undefined` for uncached dynamic scripts, causing the browser to reject the FetchEvent with `TypeError: Failed to convert value to 'Response'`.
+  - **Dynamic Requests Direct Bypass**: Removed redundant service worker interception (`event.respondWith`) for dynamic PHP scripts, AJAX workspace requests, and file downloads. Uncached dynamic requests are now passed directly to the browser's native network pipeline, allowing native error handling in `assets/js/app.js` without service worker promise crashes.
+  - **Guaranteed Navigation Offline Fallback Response**: Hardened HTML navigation request handling (`request.mode === 'navigate'`) to search for `offline.html` across relative and base URL permutations and provide an inline 503 fallback `Response` if `offline.html` is not in cache, ensuring `respondWith` always receives a valid `Response` instance.
+  - **Robust Static Asset Offline Handling**: Enhanced static asset caching with stale-while-revalidate, returning a safe 503 `Response` on network failure when an asset is not yet cached.
+  - **Service Worker Cache Lifecycle Upgrade**: Incremented cache identifier to `squirrelmail-pwa-v1.5.74` and dynamically computed `SW_DIR` to support both root domain and subdirectory SquirrelMail deployments.
+- **Version Bump**: Incremented version from `1.5.73` to `1.5.74`.
 
 ### Version 1.5.73
 - **Comprehensive Dark Theme Overhaul & Contrast Engine**:
