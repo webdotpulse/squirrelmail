@@ -1,4 +1,4 @@
-# SquirrelMail 1.5.72
+# SquirrelMail 1.5.73
 
 A modernized, responsive edition of SquirrelMail engineered for PHP 7.0 through 8.2+ with a Single-Page Application (SPA) interface, modern UI styling, and extensive feature enhancements.
 
@@ -67,6 +67,16 @@ This repository includes an [AGENTS.md](file:///home/koen/Git/squirrelmail/AGENT
 ---
 
 ## 📝 Changelog
+
+### Version 1.5.73
+- **Comprehensive Dark Theme Overhaul & Contrast Engine**:
+  - **Stylesheet Cascade & Priority Resolution**: Resolved cascading priority conflicts where user theme stylesheets (`css/modern_responsive/default.css`, `templates/default/css/alternates/*`) loaded dynamically after `assets/css/app.css` and overrode dark mode variables with light-only `:root` definitions.
+  - **Full Dual-Mode Support Across All Themes**: Upgraded `css/modern_responsive/default.css`, `css/modern_responsive_dark/default.css`, `css/modern_responsive_emerald/default.css`, and their corresponding template alternate stylesheets with dedicated `:root[data-theme="dark"], [data-theme="dark"]` token definitions and higher specificity.
+  - **Fixed White Sidebar & Zebra Rows**: Eliminated hardcoded `#ffffff` backgrounds on `#sm-sidebar`, workspace canvas, read email table rows (`tr.even`, `tr.odd`), and conversation thread child rows (`tr.sm-thread-child-row`), replacing them with rich dark slate surfaces (`#111827`, `#0b1120`, `#141c2e`) and vivid text contrast (`#f8fafc`, `#cbd5e1`).
+  - **High-Contrast Mailbox Action Buttons**: Fixed illegible ghost buttons (`Flag`, `Unflag`, `Read`, `Unread`, `Forward`) by styling `.sm-btn-secondary` with distinct `#1e293b` backgrounds, `#374151` borders, `#f8fafc` text, and `#334155` hover states in dark mode.
+  - **Paginators, Dropdowns & Labels Menus**: Themed pagination controls (`.sm-paginator-btn`, `.sm-paginator-page`), mailbox counters, native select dropdowns, and the Message Labels popup menu (`.ml-dropdown-menu`, `.ml-dropdown-item`) for high legibility and cohesive aesthetics.
+  - **Fallback Theme Compatibility**: Added dark-mode fallbacks to root `css/default.css` and `templates/default/css/default.css` to safeguard classic non-customized installations.
+- **Version Bump**: Incremented version from `1.5.72` to `1.5.73`.
 
 ### Version 1.5.72
 - **Progressive Web App (PWA) & Standalone App Installability**:

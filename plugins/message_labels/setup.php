@@ -128,10 +128,10 @@ function ml_page_header()
         right: 0;
         top: 100%;
         margin-top: 6px;
-        background: #ffffff;
-        border: 1px solid #dadce0;
+        background: var(--sm-bg-card, #ffffff);
+        border: 1px solid var(--sm-border, #dadce0);
         border-radius: 8px;
-        box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+        box-shadow: var(--sm-shadow-lg, 0 4px 16px rgba(0,0,0,0.15));
         z-index: 10000;
         min-width: 200px;
         padding: 8px 0;
@@ -143,12 +143,24 @@ function ml_page_header()
         gap: 10px;
         padding: 6px 14px;
         font-size: 13px;
-        color: #3c4043;
+        color: var(--sm-text-primary, #3c4043);
         cursor: pointer;
         transition: background 0.15s;
     }
     .ml-dropdown-item:hover {
-        background: #f1f3f4;
+        background: var(--sm-hover-bg, #f1f3f4);
+    }
+    [data-theme="dark"] .ml-dropdown-menu {
+        background: #151e32 !important;
+        border-color: #1f2937 !important;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55) !important;
+    }
+    [data-theme="dark"] .ml-dropdown-item {
+        color: #e2e8f0 !important;
+    }
+    [data-theme="dark"] .ml-dropdown-item:hover {
+        background: #1e293b !important;
+        color: #ffffff !important;
     }
     </style>
     <?php

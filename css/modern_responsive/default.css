@@ -1,6 +1,7 @@
 /* ==========================================================================
    SquirrelMail - Modern Responsive Theme
    A contemporary, clean, and mobile-responsive aesthetic for SquirrelMail
+   Full Dual-Mode Support (Light & Dark)
    ========================================================================== */
 
 /* Modern CSS Reset & Typography */
@@ -10,21 +11,38 @@
     box-sizing: border-box;
 }
 
-:root {
+:root,
+[data-theme="light"] {
     --sm-primary: #2563eb;
     --sm-primary-hover: #1d4ed8;
     --sm-primary-light: #eff6ff;
+    --sm-primary-border: #bfdbfe;
+    --sm-accent: #3b82f6;
     --sm-text-dark: #0f172a;
+    --sm-text-primary: #0f172a;
     --sm-text-body: #1e293b;
+    --sm-text-secondary: #475569;
     --sm-text-muted: #64748b;
-    --sm-bg-body: #ffffff;
+    --sm-bg-canvas: #f8fafc;
+    --sm-bg-body: #f8fafc;
     --sm-bg-sidebar: #f8fafc;
     --sm-bg-surface: #ffffff;
+    --sm-bg-card: #ffffff;
     --sm-bg-alt: #f8fafc;
+    --sm-hover-bg: #f1f5f9;
+    --sm-bg-hover: #f1f5f9;
+    --sm-unread-bg: #eff6ff;
+    --sm-selected-bg: #e0e7ff;
     --sm-border: #e2e8f0;
     --sm-border-light: #f1f5f9;
+    --sm-border-hover: #cbd5e1;
     --sm-danger: #ef4444;
+    --sm-danger-hover: #dc2626;
     --sm-danger-light: #fef2f2;
+    --sm-warning: #d97706;
+    --sm-warning-light: #fffbeb;
+    --sm-success: #059669;
+    --sm-success-light: #ecfdf5;
     --sm-radius-sm: 4px;
     --sm-radius-md: 6px;
     --sm-radius-lg: 8px;
@@ -34,13 +52,48 @@
     --sm-font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
+:root[data-theme="dark"],
+[data-theme="dark"] {
+    --sm-primary: #3b82f6;
+    --sm-primary-hover: #60a5fa;
+    --sm-primary-light: #1e293b;
+    --sm-primary-border: #2563eb;
+    --sm-accent: #60a5fa;
+    --sm-text-dark: #f8fafc;
+    --sm-text-primary: #f8fafc;
+    --sm-text-body: #cbd5e1;
+    --sm-text-secondary: #cbd5e1;
+    --sm-text-muted: #94a3b8;
+    --sm-bg-canvas: #090d16;
+    --sm-bg-body: #090d16;
+    --sm-bg-sidebar: #0b1120;
+    --sm-bg-surface: #111827;
+    --sm-bg-card: #151e32;
+    --sm-bg-alt: #1e293b;
+    --sm-hover-bg: #1e293b;
+    --sm-bg-hover: #1e293b;
+    --sm-unread-bg: #172554;
+    --sm-selected-bg: #1e3a8a;
+    --sm-border: #1f2937;
+    --sm-border-light: #162032;
+    --sm-border-hover: #374151;
+    --sm-danger: #ef4444;
+    --sm-danger-hover: #f87171;
+    --sm-danger-light: #2d1518;
+    --sm-warning: #f59e0b;
+    --sm-warning-light: #2d2305;
+    --sm-success: #10b981;
+    --sm-success-light: #062b1e;
+    --sm-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --sm-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+}
+
 body {
     font-family: var(--sm-font-stack);
     color: var(--sm-text-body);
-    background-color: var(--sm-bg-body);
+    background-color: var(--sm-bg-canvas);
     line-height: 1.5;
     margin: 0;
-    /*padding: 12px 16px;*/
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 }
@@ -52,16 +105,16 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-    background: #f1f5f9;
+    background: var(--sm-bg-canvas);
 }
 
 ::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
+    background: var(--sm-border);
     border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: #94a3b8;
+    background: var(--sm-border-hover);
 }
 
 /* Base Links */
@@ -82,6 +135,7 @@ a:active {
 input[type="text"],
 input[type="password"],
 input[type="email"],
+input[type="search"],
 select,
 textarea {
     font-family: var(--sm-font-stack);
@@ -89,10 +143,10 @@ textarea {
     padding: 7px 11px;
     border: 1px solid var(--sm-border);
     border-radius: var(--sm-radius-md);
-    background-color: #ffffff;
-    color: var(--sm-text-dark);
+    background-color: var(--sm-bg-surface);
+    color: var(--sm-text-primary);
     outline: none;
-    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
     box-sizing: border-box;
     max-width: 100%;
 }
@@ -110,6 +164,7 @@ textarea {
 input[type="text"]:focus,
 input[type="password"]:focus,
 input[type="email"]:focus,
+input[type="search"]:focus,
 select:focus,
 textarea:focus {
     border-color: var(--sm-primary);
@@ -127,22 +182,21 @@ button {
     padding: 7px 14px;
     border-radius: var(--sm-radius-md);
     border: 1px solid var(--sm-border);
-    background-color: #ffffff;
-    color: var(--sm-text-dark);
+    background-color: var(--sm-bg-surface);
+    color: var(--sm-text-primary);
     cursor: pointer;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 6px;
     transition: all 0.15s ease;
-    /*line-height: 1.4;*/
 }
 
 input[type="submit"]:hover,
 input[type="button"]:hover,
 button:hover {
-    background-color: #f8fafc;
-    border-color: #cbd5e1;
+    background-color: var(--sm-hover-bg);
+    border-color: var(--sm-border-hover);
     color: var(--sm-primary);
 }
 
@@ -166,17 +220,16 @@ input[type="submit"][value*="Send"]:hover,
 /* Left Navigation Sidebar (Folder Tree) */
 body.sqm_leftMain {
     background-color: var(--sm-bg-sidebar) !important;
-    color: var(--sm-text-dark);
+    color: var(--sm-text-primary);
     padding: 10px 12px;
     border-right: 1px solid var(--sm-border);
 }
 
 .sqm_leftMain a:link,
 .sqm_leftMain a:visited {
-    color: var(--sm-text-dark);
+    color: var(--sm-text-primary);
     text-decoration: none;
     display: inline-block;
-    /*padding: 4px 8px;*/
     border-radius: var(--sm-radius-md);
     font-size: 13px;
     font-weight: 500;
@@ -185,7 +238,7 @@ body.sqm_leftMain {
 
 .sqm_leftMain a:hover,
 .sqm_leftMain a:active {
-    background-color: #e2e8f0;
+    background-color: var(--sm-hover-bg);
     color: var(--sm-primary);
     text-decoration: none;
 }
@@ -199,8 +252,8 @@ body.sqm_leftMain {
 .leftspecial,
 .leftspecial a:link,
 .leftspecial a:visited {
-    /*    color: #e11d48 !important;
-    font-weight: 600 !important;*/
+    color: var(--sm-primary) !important;
+    font-weight: 600 !important;
 }
 
 .sqm_folderHeader {
@@ -219,9 +272,10 @@ body.sqm_leftMain {
 td.header1,
 .sqm_loginOrgName,
 .sqm_signoutBar {
-    background-color: #ffffff !important;
+    background-color: var(--sm-bg-surface) !important;
     border-bottom: 1px solid var(--sm-border);
     padding: 10px 16px;
+    color: var(--sm-text-primary) !important;
 }
 
 .sqm_menuline {
@@ -240,12 +294,12 @@ td.header1,
     align-items: center;
     padding: 5px 12px;
     border-radius: var(--sm-radius-md);
-    background-color: #f1f5f9;
-    color: var(--sm-text-dark);
+    background-color: var(--sm-bg-surface);
+    color: var(--sm-text-primary);
     font-size: 12.5px;
     font-weight: 500;
     text-decoration: none;
-    border: 1px solid transparent;
+    border: 1px solid var(--sm-border);
     transition: all 0.15s ease;
 }
 
@@ -253,7 +307,7 @@ td.header1,
 .sqm_menuline a:active {
     background-color: var(--sm-primary-light);
     color: var(--sm-primary);
-    border-color: #bfdbfe;
+    border-color: var(--sm-primary-border);
     text-decoration: none;
 }
 
@@ -263,7 +317,7 @@ table.table_empty,
 .sqm_wrapperTable {
     width: 100% !important;
     border-collapse: collapse;
-    background-color: #ffffff;
+    background-color: var(--sm-bg-surface);
     border: 1px solid var(--sm-border);
     border-radius: var(--sm-radius-lg);
     overflow: hidden;
@@ -276,7 +330,7 @@ tr.header5,
 tr.header4,
 th,
 .thead_caption {
-    background-color: #f8fafc !important;
+    background-color: var(--sm-bg-canvas) !important;
     color: var(--sm-text-muted) !important;
     font-size: 12px !important;
     font-weight: 600 !important;
@@ -295,30 +349,48 @@ tr.odd td {
     border-bottom: 1px solid var(--sm-border-light);
     vertical-align: middle;
     font-size: 13.5px;
+    color: var(--sm-text-primary);
     transition: background 0.1s ease;
 }
 
 tr.odd,
 tr.even {
-    background-color: #ffffff;
+    background-color: var(--sm-bg-surface);
 }
 
 tr.odd:hover,
 tr.even:hover {
-    background-color: #f8fafc !important;
+    background-color: var(--sm-hover-bg) !important;
 }
 
-/* Bold Styling for Unread Messages */
+/* Bold Styling & Accent for Unread Messages */
+tr.unread {
+    background-color: var(--sm-unread-bg) !important;
+}
+
 tr.unread td,
 tr.unread b,
 tr.unread a {
     font-weight: 700 !important;
-    color: var(--sm-text-dark) !important;
+    color: var(--sm-text-primary) !important;
+}
+
+/* Thread Child Rows */
+tr.sm-thread-child-row {
+    background-color: rgba(59, 130, 246, 0.02) !important;
+}
+
+[data-theme="dark"] tr.sm-thread-child-row {
+    background-color: #141c2e !important;
+}
+
+[data-theme="dark"] tr.sm-thread-child-row:hover {
+    background-color: #1e2a40 !important;
 }
 
 /* Message View / Reading Pane Card */
 .read-message-card {
-    background: #ffffff;
+    background: var(--sm-bg-card);
     border: 1px solid var(--sm-border);
     border-radius: var(--sm-radius-lg);
     box-shadow: var(--sm-shadow-sm);
@@ -332,12 +404,13 @@ tr.unread a {
     margin-bottom: 16px;
     font-size: 13.5px;
     line-height: 1.6;
+    color: var(--sm-text-secondary);
 }
 
 .read-message-body {
     font-size: 14px;
     line-height: 1.6;
-    color: #1e293b;
+    color: var(--sm-text-body);
     word-break: break-word;
     overflow-x: auto;
 }
@@ -347,7 +420,7 @@ tr.unread a {
     width: 100%;
     max-width: 900px;
     margin: 0 auto;
-    background: #ffffff;
+    background: var(--sm-bg-card);
     border: 1px solid var(--sm-border);
     border-radius: var(--sm-radius-lg);
     padding: 16px;
@@ -368,14 +441,16 @@ textarea#body {
     font-family: inherit;
     line-height: 1.6;
     box-sizing: border-box;
+    background: var(--sm-bg-surface);
+    color: var(--sm-text-primary);
 }
 
 /* Error and Alert Boxes */
 .error_table,
 .sqm_errorBox {
     background-color: var(--sm-danger-light) !important;
-    border: 1px solid #fecaca !important;
-    color: #991b1b !important;
+    border: 1px solid var(--sm-danger) !important;
+    color: var(--sm-danger) !important;
     border-radius: var(--sm-radius-md);
     padding: 12px 16px;
     margin: 12px 0;
@@ -433,7 +508,6 @@ textarea#body {
     select {
         width: 100% !important;
         font-size: 15px !important;
-        /* Prevents auto-zoom on iOS */
     }
 
     /* Touch-friendly buttons */
